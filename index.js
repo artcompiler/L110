@@ -12,7 +12,7 @@ app.set('port', (process.env.PORT || 5102));
 app.use(express.static(__dirname + '/lib'));
 
 app.get('/', function(req, res) {
-  res.send(compile("Hello, L102!"));
+  res.send("Hello, L102!");
 });
 
 var compiler = require("./lib/compile.js");
