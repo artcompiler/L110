@@ -1,0 +1,27 @@
+{
+  "name": "L103",
+  "version": "0.1.0",
+  "description": "Compiler as a service",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "~3.4.x",
+    "underscore": "1.4.x",
+    "requirejs": "latest"
+  },
+  "engines": {
+    "node": "0.10.x"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/artcompiler/L103"
+  },
+  "keywords": [
+    "node",
+    "heroku",
+    "express"
+  ],
+  "author": "Jeff Dyer"
+}

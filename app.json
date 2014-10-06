@@ -1,0 +1,6 @@
+{
+  "name": "L102.artcompiler.com",
+  "description": "L102 compiler service",
+  "repository": "https://github.com/artcompiler/L102",
+  "keywords": ["node", "express", "static"]
+}
