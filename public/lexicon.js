@@ -7,7 +7,7 @@ exports.wordMap = {
     ]
 }
 
-exports.lexiconType = "L102";
+exports.lexiconType = "draw";
 exports.globalLexicon = {
     "let" : { "tk": 0x12, "cls": "keyword" },
     "if" : { "tk": 0x05, "cls": "keyword" },
@@ -48,9 +48,10 @@ exports.globalLexicon = {
 
     "print" : { "tk": 0x01, "cls": "function", "length": 1 },
 
-    "equiv-symbolic" : { "tk": 0x01, "name": "EQUIVSYM", "cls": "function", "length": 2 },
-    "simplify" : { "tk": 0x01, "name": "SIMPLIFY", "cls": "function", "length": 1 },
-    "expand" : { "tk": 0x01, "name": "EXPAND", "cls": "function", "length": 1 },
+    "step" : { "tk": 0x01, "name": "STEP", "cls": "function", "length": 2 },
+    "pen-up" : { "tk": 0x01, "name": "PENUP", "cls": "function", "length": 0 },
+    "pen-down" : { "tk": 0x01, "name": "PENDOWN", "cls": "function", "length": 0 },
+    "show-track" : { "tk": 0x01, "name": "SHOWTRACK", "cls": "function", "length": 0 },
 
     "cos" : { "tk": 0x01, "name": "COS", "cls": "function", "length": 1 },
     "sin" : { "tk": 0x01, "name": "SIN", "cls": "function", "length": 1 },
@@ -87,8 +88,4 @@ exports.globalLexicon = {
     "ge" : { "tk": 0x0E, "name": "GE", "cls": "operator", "length": 0 },
 
     "deg" : { "tk": 0x0A, "cls": "operator", "length": 0 },
-
-    "select" : { "tk": 0x01, "name": "SELECT", "cls": "function", "length": 2 },
-    "select-all" : { "tk": 0x01, "name": "SELECTALL", "cls": "function", "length": 2 },
-    "nth-child" : { "tk": 0x01, "name": "NTH-CHILD", "cls": "function", "length": 1 },
 }

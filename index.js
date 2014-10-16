@@ -1,15 +1,15 @@
 /* -*- Mode: js; js-indent-level: 2; indent-tabs-mode: nil; tab-width: 2 -*- */
 /* vim: set shiftwidth=2 tabstop=2 autoindent cindent expandtab: */
 /*
-   Web service for compiling L102.
+   Web service for compiling L101.
 */
 
 var express = require('express')
 var app = express();
 var http = require('http');
 
-app.set('port', (process.env.PORT || 5102));
-app.use(express.static(__dirname + '/lib'));
+app.set('port', (process.env.PORT || 5101));
+app.use(express.static(__dirname + '/public'));
 
 app.get('/', function(req, res) {
   res.send("Hello, L102!");
@@ -23,7 +23,6 @@ app.get('/compile', function(req, res) {
     data += chunk;
   });
   req.on('end', function () {
-    console.log("/compile data=" + data);
     var src = JSON.parse(data).src;
     var obj = compiler.compile(src);
     res.send(obj);
