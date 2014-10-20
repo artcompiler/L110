@@ -4,15 +4,15 @@
    Web service for compiling L101.
 */
 
+var http = require('http');
 var express = require('express')
 var app = express();
-var http = require('http');
 
 app.set('port', (process.env.PORT || 5101));
 app.use(express.static(__dirname + '/public'));
 
 app.get('/', function(req, res) {
-  res.send("Hello, L102!");
+  res.send("Hello, L101!");
 });
 
 var compiler = require("./lib/compile.js");
