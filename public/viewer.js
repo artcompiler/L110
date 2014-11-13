@@ -4,35 +4,7 @@
 
 exports.viewer = (function () {
 
-  var CENTER_X = 320;
-  var CENTER_Y = 180;
-  var SCALE = 2;
-  var RADIUS = 100*SCALE;
-  var STEP_LENGTH = .1745*SCALE;
-  var leftX = 0, leftY = 0, rightX = 0, rightY = 0;
-  var angle = 0;
-  var penX = 0, penY = 0;
-  var penState = true;
-  var trackState = false;
-  var lastInkX = Number.MAX_VALUE, lastInkY = Number.MAX_VALUE, needsInk = true;
-  var INK_WEIGHT = 1;
-  var INK_DISTANCE = INK_WEIGHT / 2;
-  var INK_OPACITY = 0.4;
-
   function reset() {
-    angle = 0;
-    leftX = CENTER_X + RADIUS/2;
-    leftY = CENTER_Y;
-    rightX = CENTER_X - RADIUS/2;
-    rightY = CENTER_Y;
-    penX = 0;
-    penY = 0;
-    penState = false;
-    trackState = false;
-  }
-
-  function round(n) {
-    return n > 0x7FFF ? n - 0x10000 : n;
   }
 
   function update(obj, src, pool) {
@@ -40,37 +12,9 @@ exports.viewer = (function () {
     exports.src = src;
     exports.pool = pool;
     exports.obj = obj;
-    var c, i = 0;
-    var data = [];
-    while (i < obj.length) {
-      switch ((c = obj.charAt(i++))) {
-      case "S":
-        switch ((c = obj.charAt(i++))) {
-        case "S":
-          lsteps = round(parseInt(obj.substring(i, i + 4), 16));
-          rsteps = round(parseInt(obj.substring(i + 4, i + 8), 16));
-          i += 8;
-          data = data.concat(step(lsteps, rsteps));
-          break;
-        case "T":
-          trackState = true;
-          break;
-        }
-        break;
-      case "P":
-        switch ((c = obj.charAt(i++))) {
-        case "U":
-          penState = false;
-          break;
-        case "D":
-          penState = true;
-          break;
-        }
-        break;
-      }
-    }
 
-    $("#graff-view").html('<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360">');
+    $("#graff-view").html(obj);
+/*
     var svg = d3.select("#graff-view svg");
     var circle = svg.selectAll("circle")
       .data(data);
@@ -86,153 +30,16 @@ exports.viewer = (function () {
       .attr("r", function(d) { return d.r; })
       .style("fill", function(d) { return d.fill; })
       .style("stroke", function(d) { return d.stroke; });
-
-
+*/
     var bbox = $("#graff-view svg g")[0].getBBox();
     $("#graff-view svg").attr("height", (bbox.height + 40) + "px");
     $("#graff-view svg").attr("width", (bbox.width + 40) + "px");
-
-  }
-
-  // Each step taken needs to be relative to the position and direction of the
-  // current state.
-  function step(lsteps, rsteps) {
-    var dirL = lsteps < 0 ? 1 : -1;
-    var dirR = rsteps < 0 ? 1 : -1;
-    lsteps = Math.abs(lsteps);
-    rsteps = Math.abs(rsteps);
-    var points = [];
-    var offset = 0;
-    var delta = 0;
-    var args = [];
-    if (lsteps >= rsteps) {
-      if (rsteps > 0) {
-        delta = (lsteps - rsteps) / rsteps;  // 3
-        for ( ; rsteps > 0; ) {
-          offset += delta;  // Each lstep is equal to rstep plus delta.
-          stepOneLeft(dirL);
-          stepOneRight(dirR);
-          lsteps--;
-          rsteps--;
-          ink(args);
-          for(; offset >= 1; offset--) {  // 3 * 0 | 3 * 1
-            stepOneLeft(dirL);
-            lsteps--;
-            ink(args);
-          }
-        }
-      }
-      // rsteps === 0. only lsteps left
-      for(; lsteps > 0; lsteps--) {  // 3 * 0 | 3 * 1
-        stepOneLeft(dirL);
-        ink(args);
-      }
-    } else {
-      if (lsteps > 0) {
-        delta = (rsteps - lsteps) / lsteps;
-        for ( ; lsteps > 0; ) {
-          offset += delta;
-          stepOneLeft(dirL);
-          stepOneRight(dirR);
-          lsteps--;
-          rsteps--;
-          ink(args);
-          for(; offset >= 1; offset--) {  // 3 * 0 | 3 * 1
-            stepOneRight(dirR);
-            rsteps--;
-            ink(args);
-          }
-        }
-      }
-      // lsteps === 0. only rsteps left
-      for(; rsteps > 0; rsteps--) {  // 3 * 0 | 3 * 1
-        stepOneRight(dirR);
-        ink(args);
-      }
-    }
-    return args;
-
-    function checkInk() {
-      var dx = penX - lastInkX;
-      var dy = penY - lastInkY;
-      var d = Math.sqrt(dx * dx + dy * dy);
-      if (d > INK_DISTANCE) {
-        needsInk = true;
-        lastInkX = penX;
-        lastInkY = penY;
-      } else {
-        needsInk = false;
-      }
-    }
-
-    function ink(args) {
-      checkInk();
-      if (penState && needsInk) {
-        args.push({
-          "tag": "ellipse",
-          "cx": penX,
-          "cy": penY,
-          "r": INK_WEIGHT,
-          "fill": "rgba(0,100,200," + INK_OPACITY + ")",
-          "stroke": "rgba(0,0,0,0)",
-        });
-      }
-      if (trackState) {
-        args.push({
-          "tag": "ellipse",
-          "cx": leftX,
-          "cy": leftY,
-          "r": .5,
-          "fill": "rgba(255,0,0,.1)",
-          "stroke": "rgba(0,0,0,0)",
-        }, {
-          "tag": "ellipse",
-          "cx": rightX,
-          "cy": rightY,
-          "r": .5,
-          "fill": "rgba(0,255,0,.1)",
-          "stroke": "rgba(0,0,0,0)",
-        });
-      }
-    }
-  }
-
-  function stepOneLeft(dir) {
-    angle -= dir * STEP_LENGTH / RADIUS;
-    var dx = RADIUS * Math.cos(angle);
-    var dy = RADIUS * Math.sin(angle);
-    leftX = rightX + dx;
-    leftY = rightY + dy;
-    penX = rightX + dx/2;
-    penY = rightY + dy/2;
-  }
-
-  function stepOneRight(dir) {
-    angle += dir * STEP_LENGTH / RADIUS;
-    var dx = RADIUS * Math.cos(Math.PI + angle);
-    var dy = RADIUS * Math.sin(Math.PI + angle);
-    rightX = leftX + dx;
-    rightY = leftY + dy;
-    penX = leftX + dx/2;
-    penY = leftY + dy/2;
-  }
-
-  function penUp() {
-    penState = false;
-  }
-
-  function penDown() {
-    penState = true;
-  }
-
-  function showTrack() {
-    trackState = true;
   }
 
   function capture() {
 
     // My SVG file as s string.
-    var mySVG = $("#graff-view").html();
+    var mySVG = $("#graff-view .graffiti").html();
     // Create a Data URI.
     // Load up our image.
 

@@ -1,1 +1,5 @@
-L105 compiles LaTeX to JSXGraph fragments.
+L106 evaluates the syntax equivalence of two expressions.
+
+    equiv-syntax "2x(x+1)" "3y(y+1)" 
+
+Evaluates to true.
