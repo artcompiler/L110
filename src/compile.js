@@ -3,7 +3,10 @@
 /* Copyright (c) 2014, Art Compiler LLC */
 
 var _ = require("underscore");
-var model = require("./lib/model.js");
+var requirejs = require("requirejs");
+var model = requirejs("./L15/lib/model.js");
+
+console.log("model=" + JSON.stringify(Model));
 
 var transformer = function() {
 
