@@ -21,7 +21,15 @@ var transformer = function() {
     "PROG" : program,
     "EXPRS" : exprs,
     "STR": str,
+    "BOOL": bool,
+    "LIST" : list,
     "EQUIV-SYNTAX": equiv_syntax,
+    "ALLOW-TRAILING-ZEROS": allow_trailing_zeros,
+    "ALLOW-DECIMAL": allow_decimal,
+    "ALLOW-FRACTION": allow_fraction,
+    "ALLOW-SCIENTIFIC": allow_scientific,
+    "ALLOW-INTEGER": allow_integer,
+    "ALLOW-OTHER-VARIABLE-NAMES": allow_other_variable_names,
   }
 
   var RADIUS = 100;
@@ -105,6 +113,18 @@ var transformer = function() {
     return node.elts[0]
   }
 
+  function bool(node) {
+    return node.elts[0]
+  }
+
+  function list(node) {
+    var elts = visit(node.elts[0]);
+    if (!(elts instanceof Array)) {
+      elts = [elts];
+    }
+    return elts;
+  }
+
   function program(node) {
     var elts = [];
     elts.push(visit(node.elts[0]));
@@ -121,43 +141,94 @@ var transformer = function() {
         elts.push(visit(node.elts[i]))
       }
     }
-    if (elts.length===1) {
-      return elts[0]
-    }
-    return {
-      tag: "",
-      //            class: "exprs",
-      elts: elts
-    }
+    return elts;
   }
 
-  function equiv_syntax(node) {
-    var actual = visit(node.elts[1]);
-    var allowed = visit(node.elts[0]);
-    if (actual && allowed) {
-      var n1 = Model.create(actual);
-      var n2 = Model.create(allowed);
-      console.log("equiv_literal() n1=" + JSON.stringify(n1, null, 2));
-      console.log("equiv_literal() n2=" + JSON.stringify(n2, null, 2));
-      var n1n = normalize(n1);
-      var n2n = normalize(n2);
-      console.log("equiv_literal() n1n=" + JSON.stringify(n1n, null, 2));
-      console.log("equiv_literal() n2n=" + JSON.stringify(n2n, null, 2));
-      var style;
-      if (Ast.intern(n1n) === Ast.intern(n2n)) {
-        style = "fill: rgb(0,255,0)";
-      } else {
-        style = "fill: rgb(255,0,0)";
-      }
-      return {
-        "tag": "ellipse",
-        "cx": "100",
-        "cy": "100",
-        "rx": "50",
-        "ry": "50",
-        "style": style,
-      };
+  // Get or set an option on a node.
+  function option(node, id, val) {
+    if (!node.options) {
+      node.options = {};
     }
+    var old = node.options[id];
+    if (val !== undefined) {
+      node.options[id] = val;
+    }
+    return old;
+  }
+
+  var normalNumber = numberNode("298230487121230434902874");
+  normalNumber.is_normal = true;
+
+  function equiv_syntax(node) {
+    var reference = visit(node.elts[1]);
+    var response = visit(node.elts[0]);
+    var style = "fill: rgb(255,0,0)";
+    if (response) {
+      var result = some(reference, function (ref) {
+        var n1 = Model.create(ref);
+        var n2 = Model.create(response);
+        var options = reference.options ? reference.options : {};
+        options.is_normal = true;
+        var n1n = normalize(n1, options, n1);
+        options.is_normal = false;
+        var n2n = normalize(n2, options, n1);
+        return Ast.intern(n1n) === Ast.intern(n2n);
+      });
+      if (result) {
+        style = "fill: rgb(0,255,0)";
+      }
+    }
+    return {
+      "tag": "ellipse",
+      "cx": "100",
+      "cy": "100",
+      "rx": "50",
+      "ry": "50",
+      "style": style,
+    };
+  }
+
+
+  function allow_fraction(node) {
+    var n1 = visit(node.elts[1]);
+    var n2 = visit(node.elts[0]);
+    option(n2, "allow_fraction", n1);
+    return n2;
+  }
+
+  function allow_trailing_zeros(node) {
+    var n1 = visit(node.elts[1]);
+    var n2 = visit(node.elts[0]);
+    option(n2, "allow_trailing_zeros", n1);
+    return n2;
+  }
+
+  function allow_decimal(node) {
+    var n1 = visit(node.elts[1]);
+    var n2 = visit(node.elts[0]);
+    option(n2, "allow_decimal", n1);
+    return n2;
+  }
+
+  function allow_scientific(node) {
+    var n1 = visit(node.elts[1]);
+    var n2 = visit(node.elts[0]);
+    option(n2, "allow_scientific", n1);
+    return n2;
+  }
+
+  function allow_integer(node) {
+    var n1 = visit(node.elts[1]);
+    var n2 = visit(node.elts[0]);
+    option(n2, "allow_integer", n1);
+    return n2;
+  }
+
+  function allow_other_variable_names(node) {
+    var n1 = visit(node.elts[1]);
+    var n2 = visit(node.elts[0]);
+    option(n2, "allow_alternate_vars", n1);
+    return n2;
   }
 
   // Add messages here.
@@ -267,7 +338,6 @@ var transformer = function() {
   // The outer Visitor function provides a global scope for all visitors,
   // as well as dispatching to methods within a visitor.
   function Visitor() {
-    console.log("***Visitor()");
     var varNames = "abcdefghijklmnopqrstuvwxyz";
     var varMap = {};
     function reset() {
@@ -343,8 +413,11 @@ var transformer = function() {
     // multiplication. It does not perform expansion or simplification so that
     // the basic structure of the expression is preserved. Also, flattens binary
     // trees into N-ary nodes.
-    function normalize(root) {
-      var option = Model.option;
+    function normalize(root, options, ref) {
+      if (!ref || !ref.args) {
+        // If not ref, then the structure of nodes is different, so just return original root.
+        ref = {args:[]};
+      }
       if (!root || !root.args) {
         assert(false, "Should not get here. Illformed node.");
         return 0;
@@ -353,26 +426,50 @@ var transformer = function() {
       var node = Model.create(visit(root, {
         name: "normalize",
         numeric: function (node) {
-          return numberNode("2");
+          // In normal mode, replace each number with its corresponding normalized
+          // value. Otherwise, replace each number with its corresponding normalized
+          // value only if the option
+          if (options.is_normal) {
+            return normalNumber;
+          } else if (ref && node.numberFormat === ref.numberFormat ||
+                     node.numberFormat === "decimal" && options.allow_decimal ||
+                     node.numberFormat === "integer" && options.allow_integer) {
+            return normalNumber;
+          }
+          return node;
         },
         additive: function (node) {
           var args = [];
-          forEach(node.args, function (n) {
-            n = normalize(n);
+          forEach(node.args, function (n, i) {
+            n = normalize(n, options, ref.args[i]);
             args.push(n);
           });
           return binaryNode(Model.ADD, args);
         },
         multiplicative: function(node) {
           var args = [];
-          forEach(node.args, function (n) {
-            n = normalize(n);
+          var allow_integer = options.allow_integer;
+          if (options.allow_fraction) {
+            options.allow_integer = true;
+          }
+          forEach(node.args, function (n, i) {
+            n = normalize(n, options, ref.args[i]);
             args.push(n);
           });
+          options.allow_integer = allow_integer;
+          if (options.is_normal) {
+            if (node.isFraction) {
+              options.allow_fraction = true;
+            }
+            return normalNumber;
+          } else if (node.isFraction && options.allow_fraction &&
+                     args[0].is_normal && args[1].is_normal) {
+            return normalNumber;
+          }
           return binaryNode(Model.MUL, args);
         },
         unary: function(node) {
-          var arg0 = normalize(node.args[0]);
+          var arg0 = normalize(node.args[0], options, ref.args[i]);
           switch (node.op) {
           case Model.SUB:
             // Convert SUBs to ADDs
@@ -403,21 +500,26 @@ var transformer = function() {
           if (!(name = varMap[id])) {
             varMap[id] = name = varNames.charAt(keys(varMap).length);
           }
-          console.log("normalize() variable id=" + id + " name=" + name);
           return variableNode(name);
         },
         exponential: function(node) {
           var args = [];
-          forEach(node.args, function (n) {
-            n = normalize(n);
+          forEach(node.args, function (n, i) {
+            n = normalize(n, options, ref.args[i]);
             args.push(n);
           });
+          if (options.is_normal) {
+            return normalNumber;
+          } else if (args[0].is_normal && 
+                     (args[1].is_normal || args[1].numberFormat === "integer")) {
+            return normalNumber;
+          }
           return binaryNode(node.op, args);
         },
         comma: function(node) {
           var vals = [];
-          forEach(node.args, function (n) {
-            vals = vals.concat(normalize(n));
+          forEach(node.args, function (n, i) {
+            vals = vals.concat(normalize(n, options, ref.args[i]));
           });
           var node = newNode(node.op, vals);
           return node;
@@ -458,11 +560,6 @@ var transformer = function() {
           return node;
         },
       }), root.location);
-      // If the node has changed, simplify again
-//      while (nid !== Ast.intern(node)) {
-//        nid = Ast.intern(node);
-//        node = normalize(node);
-//      }
       return node;
     }
 
@@ -868,10 +965,9 @@ var transformer = function() {
   }
 
   var visitor = new Visitor();
-  function normalize(node) {
-    console.log("visitor=" + visitor);
+  function normalize(node, options, ref) {
     visitor.reset();
-    var result = visitor.normalize(node);
+    var result = visitor.normalize(node, options, ref);
     return result;
   }
 
