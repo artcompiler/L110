@@ -333,9 +333,9 @@ var transformer = function() {
   }
 
   function allowDecimal(node, options) {
-    var n2 = visit(node.elts[0], options);
+    var n1 = visit(node.elts[0], options);
     option(options, "allowDecimal", true);
-    return n2;
+    return n1;
   }
 
   function not(node, options) {
