@@ -26,6 +26,7 @@ var transformer = function() {
     "IS-EXPANDED": isExpanded,
     "INVERSE-RESULT": inverseResult,
     "DECIMAL-PLACES": decimalPlaces,
+    "ALLOW-DECIMAL": allowDecimal,
   };
   var nodePool;
   function reset() {
@@ -325,15 +326,15 @@ var transformer = function() {
     };
   }
 
-  function allow_trailing_zeros(node, options) {
+  function allowTrailingZeros(node, options) {
     var n2 = visit(node.elts[0], options);
-    option(options, "allow_trailing_zeros", true);
+    option(options, "allowTrailingZeros", true);
     return n2;
   }
 
-  function allow_decimal(node, options) {
+  function allowDecimal(node, options) {
     var n2 = visit(node.elts[0], options);
-    option(options, "allow_decimal", true);
+    option(options, "allowDecimal", true);
     return n2;
   }
 

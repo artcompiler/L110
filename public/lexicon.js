@@ -19,5 +19,6 @@ exports.globalLexicon = {
     "isExpanded" : { "tk": 0x01, "name": "IS-EXPANDED", "cls": "function", "length": 1 , "arity": 1 },
     "not" : { "tk": 0x01, "name": "NOT", "cls": "function", "length": 1 },
     "inverseResult" : { "tk": 0x01, "name": "NOT", "cls": "function", "length": 1 },
+    "allowDecimal" : { "tk": 0x01, "name": "ALLOW-DECIMAL", "cls": "function", "length": 1 },
     "decimalPlaces" : { "tk": 0x01, "name": "DECIMAL-PLACES", "cls": "function", "length": 2 },
 }
