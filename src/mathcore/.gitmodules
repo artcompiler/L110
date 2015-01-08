@@ -1,0 +1,6 @@
+[submodule "lib/model"]
+	path = lib/model
+	url = https://github.com/artcompiler/L15.git
+[submodule "lib/big"]
+	path = lib/big
+	url = https://github.com/MikeMcl/big.js.git

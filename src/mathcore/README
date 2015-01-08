@@ -1,0 +1,37 @@
+CLONING
+
+The following shell commands clone this repo and submodules.
+
+   $ git clone git@github.com:Learnosity/mathcore.git
+   $ cd mathcore
+   $ git submodule init
+   $ git submodule update
+
+
+BUILDING
+
+Built files are placed in ./lib/
+
+   $ cd build
+   $ make
+
+
+TESTING
+
+The library must be built before it can be tested.
+
+   $ cd tests
+   $ make all
+
+MERGING
+
+Merge a branch into master
+
+   git checkout master
+   git merge feature-branch
+   git submodule update
+   cd build
+   make
+
+You should now have an updated mathcore.js and chemcore.js in the ../lib.
+Follow the "TESTING" directions to be sure.
