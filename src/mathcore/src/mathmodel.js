@@ -25,6 +25,7 @@
   messages[2012] = "Expressions with comparison or equality operators cannot be compared with equivValue.";
   messages[2013] = "Invalid matrix multiplication.";
   messages[2014] = "Invalid syntax.";
+  messages[2015] = "Invalid format name '%1'.";
 
   var bigOne = new BigDecimal("1");
   var bigZero = new BigDecimal("0");
@@ -824,55 +825,135 @@
       });
     }
 
+    function normalizeFormatObject(fmt) {
+      // Normalize the fmt object to an array of objects
+      var list = [];
+      switch (fmt.op) {
+      case Model.STR:
+        list.push({
+          code: fmt.args[0],
+        });
+        break;
+      case Model.MUL:
+        var code = "";
+        var length = undefined;  // undefined and zero have different meanings.
+        forEach(fmt.args, function (f) {
+          if (f.op === Model.VAR) {
+            code += f.args[0];
+          } else if (f.op === Model.NUM) {
+            length = +f.args[0];
+          }
+        });
+        list.push({
+          code: code,
+          length: length,
+        });
+        break;
+      case Model.COMMA:
+        forEach(fmt.args, function (f) {
+          list = list.concat(normalizeFormatObject(f));
+        });
+        break;
+      }
+      return list;
+    }
+
     function checkNumberFormat(fmt, node) {
-      var i = 0, j = 0, len, code;
-      for ( ; i < fmt.length; ) {
-        code = typeof fmt[i] === "string" ? fmt[i] : fmt[i].args[0];
-        i = i + 1;
+      var fmtList = normalizeFormatObject(fmt);
+      return some(fmtList, function (f) {
+        var code = f.code;
+        var length = f.length;
         switch (code) {
-        case "i": case "I":
+        case "integer":
           if (node.numberFormat === "integer") {
-            if (!fmt[i] || +fmt[i].args[0] === node.args[0].length) {
+            if (length === undefined || length === node.args[0].length) {
               // If there is no size or if the size matches the value...
               return true;
             }
           }
           break;
-        case "d": case "D":
+        case "decimal":
           if (node.numberFormat === "decimal") {
-            if (fmt[i] === undefined ||
-                +fmt[i].args[0] === 0 && node.args[0].indexOf(".") === -1 ||
-                +fmt[i].args[0] === node.args[0].substring(node.args[0].indexOf(".") + 1).length) {
+            if (length === undefined ||
+                length === 0 && node.args[0].indexOf(".") === -1 ||
+                length === node.args[0].substring(node.args[0].indexOf(".") + 1).length) {
               // If there is no size or if the size matches the value...
               return true;
             }
           }
           break;
-        case "n": case "N":
+        case "number":
           if (node.numberFormat === "integer" ||
               node.numberFormat === "decimal") {
-            if (fmt[i] === undefined ||
-                +fmt[i].args[0] === 0 && node.args[0].indexOf(".") === -1 ||
-                +fmt[i].args[0] === node.args[0].substring(node.args[0].indexOf(".") + 1).length) {
+            if (length === undefined ||
+                length === 0 && node.args[0].indexOf(".") === -1 ||
+                length === node.args[0].substring(node.args[0].indexOf(".") + 1).length) {
               // If there is no size or if the size matches the value...
               return true;
             }
           }
           break;
-        case "e": case "E":
+        case "scientific":
           if (node.isScientific) {
             var coeff = node.args[0].args[0];
-            if (fmt[i] === undefined ||
-                +fmt[i].args[0] === 0 && coeff.indexOf(".") === -1 ||
-                +fmt[i].args[0] === coeff.substring(coeff.indexOf(".") + 1).length) {
+            if (length === undefined ||
+                length === 0 && coeff.indexOf(".") === -1 ||
+                length === coeff.substring(coeff.indexOf(".") + 1).length) {
               // If there is no size or if the size matches the value...
               return true;
             }
           }
           break;
+        case "fraction":
+          if (node.isFraction) {
+            return true;
+          }
+          break;
+        case "mixedFraction":
+          if (node.isMixedFraction) {
+            return true;
+          }
+          break;
+        case "fractionOrDecimal":
+          if (node.isFraction ||
+              node.isMixedFraction ||
+              node.numberFormat === "decimal") {
+            return true;
+          }
+          break;
+        default:
+          assert(false, message(2015, [code]));
+          break;
         }
+      });
+    }
+
+    function checkVariableFormat(fmt, id) {
+      var fmtList = normalizeFormatObject(fmt);
+      assert(fmtList.length === 1);
+      var code = fmtList[0].code;
+      var length = fmtList[0].length; // Possibly undefined.
+      var name;
+      switch (code) {
+      case "variable":
+        if (!(name = varMap[id])) {
+          varMap[id] = name = "_" + length;
+        }
+        break;
+      case "integer":
+      case "decimal":
+      case "number":
+      case "scientific":
+      case "fraction":
+      case "mixedFraction":
+      case "fractionOrDecimal":
+        name = id;  // Do nothing.
+        break;
+      default:
+        assert(false, message(2015, [code]));
+        break;
       }
-      return false;
+      return name;
     }
 
     function normalizeSyntax(root, ref) {
@@ -889,21 +970,25 @@
       var node = Model.create(visit(root, {
         name: "normalizeSyntax",
         format: function(node) {
-          var names = variables(node.args[0]);
-          if (names[0] === "V") {
-            return variableNode(names[1]);
+          var fmtList = normalizeFormatObject(node.args[0]);
+          if (fmtList[0].code === "variable") {
+            return variableNode("_" + fmtList[0].length);
           }
           return normalNumber;
         },
         numeric: function (node) {
           if (ref && ref.op === Model.FORMAT &&
-              checkNumberFormat(ref.args[0].args, node)) {
+              checkNumberFormat(ref.args[0], node)) {
             return normalNumber;
           }
           return node;
         },
         additive: function (node) {
           var args = [];
+          if (ref && ref.op === Model.FORMAT &&
+              checkNumberFormat(ref.args[0], node)) {
+            return normalNumber;
+          }
           forEach(node.args, function (n, i) {
             n = normalizeSyntax(n, ref.args[i]);
             args.push(n);
@@ -913,7 +998,7 @@
         multiplicative: function(node) {
           var args = [];
           if (ref && ref.op === Model.FORMAT &&
-              checkNumberFormat(ref.args[0].args, node)) {
+              checkNumberFormat(ref.args[0], node)) {
             return normalNumber;
           }
           if (option("requireScientific") && !node.isScientific) {
@@ -955,11 +1040,8 @@
         variable: function(node) {
           var id = node.args[0];
           var name;
-          if (ref && ref.op === Model.FORMAT &&
-              ref.args[0].op === Model.MUL &&
-              ref.args[0].args[0].args[0].toUpperCase() === "V" &&
-              !(name = varMap[id])) {
-            varMap[id] = name = ref.args[0].args[1].args[0];
+          if (ref && ref.op === Model.FORMAT) {
+            name = checkVariableFormat(ref.args[0], id);
           } else {
             name = id;
           }
@@ -1501,10 +1583,13 @@
       if (n === null) {
         return false;
       }
+      var bd;
       if (n.op === Model.NUM) {
-        n = mathValue(n);
+        bd = mathValue(n);
+      } else {
+        bd = n;
       }
-      return n.compareTo(bigZero) < 0;
+      return bd.compareTo(bigZero) < 0;
     }
 
     function isPos(bd) {

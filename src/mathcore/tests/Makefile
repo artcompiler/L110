@@ -1,8 +1,14 @@
 default:
-	@echo "run: make [new|all|number|algebra|math|chem]"
+	@echo "run: make [new|all|number|algebra|syntax|error|math|chem]"
 
 all:	check
 	open ../tests/jasmine/FullRunner.html
+
+error:	check
+	open ../tests/jasmine/ErrorRunner.html
+
+syntax:	check
+	open ../tests/jasmine/SyntaxRunner.html
 
 number: check
 	open ../tests/jasmine/NumberRunner.html

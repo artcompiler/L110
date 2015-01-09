@@ -239,28 +239,78 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
-          [["\\format{D}"], "1."],
-          [["\\format{D}"], "221.23"],
-          [["\\format{D0}"], "1."],
-          [["\\format{D1}"], "1.2"],
-          [["\\format{D4}"], "1.2000"],
-          [["(x+y)(x+\\format{I})", "(x+\\format{I})(x+y)"], "(x+2)(x+y)"],
-          [["(\\format{Va}+\\format{I})(\\format{Vb}+\\format{I})"], "(x+2)(y+3)"],
-          [["\\format{Va}\\format{Vb}"], "xy"],
-          [["\\format{E}"], "1.0\\times10^2"],
-          [["\\format{E1}"], "1.0\\times10^2"],
-          [["\\format{E4}"], "1.0123\\times10^10"],
-          [["\\format{N}"], "1"],
-          [["\\format{N}"], "221.23"],
-          [["\\format{N0}"], "1"],
-          [["\\format{N1}"], "1.2"],
-          [["\\format{N4}"], "1.2000"],
-          [["\\frac{\\format{I}}{\\format{I}}"], "1/3"],
-          [["\\frac{\\format{I}}{\\format{I}}"], "\\frac{1}{3}"],
-          [["x+\\format{I3}+1.2", "x+\\format{I2}"], "x+100+1.2"],
-          [["x+\\format{I3}", "x+\\format{I2}"], "x+10"],
-          [["x+\\format{I2}"], "x+10"],
-          [["x+\\format{I}"], "x+1"],
+          [["\\format{integer}"], "1"],
+          [["\\format{variable}"], "a"],
+          [["\\format{variable(1)}"], "a"],
+          [["\\format{variable(1)}\\format{variable}\\format{variable(1)}"], "aba"],
+          [["\\format{variable(1)}\\format{variable}\\format{variable(1)}"], "aba"],
+          [["\\format{variable}\\format{variable}\\format{variable}"], "abc"],
+          [["\\format{variable(1)}\\format{variable(1)}"], "aa"],
+          [["\\format{decimal(2), integer}"], "1.23"],
+          [["\\format{decimal(2)}"], "1.23"],
+          [["\\format{decimal}"], "1.23"],
+          [["\\format{number(2), integer}"], "1.23"],
+          [["\\format{number(2)}"], "1.23"],
+          [["\\format{number}"], "1.23"],
+          [["\\format{fractionOrDecimal}"], "1.23"],
+          [["\\format{decimal(2), integer}"], "1"],
+          [["\\format{integer}"], "1"],
+          [["\\format{fractionOrDecimal}"], "\\frac{1}{2}"],
+          [["\\format{fractionOrDecimal}"], "1\\frac{1}{2}"],
+          [["\\format{mixedFraction}"], "1\\frac{1}{2}"],
+          [["\\format{mixedFraction}"], "1.23\\frac{1}{2}"],
+
+        ]);
+      });
+      describe("NOT equivSyntax", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivSyntax",
+                value: v[0],
+              }, v[1])).toBe(false);
+            });
+          });
+        }
+        run([
+          [["\\format{variable(1)}\\format{variable}\\format{variable(1)}"], "aaa"],
+        ]);
+      });
+      describe("equivSyntax", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivSyntax",
+                value: v[0],
+              }, v[1])).toBe(true);
+            });
+          });
+        }
+        run([
+          [["\\format{decimal}"], "1."],
+          [["\\format{decimal}"], "221.23"],
+          [["\\format{decimal(0)}"], "1."],
+          [["\\format{decimal(1)}"], "1.2"],
+          [["\\format{decimal(4)}"], "1.2000"],
+          [["(x+y)(x+\\format{integer})", "(x+\\format{integer})(x+y)"], "(x+2)(x+y)"],
+          [["(\\format{variable(0)}+\\format{integer})(\\format{variable(1)}+\\format{integer})"], "(x+2)(y+3)"],
+          [["\\format{variable(0)}\\format{variable(1)}"], "xy"],
+          [["\\format{scientific}"], "1.0\\times10^2"],
+          [["\\format{scientific(1)}"], "1.0\\times10^2"],
+          [["\\format{scientific(4)}"], "1.0123\\times10^10"],
+          [["\\format{number}"], "1"],
+          [["\\format{number}"], "221.23"],
+          [["\\format{number(0)}"], "1"],
+          [["\\format{number(1)}"], "1.2"],
+          [["\\format{number(4)}"], "1.2000"],
+          [["\\frac{\\format{integer}}{\\format{integer}}"], "1/3"],
+          [["\\frac{\\format{integer}}{\\format{integer}}"], "\\frac{1}{3}"],
+          [["x+\\format{integer(3)}+1.2", "x+\\format{integer(2)}"], "x+100+1.2"],
+          [["x+\\format{integer(3)}", "x+\\format{integer(2)}"], "x+10"],
+          [["x+\\format{integer(2)}"], "x+10"],
+          [["x+\\format{integer}"], "x+1"],
           ["x+1", "x+1"],
           ["1/2", "1/2"],
           [["1/2", "1.3"], "1/2"],
@@ -297,13 +347,13 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
-          [["\\format{D}"], "1,000.0"],
-          [["\\format{I}"], "1,000"],
-          [["\\format{N}"], "1,000.0"],
-          [["\\format{D}"], "1"],
-          [["\\format{D0}"], "1"],
-          [["\\format{D1}"], "1.20"],
-          [["(\\format{Va}+\\format{I})(\\format{Vb}+\\format{I})"], "(x+2)(x+3)"],
+          [["\\format{decimal}"], "1,000.0"],
+          [["\\format{integer}"], "1,000"],
+          [["\\format{number}"], "1,000.0"],
+          [["\\format{decimal}"], "1"],
+          [["\\format{decimal(0)}"], "1"],
+          [["\\format{decimal(1)}"], "1.20"],
+          [["(\\format{variable(0)}+\\format{integer})(\\format{variable(1)}+\\format{integer})"], "(x+2)(x+3)"],
           ["0.3", "0.300"],
           ["x*1", "x+1"],
           ["(1/2)/(1/2)", "1 2/3"],
@@ -329,9 +379,9 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
-          [["\\format{D}"], "1,000.0"],
-          [["\\format{I}"], "1,000"],
-          [["\\format{N}"], "1,000.0"],
+          [["\\format{decimal}"], "1,000.0"],
+          [["\\format{integer}"], "1,000"],
+          [["\\format{number}"], "1,000.0"],
         ]);
       });
     });
