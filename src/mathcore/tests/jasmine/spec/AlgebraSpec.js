@@ -589,12 +589,16 @@ define(["mathcore"], function (MathCore) {
           forEach(tests, function (v, i) {
             it(v[0], function() {
               expect(MathCore.evaluate({
-                method: "isFactorised"
+                method: "isFactorised",
+                options: {
+                  field: "integer"
+                },
               }, v[0])).toBe(true);
             });
           });
         };
         run([
+          ["(3x+2)(3x+2)"],
           ["(x+4)(x-3)"],
           ["x^2"],
           ["15y^10"],
@@ -624,13 +628,19 @@ define(["mathcore"], function (MathCore) {
           forEach(tests, function (v, i) {
             it(v[0], function() {
               expect(MathCore.evaluate({
-                method: "isFactorised"
+                method: "isFactorised",
+                options: {
+                  field: "integer"
+                },
               }, v[0])).toBe(false);
             });
           });
         };
         run([
-          ["x(x-3) + 4x -12"],
+          ["x(x-3)+2"],
+          ["(x+2)x+3x+6"],
+          ["x(x-4)+3x-12"],
+          ["x(x-3)+4x-12"],
           ["xyxy"],
           ["x(x)"],
           ["x^2+15x+50"],
@@ -651,6 +661,60 @@ define(["mathcore"], function (MathCore) {
           ["x^2+5x+6"],
           ["x^2-10x+24"],
           ["c^2-3c-40"],
+          ["3x(3x+2)+6x+4"],
+          ["x(x+5)+15+3x"],
+          ["(3x+2)^2"],
+        ]);
+      });
+      describe("isFactorised field:real", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0], function() {
+              expect(MathCore.evaluate({
+                method: "isFactorised",
+                options: {
+                  "field": "real"
+                }
+              }, v[0])).toBe(true);
+            });
+          });
+        };
+        run([
+          ["(3x+2)(3x+2)"],
+          ["(x+4)(x-3)"],
+          ["x^2"],
+          ["15y^10"],
+          ["15y^10(3y^2+2)"],
+          ["2(s-2\\sqrt{2})(s+2\\sqrt{2})"],
+          ["(x+\\sqrt{3})(x-1)"],
+          ["(x-1)(x-2)"],
+          ["(-1+x)(-2+x)"],
+          ["(x-2)(x-1)"],
+          ["(x-1)(x-2)"],
+          ["(-1+x)(-2+x)"],
+          ["(-1+x)(x-2)"],
+          ["x+1"],
+          ["x+y-1"],
+          ["(2x+3)(3x-1)"],
+          ["(3x-2)(3x-2)"],
+          ["(3x-2)^2"],
+          ["4"],
+          ["x^2+x+1"],
+          ["5(x-1)(x^2+x+1)"],
+        ]);
+      });
+      describe("isFactorised field:real (default)", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0], function() {
+              expect(MathCore.evaluate({
+                method: "isFactorised",
+              }, v[0])).toBe(true);
+            });
+          });
+        };
+        run([
+          ["(3x+2)(3x+2)"],
         ]);
       });
       describe("NOT isFactorised field:real", function() {
@@ -667,8 +731,12 @@ define(["mathcore"], function (MathCore) {
           });
         };
         run([
+          ["3x(3x+2)+6x+4"],
+          ["9x^2+12x+4"],
+          ["x(x+5)+15+3x"],
           ["2(s^2-8)"],
           ["x^2-3"],
+          ["(x+2)x+3x+6"],
         ]);
       });
       describe("isFactorised field:complex", function() {

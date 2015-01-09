@@ -3485,7 +3485,8 @@
     }
 
     function isPolynomial(node) {
-      var tt = terms(node);
+      var n0 = JSON.parse(JSON.stringify(node));  // Make copy
+      var tt = terms(expand(n0));
       var a = bigZero, b = bigZero, c = bigZero, notPolynomial = false;
       var cc = [];
       forEach(tt, function (v) {
@@ -4200,7 +4201,7 @@
     if (opt === undefined) {
       switch (p) {
       case "field":
-        opt = "integer";
+        opt = "real";
         break;
       case "decimalPlaces":
         opt = 10;
