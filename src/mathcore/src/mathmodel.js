@@ -204,8 +204,10 @@
   }
 
   var varMap = {};
+  var varNames = [];
   function reset() {
     varMap = {};
+    varNames = [];
   }
 
   // The outer Visitor function provides a global scope for all visitors,
@@ -936,8 +938,18 @@
       var name;
       switch (code) {
       case "variable":
-        if (!(name = varMap[id])) {
-          varMap[id] = name = "_" + length;
+        if (length === undefined) {
+          // If length is undefined, then accept any variable.
+          name = "_";
+        } else if (!(name = varMap[id])) {
+          // If not in the map then add it.
+          // But only if the synthetic name is not already taken.
+          if (indexOf(varNames, "_" + length) < 0) {
+            varMap[id] = name = "_" + length;
+            varNames.push(name);
+          } else {
+            name = id; // No match, so use the original name.
+          }
         }
         break;
       case "integer":
@@ -972,7 +984,13 @@
         format: function(node) {
           var fmtList = normalizeFormatObject(node.args[0]);
           if (fmtList[0].code === "variable") {
-            return variableNode("_" + fmtList[0].length);
+            var id;
+            if (fmtList[0].length === undefined) {
+              id = "_";
+            } else {
+              id = "_" + fmtList[0].length;
+            }
+            return variableNode(id);
           }
           return normalNumber;
         },

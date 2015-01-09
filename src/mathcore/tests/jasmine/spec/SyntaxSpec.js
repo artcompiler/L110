@@ -239,6 +239,7 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          [["\\format{variable(1)}\\format{variable}\\format{variable(1)}"], "aaa"],
           [["\\format{integer}"], "1"],
           [["\\format{variable}"], "a"],
           [["\\format{variable(1)}"], "a"],
@@ -259,36 +260,7 @@ define(["mathcore"], function (MathCore) {
           [["\\format{fractionOrDecimal}"], "1\\frac{1}{2}"],
           [["\\format{mixedFraction}"], "1\\frac{1}{2}"],
           [["\\format{mixedFraction}"], "1.23\\frac{1}{2}"],
-
-        ]);
-      });
-      describe("NOT equivSyntax", function() {
-        function run(tests) {
-          forEach(tests, function (v, i) {
-            it(v[0] + " | " + v[1], function() {
-              expect(MathCore.evaluate({
-                method: "equivSyntax",
-                value: v[0],
-              }, v[1])).toBe(false);
-            });
-          });
-        }
-        run([
-          [["\\format{variable(1)}\\format{variable}\\format{variable(1)}"], "aaa"],
-        ]);
-      });
-      describe("equivSyntax", function() {
-        function run(tests) {
-          forEach(tests, function (v, i) {
-            it(v[0] + " | " + v[1], function() {
-              expect(MathCore.evaluate({
-                method: "equivSyntax",
-                value: v[0],
-              }, v[1])).toBe(true);
-            });
-          });
-        }
-        run([
+          ["\\format{variable(1)}\\format{variable}\\format{variable(1)}", "xxx"],
           [["\\format{decimal}"], "1."],
           [["\\format{decimal}"], "221.23"],
           [["\\format{decimal(0)}"], "1."],
@@ -347,6 +319,7 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["\\format{variable(1)}\\format{variable(1)}", "xy"],
           [["\\format{decimal}"], "1,000.0"],
           [["\\format{integer}"], "1,000"],
           [["\\format{number}"], "1,000.0"],
