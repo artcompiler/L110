@@ -27,6 +27,7 @@ var transformer = function() {
     "INVERSE-RESULT": inverseResult,
     "DECIMAL-PLACES": decimalPlaces,
     "ALLOW-DECIMAL": allowDecimal,
+    "FIELD": field,
   };
   var nodePool;
   function reset() {
@@ -355,6 +356,13 @@ var transformer = function() {
     var n0 = visit(node.elts[0], options);
     console.log("decimalPlaces() n1=" + n1);
     option(options, "decimalPlaces", n1);
+    return n0;
+  }
+
+  function field(node, options) {
+    var n1 = visit(node.elts[1], options);
+    var n0 = visit(node.elts[0], options);
+    option(options, "field", n1);
     return n0;
   }
 

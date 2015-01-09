@@ -621,6 +621,8 @@ define(["mathcore"], function (MathCore) {
           ["4"],
           ["x^2+x+1"],
           ["5(x-1)(x^2+x+1)"],
+          ["(3x+2)^2"],
+          ["3x(3x+2)+6x+4"],
         ]);
       });
       describe("NOT isFactorised field:integer", function() {
@@ -661,9 +663,7 @@ define(["mathcore"], function (MathCore) {
           ["x^2+5x+6"],
           ["x^2-10x+24"],
           ["c^2-3c-40"],
-          ["3x(3x+2)+6x+4"],
           ["x(x+5)+15+3x"],
-          ["(3x+2)^2"],
         ]);
       });
       describe("isFactorised field:real", function() {
@@ -703,7 +703,7 @@ define(["mathcore"], function (MathCore) {
           ["5(x-1)(x^2+x+1)"],
         ]);
       });
-      describe("isFactorised field:real (default)", function() {
+      describe("isFactorised field:integer (default)", function() {
         function run(tests) {
           forEach(tests, function (v, i) {
             it(v[0], function() {

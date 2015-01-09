@@ -4201,7 +4201,7 @@
     if (opt === undefined) {
       switch (p) {
       case "field":
-        opt = "real";
+        opt = "integer";
         break;
       case "decimalPlaces":
         opt = 10;
