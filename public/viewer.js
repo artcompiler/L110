@@ -29,6 +29,7 @@ exports.viewer = (function () {
         delete value.options[v];
         break;
       case "decimalPlaces":
+      case "field":
         options += v + "=" + value.options[v] + " ";
         break;
       default:
