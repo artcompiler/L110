@@ -258,6 +258,7 @@ define(["mathcore"], function (MathCore) {
           [["\\format{integer}"], "1"],
           [["\\format{fractionOrDecimal}"], "\\frac{1}{2}"],
           [["\\format{fractionOrDecimal}"], "1\\frac{1}{2}"],
+          [["\\format{mixedFraction}"], "1 1/2"],
           [["\\format{mixedFraction}"], "1\\frac{1}{2}"],
           [["\\format{mixedFraction}"], "1.23\\frac{1}{2}"],
           ["\\format{variable(1)}\\format{variable}\\format{variable(1)}", "xxx"],
@@ -319,6 +320,7 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          [["\\format{scientific}"], "1.0\\div10"],
           ["\\format{variable(1)}\\format{variable(1)}", "xy"],
           [["\\format{decimal}"], "1,000.0"],
           [["\\format{integer}"], "1,000"],
