@@ -623,6 +623,7 @@ define(["mathcore"], function (MathCore) {
           ["5(x-1)(x^2+x+1)"],
           ["(3x+2)^2"],
           ["3x(3x+2)+6x+4"],
+          ["(3 + x)(2 + x)"], // factorised of (x+2)x+3x+6
         ]);
       });
       describe("NOT isFactorised field:integer", function() {
@@ -664,6 +665,7 @@ define(["mathcore"], function (MathCore) {
           ["x^2-10x+24"],
           ["c^2-3c-40"],
           ["x(x+5)+15+3x"],
+          ["(x+2)x+3x+6"],
         ]);
       });
       describe("isFactorised field:real", function() {
@@ -1072,6 +1074,8 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["20>2+d", "2+d<20"],
+          ["20>2+d", "d+2<20"],
           ["3.06\\div3=1.02", "3.06\\div3=1.02"],
           ["x=10", "2x=20"],
           ["x \\lt 10", "2x \\lt 20"],
@@ -1082,8 +1086,8 @@ define(["mathcore"], function (MathCore) {
           ["x<=10", "2x<=20"],
           ["x>10", "2x>20"],
           ["x>=10", "2x>=20"],
-          ["x \\ge 10", "10 \\lt x"],
-          ["x>=10", "10<x"],
+          ["x \\ge 10", "10 \\le x"],
+          ["x>=10", "10<=x"],
           ["3+2=5", "\\frac{5}{2}+\\frac{5}{2}=5"],
         ]);
       });
@@ -1099,6 +1103,7 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["20>2+d", "2+d<=20"],
           ["8=8", "16=12"],
           ["x \\ge 10", "10 \\ge x"],
           ["3+6=6", "\\frac{5}{2}+\\frac{5}{2}=5"],

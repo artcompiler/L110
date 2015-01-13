@@ -112,6 +112,21 @@ var forEach = function forEach(array, fun) {
 define(["mathcore"], function (MathCore) {
   describe("MathCore", function() {
     describe("New", function() {
+      describe("equivLiteral", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivLiteral",
+                options: {ignoreText: true},
+                value: v[0],
+              }, v[1])).toBe(true);
+            });
+          });
+        }
+        run([
+        ]);
+      });
       describe("NOT equivLiteral", function() {
         function run(tests) {
           forEach(tests, function (v, i) {
@@ -136,6 +151,24 @@ define(["mathcore"], function (MathCore) {
                 options: {
                   allowThousandsSeparator: true
                 }
+              }, v[1])).toBe(true);
+            });
+          });
+        }
+        run([
+        ]);
+      });
+      describe("equivSymbolic allowDecimal", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivSymbolic",
+                options: {
+                  allowDecimal: true,
+                  decimalPlaces: 10,
+                },
+                value: v[0],
               }, v[1])).toBe(true);
             });
           });

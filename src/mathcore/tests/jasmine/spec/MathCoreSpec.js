@@ -398,6 +398,10 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          [ "\\text{text next to interval }\\left[1,2\\right)",
+            "\\text{text next to interval }\\left[1,2\\right)"],
+          [ "\\text{text next to interval }\\left(1,2\\right]",
+            "\\text{text next to interval }\\left(1,2\\right]"],
           ["(1, 3)", "(1, 3)"],
           ["(1, 3]", "(1, 3]"],
           ["[1, 3]", "[1, 3]"],
@@ -419,6 +423,14 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+            ["\\text{text next to interval }\\left[1,2\\right)",
+             "\\text{text next to interval }\\left[1,2\\right]"],
+            ["\\text{text next to interval }\\left(1,2\\right]",
+             "\\text{text next to interval }\\left[1,2\\right]"],
+            ["\\text{text next to interval }\\left(1,2\\right]",
+             "\\text{text next to interval }\\left[1,2\\right)"],
+            ["\\text{text next to interval }\\left[1,2\\right)",
+             "\\text{text next to interval }\\left(1,2\\right]"],
             ["[-1,0)", "[-1,0]"],
         ]);
       });

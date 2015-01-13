@@ -1140,7 +1140,15 @@
               // because it simplifies constant expressions.
               return;
             }
+            if (args.length > 0 &&
+                Ast.intern(n) === Ast.intern(nodeMinusOne) &&
+                Ast.intern(args[args.length-1]) === Ast.intern(nodeMinusOne)) {
+              // Double negative, so erase both.
+              args.pop();
+              return;
+            }
             if (n.op === Model.MUL) {
+              // Flatten
               args = args.concat(n.args);
             } else {
               args.push(n);
@@ -1216,7 +1224,7 @@
           node = binaryNode(node.op, args);
           if (node.op === Model.GT || node.op === Model.GE) {
             // Normalize inequalities to LT and LE
-            node.op = node.op === Model.GT ? Model.LE : Model.LT;
+            node.op = node.op === Model.GT ? Model.LT : Model.LE;
             var t = node.args[0];
             node.args[0] = node.args[1];
             node.args[1] = t;
@@ -1421,8 +1429,8 @@
           forEach(node.args, function (n, i) {
             node.args[i] = sort(n);
           });
-          if (node.op !== Model.EQL) {
-            // If inequality, then don't sort
+          if (node.op === Model.COLON) {
+            // If ratio, then don't sort toplevel terms.
             return node;
           }
           // Sort by descending degree
@@ -1436,6 +1444,11 @@
               // Swap adjacent elements
               node.args[i] = n1;
               node.args[i + 1] = n0;
+              node.op =
+                node.op === Model.GT ? Model.LT :
+                node.op === Model.GE ? Model.LE :
+                node.op === Model.LT ? Model.GT :
+                node.op === Model.LE ? Model.GE : node.op;
             } else if (d0 === d1) {
               v0 = variables(n0);
               v1 = variables(n1);
@@ -1445,6 +1458,21 @@
                 var t = node.args[i];
                 node.args[i] = n1;
                 node.args[i + 1] = n0;
+                node.op =
+                  node.op === Model.GT ? Model.LT :
+                  node.op === Model.GE ? Model.LE :
+                  node.op === Model.LT ? Model.GT :
+                  node.op === Model.LE ? Model.GE : node.op;
+              } else if (!isZero(n1) && isLessThan(mathValue(n0), mathValue(n1))) {
+                // Unless the RHS is zero, swap adjacent elements
+                var t = node.args[i];
+                node.args[i] = n1;
+                node.args[i + 1] = n0;
+                node.op =
+                  node.op === Model.GT ? Model.LT :
+                  node.op === Model.GE ? Model.LE :
+                  node.op === Model.LT ? Model.GT :
+                  node.op === Model.LE ? Model.GE : node.op;
               }
             }
           }
@@ -3829,7 +3857,12 @@
     var v1t = bigZero;
     var v2t = bigZero;
     var args = [];
-
+    if (isComparison(n1.op) && isComparison(n2.op)) {
+      var v1 = Model.create(n1.args[0]).equivValue(n1.args[1], n1.op);
+      var v2 = Model.create(n2.args[0]).equivValue(n2.args[1], n2.op);
+      var result = v1 === v2;
+      return inverseResult ? !result : result;
+    }
     if (n1.op === Model.PM) {
       var args = distributeUnits(n1.args[0], n1.args[1]);
       n1 = binaryNode(Model.PM, args);
@@ -3874,10 +3907,8 @@
     var v1 = mathValue(n1b, env);
     var v2 = mathValue(n2b, env);
     assert(v1 !== null || isComparison(n1b.op), message(2005));
-    assert(v1 !== null && !isComparison(n1b.op), message(2012));
     assert(n1b.op !== Model.PM || v1t !== null, message(2005));
     assert(v2 !== null || isComparison(n2b.op), message(2005));
-    assert(v2 !== null && !isComparison(n2b.op), message(2012));
     assert(n2b.op !== Model.PM || v2t !== null, message(2005));
     Assert.clearLocation();
     // If we have two arrays, then compare their elements
@@ -4061,7 +4092,7 @@
   // Check if two equations are literally equivalent. Two equations are
   // literally equivalent if and only if they have the same AST. ASTs with the
   // same structure intern to the same pool index.
-  Model.fn.equivLiteral = function (n1, n2) {
+  Model.fn.equivLiteral = function equivLiteral(n1, n2) {
     var ignoreOrder = option("ignoreOrder");
     var inverseResult = option("inverseResult");
     n1 = normalizeLiteral(n1);
@@ -4070,14 +4101,25 @@
       n1 = sort(n1);
       n2 = sort(n2);
     }
-    var nid1 = this.intern(n1);
-    var nid2 = this.intern(n2);
-    if (nid1 === nid2 &&
-        (n1.op !== Model.INTERVAL && n1.op !== Model.LIST ||
-         n1.lbrk === n2.lbrk && n1.rbrk === n2.rbrk)) {
-      return inverseResult ? false : true;
+    var nid1 = Ast.intern(n1);
+    var nid2 = Ast.intern(n2);
+    if (nid1 === nid2) {
+      if (n1.op !== Model.INTERVAL && n1.op !== Model.LIST) {
+        // Check special case of \text{..} [..]
+        if (n1.op === Model.MUL) {
+          for (var i = 0; i < n1.args.length; i++) {
+            if (n1.args[i].op === Model.INTERVAL &&
+                !equivLiteral(n1.args[i], n2.args[i])) {
+              // Check immediately nested intervals.
+              return inverseResult ? true : false;
+            }
+          }
+        }
+        return inverseResult ? false : true;
+      } else if (n1.lbrk === n2.lbrk && n1.rbrk === n2.rbrk) {
+          return inverseResult ? false : true;
+      }
     }
-    // FIXME compare tree to find source of error.
     return inverseResult ? true : false;
   }
 

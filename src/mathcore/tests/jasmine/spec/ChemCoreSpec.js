@@ -116,7 +116,7 @@ define(["chemcore"], function (ChemCore) {
                 value: v[0],
                 options: {
                   allowDecimal: true,
-                  decimalPlaces: 4,
+                  decimalPlaces: 3,
                 },
               }, v[1])).toBe(true);
             });
