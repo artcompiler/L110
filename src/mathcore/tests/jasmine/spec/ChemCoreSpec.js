@@ -146,6 +146,27 @@ define(["chemcore"], function (ChemCore) {
           ["\\frac{10g}{24.3g mol^-1}", "0.4115mol"],
         ]);
       });
+      describe("equivValue", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(ChemCore.evaluate({
+                method: "equivValue",
+                value: v[0]
+              }, v[1])).toBe(true);
+            });
+          });
+        }
+        run([
+          ["1000000\\mum", "1m"],
+          ["1000000\\mug", "1g"],
+          ["1000000\\mus", "1s"],
+          ["1000000\\muL", "1L"],
+          ["1\\muL", "1*10^-6L"],
+          ["1\\muL", "1\\times10^-6L"],
+          ["1\\times10^6\\muL", "1L"],
+        ]);
+      });
       describe("equivValue decimalPlaces:3", function() {
         function run(tests) {
           forEach(tests, function (v, i) {

@@ -21,6 +21,7 @@ var ChemCore = (function () {
   var k = 1000;
   var c = Math.pow(10, -2);
   var m = Math.pow(10, -3);
+  var mu = Math.pow(10, -6); // micro, \\mu
   var n = Math.pow(10, -9);
   var env = {
     "g": u,
@@ -37,9 +38,14 @@ var ChemCore = (function () {
     "ms": m,
     "mm": m,
     "mL": m,
+    "\\mug": mu,
+    "\\mus": mu,
+    "\\mum": mu,
+    "\\muL": mu,
     "ng": n,
     "ns": n,
     "nm": n,
+    "nL": n,
     "in": 1 / 12,
     "ft": u,
     "mi": 5280,
