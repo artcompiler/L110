@@ -16,6 +16,7 @@ var ChemCore = (function () {
   messages[4002] = "No Chem Core solution provided.";
   messages[4003] = "No Chem Core spec value provided.";
   messages[4004] = "Invalid Chem Core spec method '%1'.";
+  messages[4005] = "Operation taking too long.";
 
   var u = 1;
   var k = 1000;
@@ -182,6 +183,7 @@ var ChemCore = (function () {
     try {
       assert(spec, message(4001, [spec]));
       assert(solution, message(4002, [solution]));
+      Assert.setCounter(1000000, message(4005));
       var evaluator = makeEvaluator(spec);
       var result = evaluator.evaluate(solution);
     } catch (e) {
@@ -193,6 +195,7 @@ var ChemCore = (function () {
   function evaluateVerbose(spec, solution) {
     try {
       assert(spec, message(4001, [spec]));
+      Assert.setCounter(1000000, message(4005));
       var evaluator = makeEvaluator(spec);
       var result, errorCode = 0, msg = "Normal completion", stack, location;
       result = evaluator.evaluate(solution);

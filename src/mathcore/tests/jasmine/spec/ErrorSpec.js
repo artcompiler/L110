@@ -119,6 +119,7 @@ define(["mathcore"], function (MathCore) {
         }
         describe("various", function() {
           var tests = [
+            ["equivLiteral", ["10", "10..."], {}, 1007],
             ["equivLiteral", ["(1+2]", "(1+2)"], {}, 1001],
             ["equivLiteral", ["\\text{Range: }\\left[-\\infty,0\\right)",
                               "\\text{Range: }\\left(-\\infty,0\\right)"], {}, 1001],

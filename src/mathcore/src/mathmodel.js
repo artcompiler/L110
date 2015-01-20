@@ -294,6 +294,7 @@
         assert(false, "Should not get here. Unhandled node operator " + node.op);
         break;
       }
+      Assert.checkCounter();
       return node;
     }
 
@@ -680,149 +681,6 @@
             vals = vals.concat(terms(n));
           });
           return vals;
-        },
-      });
-    }
-
-    // Test for specific syntax
-    function hasSyntax(root, env) {
-      var syntaxClass = option("class");
-      if (!root || !root.args) {
-        assert(false, "Should not get here. Illformed node.");
-        return 0;
-      }
-
-      return visit(root, {
-        name: "hasSyntax",
-        exponential: function (node) {
-          switch (syntaxClass) {
-          case "polynomial":
-            return (function () {
-              var v = node.args.shift();   // Shift the var out of the args leaving only exponents in the node
-              var e = mathValue(node);     // Now get the math value of the exponents
-              if (isInteger(e) && !isNeg(e)) {
-                env.variable = v;
-                env.expo = toNumber(e);
-                return true;
-              }
-              //assert(false, "ERROR: Invalid exponent in hasSyntax.");
-              return false;
-            })();
-          case "number":
-            return false;
-          default:
-            return true;
-          }
-        },
-        multiplicative: function (node) {
-          switch (syntaxClass) {
-          case "polynomial":
-            return every(node.args, function (n) {
-              return hasSyntax(n, env);
-            });
-          case "number":
-            return false;
-          default:
-            return true;
-          }
-        },
-        additive: function (node) {
-          switch (syntaxClass) {
-          case "polynomial":
-            var args = [];
-            var self = this;
-            var okay = every(node.args, function (n) {
-              env.coeff = 1;
-              env.variable = "";
-              env.expo = 0;
-              var okay = hasSyntax(n, env);
-              if (okay) {
-                args = args.concat(newNode("term", [env.coeff, env.variable, env.expo]));
-              }
-              return okay;
-            });
-            env.polynomial = newNode("polynomial", args);
-            return okay;
-          case "number":
-            return false;
-          default:
-            return true;
-          }
-        },
-        numeric: function(node) {
-          var mv, result;
-          switch (syntaxClass) {
-          case "polynomial":
-            env.coeff *= toNumber(mathValue(node));
-            break;
-          case "number":
-          default:
-            break;
-          }
-          var decimalPlaces = option("decimalPlaces");
-          if (decimalPlaces !== undefined) {
-            mv = mathValue(node);
-            assert(mv !== null, "ERROR invalid math value in hasSyntax/numeric");
-            if (mv.scale() > decimalPlaces) {
-              assert(false, message(2014));
-            }
-          }
-          var numberFormat = option("numberFormat");
-          if (numberFormat !== undefined) {
-            if (numberFormat !== node.numberFormat) {
-              assert(false, message(2014));
-            }
-          }
-          var requireThousandsSeparator = option("requireThousandsSeparator");
-          if (requireThousandsSeparator && !node.hasThousandsSeparator) {
-            assert(false, message(2014));
-          }
-          return true;
-        },
-        variable: function(node) {
-          var vars = option("variables");
-          if (vars && vars.indexOf(node.args[0]) < 0) {
-            return false;
-          }
-          env.variable = node;
-          switch (syntaxClass) {
-          case "number":
-            return false;
-          case "polynomial":
-          default:
-            break;
-          }
-          return true;
-        },
-        unary: function(node) {
-          switch (syntaxClass) {
-          case "number":
-          case "polynomial":
-            return false;
-          default:
-            break;
-          }
-          return true;
-        },
-        comma: function(node) {
-          switch (syntaxClass) {
-          case "number":
-          case "polynomial":
-            return false;
-          default:
-            break;
-          }
-          return true;
-        },
-        equals: function(node) {
-          switch (syntaxClass) {
-          case "number":
-          case "polynomial":
-            return false;
-          default:
-            break;
-          }
-          return true;
         },
       });
     }
@@ -3058,12 +2916,12 @@
                   });
                 } else if (isInteger(emv)) {
                   // x^2 -> x*x
+                  var ea = Math.abs(toNumber(emv));
                   if (isZero(emv)) {
                     args.push(nodeOne);
-                  } else if (isAdditive(n) || !dontExpandPowers) {
+                  } else if (ea < 5 && (isAdditive(n) || !dontExpandPowers)) {
                     // Expand if the base is additive, or exponent is an integer and
                     // dontExpandPowers is false.
-                    var ea = Math.abs(toNumber(emv));
                     var invert = isNeg(emv);
                     for (var i = 0; i < ea; i++) {
                       if (invert) {
@@ -3651,7 +3509,6 @@
     this.units = units;
     this.scale = scale;
     this.hasLikeFactors = hasLikeFactors;
-    this.hasSyntax = hasSyntax;
   }
 
   var visitor = new Visitor();
@@ -3767,16 +3624,6 @@
       Assert.setLocation(node.location);
     }
     var result = visitor.factors(node, env);
-    Assert.setLocation(prevLocation);
-    return result;
-  }
-
-  function hasSyntax(node, env) {
-    var prevLocation = Assert.location;
-    if (node.location) {
-      Assert.setLocation(node.location);
-    }
-    var result = visitor.hasSyntax(node, env);
     Assert.setLocation(prevLocation);
     return result;
   }
@@ -4219,39 +4066,6 @@
     var result = every(u2, function (v) {
       return indexOf(u1, v) >= 0;
     });
-    return inverseResult ? !result : result;
-  }
-
-  Model.fn.hasSyntax = function (n1) {
-    var result;
-    var inverseResult = option("inverseResult");
-    var syntaxClass = option("class");
-    switch (syntaxClass) {
-    case "fraction":
-      result = !!n1.isFraction;
-      break;
-    case "mixedFraction":
-      result = !!n1.isMixedFraction;
-      break;
-    case "matrix":
-      result = n1.op === Model.MATRIX;
-      break;
-    case "binomial":
-      result = !!n1.isBinomial;
-      break;
-    case "equation":
-      result = n1.op === Model.EQL;
-      break;
-    case "matrix":
-      result = n1.op === Model.MATRIX;
-      break;
-    default:
-      result = true;
-      break;
-    }
-    if (inverseResult ? !result : result) {
-      result = hasSyntax(n1, {});
-    }
     return inverseResult ? !result : result;
   }
 

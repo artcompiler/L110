@@ -14,6 +14,7 @@ var MathCore = (function () {
   messages[3002] = "No Math Core solution provided.";
   messages[3003] = "No Math Core spec value provided.";
   messages[3004] = "Invalid Math Core spec method '%1'.";
+  messages[3005] = "Operation taking too long.";
 
   var u = 1;
   var k = 1000;
@@ -76,6 +77,7 @@ var MathCore = (function () {
     try {
       assert(spec, message(3001, [spec]));
       assert(solution, message(3002, [solution]));
+      Assert.setCounter(1000000, message(3005));
       var evaluator = makeEvaluator(spec);
       var result = evaluator.evaluate(solution);
     } catch (e) {
@@ -87,6 +89,7 @@ var MathCore = (function () {
   function evaluateVerbose(spec, solution) {
     try {
       assert(spec, message(3001, [spec]));
+      Assert.setCounter(1000000, message(3005));
       var evaluator = makeEvaluator(spec);
       var result, errorCode = 0, msg = "Normal completion", stack, location;
       result = evaluator.evaluate(solution);
