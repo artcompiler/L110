@@ -183,11 +183,12 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["(2x+y)(x+3z)", "2x^2+xy+6xz+3yz"],
           ["(1+x)^{4}", "(1+x)^{4}"],
           ["(1+x)^{4}", "(1+x)(1+x)(1+x)(1+x)"],
           ["(1+3)^{12}", "(4)^{12}"],
           ["(1\\frac{0.022}{12})^{12}", "(1\\frac{0.022}{12})^{12}"],
-          ["(1\\frac{0.022}{12})^{12x}", "(1\\frac{0.022}{12})^{x}"],
+          ["(1\\frac{0.022}{12})^{12x}", "(1\\frac{0.022}{12})^{12x}"],
           ["x=1/0", "x=1/0"],
           ["x=3/0", "551441014100000000000488874586225745559996325445558714888599955558874452212336998885256698811778523698555511233\\div0=x"],
           ["5=y+x", "5-2y=-y+x"],
@@ -448,6 +449,7 @@ define(["mathcore"], function (MathCore) {
           ["x^2-3x+2", "(x-1)(x-1)"],
           ["\\frac{1x}{2}","(1x+1)\\div 2"],
           ["\\sqrt{\\left(999x^2\\right)}","x"],
+          ["(1\\frac{0.022}{12})^{12x}", "(1\\frac{0.022}{12})^{x}"],
 
           // Review:
           // Negative infinity vs positive infinity - depends on how we want to
@@ -603,6 +605,12 @@ define(["mathcore"], function (MathCore) {
           });
         };
         run([
+          ["xy\\left(x-y\\right)"],
+          ["3xy(x-3y^2+4xy)"],
+          ["xy\\left(x-y\\right)"],
+          ["6xy\\left(5x-4y\\right)"],
+          ["\\left(x+2\\right)\\left(y+3\\right)"],
+          ["\\left(x-3y+4xy\\right)3xy"],
           ["(3x+2)(3x+2)"],
           ["(x+4)(x-3)"],
           ["x^2"],
@@ -645,6 +653,7 @@ define(["mathcore"], function (MathCore) {
           });
         };
         run([
+          ["3y+4xy"],
           ["x(x-3)+2"],
           ["(x+2)x+3x+6"],
           ["x(x-4)+3x-12"],

@@ -119,7 +119,11 @@ define(["mathcore"], function (MathCore) {
         }
         describe("various", function() {
           var tests = [
+<<<<<<< HEAD
             ["equivLiteral", ["10", "10..."], {}, 1007],
+=======
+            ["isFactorised", ["3xy(x^2-3y^2+4xy)"], {field: "integer"}, 2001],          
+>>>>>>> 3fca0da35a76588e060373f14426342a744d9193
             ["equivLiteral", ["(1+2]", "(1+2)"], {}, 1001],
             ["equivLiteral", ["\\text{Range: }\\left[-\\infty,0\\right)",
                               "\\text{Range: }\\left(-\\infty,0\\right)"], {}, 1001],

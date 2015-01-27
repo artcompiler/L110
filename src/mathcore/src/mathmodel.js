@@ -11,8 +11,8 @@
 
   // Add messages here.
   Assert.reserveCodeRange(2000, 2999, "mathmodel");
-  messages[2001] = "Factoring multi-variate polynomials is not supported";
-  messages[2002] = "Expressions of the form 'x^y^z' are not supported."
+  messages[2001] = "Factoring of multi-variate polynomials with all terms of degree greater than one is not supported";
+  messages[2002] = "[unused]"
   messages[2003] = "Factoring non-polynomials is not supported.";
   messages[2004] = "Compound units not supported.";
   messages[2005] = "Expressions with variables cannot be compared with equivValue.";
@@ -3288,17 +3288,19 @@
               return !solveQuadratic(coeffs[2], coeffs[1], coeffs[0]);
             }
             return !hasRoot(node, coeffs);
-          } else {
-            var d = degree(node, true);
-            if (d >= 0 && d < 2) {
-              // x+y
+          } else if (some(t1, function (n) {
+            var d = degree(n, true);
+            if (d > 0 && d < 2) {
+              // x+y^2+xy
               return true;
             }
-            assert(vars.length < 2, message(2001));
-            assert(false, message(2003));
+          })) {
+            return true;
           }
+          assert(vars.length < 2, message(2001));
+          assert(false, message(2003));
           // FIXME What other checks can we add here?
-          return true;
+          return undefined;
         },
         multiplicative: function (node) {
           switch (node.op) {
