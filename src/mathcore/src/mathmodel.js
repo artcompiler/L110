@@ -3268,7 +3268,8 @@
             });
             t2.push(ff);
           });
-          // Check to see if there are any common factors (ids).
+          // Check to see if there are any common factors (ids). Start with the
+          // factors of the first term.
           var intersect = t2.shift();
           forEach(t2, function (a) {
             intersect = filter(intersect, function (n) {
@@ -3290,7 +3291,16 @@
             return !hasRoot(node, coeffs);
           } else if (some(t1, function (n) {
             var d = degree(n, true);
-            if (d > 0 && d < 2) {
+            if (d === Number.POSITIVE_INFINITY) {
+              // x^y
+              assert(false, message(2003));
+              return undefined;
+            }
+          })) {
+            return true;
+          } else if (some(t1, function (n) {
+            var d = degree(n, true);
+            if (d >= 0 && d < 2) {
               // x+y^2+xy
               return true;
             }
@@ -3298,7 +3308,6 @@
             return true;
           }
           assert(vars.length < 2, message(2001));
-          assert(false, message(2003));
           // FIXME What other checks can we add here?
           return undefined;
         },

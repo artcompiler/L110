@@ -605,6 +605,10 @@ define(["mathcore"], function (MathCore) {
           });
         };
         run([
+<<<<<<< HEAD
+=======
+          ["x^2+4y-4"],
+>>>>>>> dd6f049af25d51145e2f7ba59448406009607b2a
           ["xy\\left(x-y\\right)"],
           ["3xy(x-3y^2+4xy)"],
           ["xy\\left(x-y\\right)"],

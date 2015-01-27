@@ -120,10 +120,14 @@ define(["mathcore"], function (MathCore) {
         describe("various", function() {
           var tests = [
 <<<<<<< HEAD
+<<<<<<< HEAD
             ["equivLiteral", ["10", "10..."], {}, 1007],
 =======
             ["isFactorised", ["3xy(x^2-3y^2+4xy)"], {field: "integer"}, 2001],          
 >>>>>>> 3fca0da35a76588e060373f14426342a744d9193
+=======
+            ["isFactorised", ["3xy(x^2-3y^2+4xy)"], {field: "integer"}, 2001],          
+>>>>>>> dd6f049af25d51145e2f7ba59448406009607b2a
             ["equivLiteral", ["(1+2]", "(1+2)"], {}, 1001],
             ["equivLiteral", ["\\text{Range: }\\left[-\\infty,0\\right)",
                               "\\text{Range: }\\left(-\\infty,0\\right)"], {}, 1001],
@@ -131,10 +135,9 @@ define(["mathcore"], function (MathCore) {
             ["equivLiteral", ["", "10"], {}, 3002],
             ["equivLiteral", ["10", ""], {}, 3003],
             ["isFactorised", ["4k^2+9m^2"], {}, 2001],
-            ["isFactorised", ["x^2+xy+3"], {}, 2001],
-            ["isFactorised", ["xy+2"], {}, 2001],
+            ["isFactorised", ["xy+2ab"], {}, 2001],
             ["isFactorised", ["(10x"], {}, 1001],
-            ["isFactorised", ["(xy^3+2)(x-1)"], {}, 2001],
+            ["isFactorised", ["(xy^3+2z^2)(x-1)"], {}, 2001],
             ["equivValue", ["x", "|x|"], {}, 2005],
             ["equivValue", ["5x^2+3x+2", "1"], {}, 2005],
             ["equivValue", ["10g", "10"], {}, 2009],
@@ -160,11 +163,10 @@ define(["mathcore"], function (MathCore) {
               ["equivLiteral", ["", "10"], "user"],
               ["equivLiteral", ["10", ""], "spec"],
               ["isFactorised", ["4k^2+9m^2"], "user"],
-              ["isFactorised", ["x^2+xy+3"], "user"],
-              ["isFactorised", ["xy+2"], "user"],
+              ["isFactorised", ["x^2+xy+3y^2"], "user"],
               ["isFactorised", ["(10x"], "user"],
               ["isFactorised", ["x^y+1"], "user"],
-              ["isFactorised", ["(xy^3+2)(x-1)"], "user"],
+              ["isFactorised", ["(xy^3+2z^2)(x-1)"], "user"],
               ["isFactorised", ["(x^y+1)(x-1)"], "user"],
               ["equivValue", ["1", "5x^2+3x+2"], "spec"],
             ];
