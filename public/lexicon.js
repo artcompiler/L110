@@ -22,4 +22,6 @@ exports.globalLexicon = {
     "allowDecimal" : { "tk": 0x01, "name": "ALLOW-DECIMAL", "cls": "function", "length": 1 },
     "decimalPlaces" : { "tk": 0x01, "name": "DECIMAL-PLACES", "cls": "function", "length": 2 },
     "field" : { "tk": 0x01, "name": "FIELD", "cls": "function", "length": 2 },
+    "setDecimalSeparator" : { "tk": 0x01, "name": "SET-DECIMAL-SEPARATOR", "cls": "function", "length": 2 },
+    "setThousandsSeparator" : { "tk": 0x01, "name": "SET-THOUSANDS-SEPARATOR", "cls": "function", "length": 2 },
 }

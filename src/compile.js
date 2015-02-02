@@ -27,6 +27,8 @@ var transformer = function() {
     "INVERSE-RESULT": inverseResult,
     "DECIMAL-PLACES": decimalPlaces,
     "ALLOW-DECIMAL": allowDecimal,
+    "SET-DECIMAL-SEPARATOR": setDecimalSeparator,
+    "SET-THOUSANDS-SEPARATOR": setThousandsSeparator,
     "FIELD": field,
   };
   var nodePool;
@@ -363,6 +365,22 @@ var transformer = function() {
     var n1 = visit(node.elts[1], options);
     var n0 = visit(node.elts[0], options);
     option(options, "field", n1);
+    return n0;
+  }
+
+  function setDecimalSeparator(node, options) {
+    var n1 = visit(node.elts[1], options);
+    var n0 = visit(node.elts[0], options);
+    option(options, "allowThousandsSeparator", true);
+    option(options, "setDecimalSeparator", n1);
+    return n0;
+  }
+
+  function setThousandsSeparator(node, options) {
+    var n1 = visit(node.elts[1], options);
+    var n0 = visit(node.elts[0], options);
+    option(options, "allowThousandsSeparator", true);
+    option(options, "setThousandsSeparator", n1);
     return n0;
   }
 
