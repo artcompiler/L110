@@ -31,8 +31,7 @@ exports.viewer = (function () {
       case "decimalPlaces":
       case "field":
       default:
-        options += v + "=" + value.options[v] + " ";
-//        options += v + " ";
+        options += v + "=" + JSON.stringify(value.options[v]) + " ";
         break;
       }
     });
