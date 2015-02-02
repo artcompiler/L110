@@ -30,10 +30,9 @@ exports.viewer = (function () {
         break;
       case "decimalPlaces":
       case "field":
-        options += v + "=" + value.options[v] + " ";
-        break;
       default:
-        options += v + " ";
+        options += v + "=" + value.options[v] + " ";
+//        options += v + " ";
         break;
       }
     });
