@@ -77,8 +77,8 @@ exports.viewer = (function () {
             '" xmlns="http://www.w3.org/2000/svg" width="640" height="' +
             height +
             '">' + checkSrc +
-            '<rect x="0" y="0" width="640" height="' + height +
-            '" fill-opacity="0" stroke-width="4" stroke-opacity="1" stroke="' + border + '"/>' +
+    //        '<rect x="0" y="0" width="640" height="' + height +
+    //        '" fill-opacity="0" stroke-width="4" stroke-opacity="1" stroke="' + border + '"/>' +
             '<g/></svg>');
     var svg = d3.select("#graff-view svg g");
     var line = svg.selectAll("text")
