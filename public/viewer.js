@@ -131,8 +131,9 @@ exports.viewer = (function () {
     // Set up our canvas on the page before doing anything.
     var old = document.getElementById('graff-view').children[0];
     var myCanvas = document.createElement('canvas');
-    myCanvas.width = 640;
-    myCanvas.height = height;
+    var bbox = $("#graff-view svg g")[0].getBBox();
+    myCanvas.height = bbox.height + 12;
+    myCanvas.width = bbox.width + 40;
     document.getElementById('graff-view').replaceChild(myCanvas, old);
     // Get drawing context for the Canvas
     var myCanvasContext = myCanvas.getContext('2d');
