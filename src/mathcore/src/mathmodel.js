@@ -4097,6 +4097,8 @@
         opt = 10;
         break;
       case "numberFormat":
+      case "setThousandsSeparator":
+      case "setDecimalSeparator":
         opt = undefined;
         break;
       default:

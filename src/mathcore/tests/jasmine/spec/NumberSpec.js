@@ -177,7 +177,7 @@ define(["mathcore"], function (MathCore) {
           ["1\\div2", "2\\div4"]
         ]);
       });
-      describe("equivLiteral allowThousandsSeparator", function() {
+      describe("equivLiteral allowThousandsSeparator=true", function() {
         function run(tests) {
           forEach(tests, function (v, i) {
             it(v[0] + " | " + v[1], function() {
@@ -196,6 +196,89 @@ define(["mathcore"], function (MathCore) {
           ["1000", "1,000"],
           ["1,000,000", "1000000"],
           ["1,234,567", "1234567"],
+        ]);
+      });
+      describe("NOT equivLiteral allowThousandsSeparator=false", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivLiteral",
+                value: v[0],
+                options: {
+                  allowThousandsSeparator: false
+                }
+              }, v[1])).not.toBe(true);
+            });
+          });
+        }
+        run([
+          ["1,000", "1000"],
+          ["1000", "1,000"],
+          ["1,000,000", "1000000"],
+          ["1,234,567", "1234567"],
+        ]);
+      });
+      describe("equivLiteral setThousandsSeparator=[' '] setDecimalSeparator=[',']", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivLiteral",
+                value: v[0],
+                options: {
+                  allowThousandsSeparator: true,
+                  setThousandsSeparator: [' '],
+                  setDecimalSeparator: ',',
+                }
+              }, v[1])).toBe(true);
+            });
+          });
+        }
+        run([
+          ["1 000", "1000"],
+          ["1 000 000", "1000000"],
+          ["1 000 000,00", "1000000,00"],
+        ]);
+      });
+      describe("NOT equivLiteral allowThousandsSeparator=[' '] setDecimalSeparator=undefined", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivLiteral",
+                value: v[0],
+                options: {
+                  allowThousandsSeparator: true,
+                  setThousandsSeparator: [' ', '\''],
+                }
+              }, v[1])).not.toBe(true);
+            });
+          });
+        }
+        run([
+          ["1,000", "1000"],
+          ["1 000'000", "1000000"],
+          ["1 000 000.00", "1000000,00"],
+        ]);
+      });
+      describe("NOT equivLiteral allowThousandsSeparator=['.'] setDecimalSeparator=undefined", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivLiteral",
+                value: v[0],
+                options: {
+                  allowThousandsSeparator: true,
+                  setThousandsSeparator: [' ', '\''],
+                }
+              }, v[1])).not.toBe(true);
+            });
+          });
+        }
+        run([
+          ["1.000.0", "1000"],
         ]);
       });
       describe("equivSymbolic", function() {

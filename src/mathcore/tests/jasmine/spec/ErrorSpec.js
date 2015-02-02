@@ -121,6 +121,7 @@ define(["mathcore"], function (MathCore) {
           var tests = [
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
             ["equivLiteral", ["10", "10..."], {}, 1007],
 =======
             ["isFactorised", ["3xy(x^2-3y^2+4xy)"], {field: "integer"}, 2001],          
@@ -128,6 +129,22 @@ define(["mathcore"], function (MathCore) {
 =======
             ["isFactorised", ["3xy(x^2-3y^2+4xy)"], {field: "integer"}, 2001],          
 >>>>>>> dd6f049af25d51145e2f7ba59448406009607b2a
+=======
+            ["equivLiteral", ["1.000", "10,00"], {
+              allowThousandsSeparator: true,
+              setThousandsSeparator: ['.'],
+            }, 2008],
+            ["equivLiteral", ["1,000", "1000"], {
+              allowThousandsSeparator: true,
+              setThousandsSeparator: [','],
+              setDecimalSeparator: ',',
+            }, 2008],
+            ["equivLiteral", ["1,000", "1000"], {
+              allowThousandsSeparator: true,
+              setThousandsSeparator: [','],
+              setDecimalSeparator: [',', '.'],
+            }, 3007],
+>>>>>>> e45c5b331071291e6cf63b411b582f19b302f06c
             ["equivLiteral", ["(1+2]", "(1+2)"], {}, 1001],
             ["equivLiteral", ["\\text{Range: }\\left[-\\infty,0\\right)",
                               "\\text{Range: }\\left(-\\infty,0\\right)"], {}, 1001],
@@ -142,8 +159,8 @@ define(["mathcore"], function (MathCore) {
             ["equivValue", ["5x^2+3x+2", "1"], {}, 2005],
             ["equivValue", ["10g", "10"], {}, 2009],
             ["equivValue", ["1000", "10,00"], {allowThousandsSeparator: true}, 1005],
-            ["isFactorised", ["x^2-25"], {Field: "integer"}, 2010],
-            ["isFactorised", ["x^2-25"], {field: "Integer"}, 2011],
+            ["isFactorised", ["x^2-25"], {Field: "integer"}, 3006],
+            ["isFactorised", ["x^2-25"], {field: "Integer"}, 3007],
           ];
           run(tests);
         });

@@ -15,6 +15,8 @@ var MathCore = (function () {
   messages[3003] = "No Math Core spec value provided.";
   messages[3004] = "Invalid Math Core spec method '%1'.";
   messages[3005] = "Operation taking too long.";
+  messages[3006] = "Invalid option name '%1'.";
+  messages[3007] = "Invalid option value '%2' for option '%1'.";
 
   var u = 1;
   var k = 1000;
@@ -135,7 +137,7 @@ var MathCore = (function () {
       case "complex":
         break;
       default:
-        assert(false, message(2011, [p, v]));
+        assert(false, message(3007, [p, v]));
         break;
       }
       break;
@@ -148,7 +150,7 @@ var MathCore = (function () {
       case "complex":
         break;
       default:
-        assert(false, message(2011, [p, v]));
+        assert(false, message(3007, [p, v]));
         break;
       }
       break;
@@ -156,7 +158,7 @@ var MathCore = (function () {
       if (v === void 0 || +v >= 0 && +v <= 20) {
         break;
       }
-      assert(false, message(2011, [p, v]));
+      assert(false, message(3007, [p, v]));
       break;
     case "allowDecimal":
     case "allowInterval":
@@ -165,14 +167,28 @@ var MathCore = (function () {
     case "dontFactorDenominators":
     case "ignoreOrder":
     case "inverseResult":
-    case "allowThousandsSeparator":
     case "requireThousandsSeparator":
     case "ignoreText":
     case "ignoreTrailingZeros":
+    case "allowThousandsSeparator":
       if (typeof v === "undefined" || typeof v === "boolean") {
         break;
       }
-      assert(false, message(2011, [p, v]));
+      assert(false, message(3007, [p, v]));
+      break;
+    case "setThousandsSeparator":
+      if (typeof v === "undefined" ||
+          v instanceof Array) {
+        break;
+      }
+      assert(false, message(3007, [p, v]));
+      break;
+    case "setDecimalSeparator":
+      if (typeof v === "undefined" ||
+          typeof v === "string" && v.length === 1) {
+        break;
+      }
+      assert(false, message(3007, [p, JSON.stringify(v)]));
       break;
     case "class":
       switch (v) {
@@ -186,17 +202,17 @@ var MathCore = (function () {
       case "interval":
         break;
       default:
-        assert(false, message(2011, [p, v]));
+        assert(false, message(3007, [p, v]));
         break;
       }
       break;
     case "variables":
       if (!(v instanceof Array)) {
-        assert(false, message(2011, [p, v]));
+        assert(false, message(3007, [p, v]));
       }
       break;
     default:
-      assert(false, message(2010, [p]));
+      assert(false, message(3006, [p]));
       break;
     }
     // If we get this far, all is well.
