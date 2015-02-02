@@ -117,6 +117,10 @@ exports.viewer = (function () {
       .html(function(d) {
         return d
       });
+    var bbox = $("#graff-view svg g")[0].getBBox();
+    $("#graff-view svg").attr("height", (bbox.height + 40) + "px");
+    $("#graff-view svg").attr("width", (bbox.width + 40) + "px");
+
   }
   function capture() {
     // My SVG file as s string.
