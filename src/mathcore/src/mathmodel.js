@@ -2194,6 +2194,13 @@
             } else {
               node = [lnode, rnode];
             }
+            if (lnode.op === Model.PM || rnode.op === Model.PM) {
+              if (node instanceof Array) {
+                node = binaryNode(Model.PM, node);
+              } else {
+                node = unaryNode(Model.PM, [node]);
+              }
+            }
             return node;
           }
         },
@@ -3721,16 +3728,16 @@
       var result = v1 === v2;
       return inverseResult ? !result : result;
     }
-    if (n1.op === Model.PM) {
+    if (n1.op === Model.PM && n1.args.length > 1) {
       var args = distributeUnits(n1.args[0], n1.args[1]);
       n1 = binaryNode(Model.PM, args);
     }
-    if (n2.op === Model.PM) {
+    if (n2.op === Model.PM && n2.args.length > 1) {
       var args = distributeUnits(n2.args[0], n2.args[1]);
       n2 = binaryNode(Model.PM, args);
     }
     var n1b, n2b, n1t, n2t;
-    if (n1.op === Model.PM) {
+    if (n1.op === Model.PM && n1.args.length > 1) {
       n1b = simplify(expand(normalize(n1.args[0])));
       n1t = simplify(expand(normalize(n1.args[1])));
       var v1 = mathValue(n1b, env);
@@ -3739,7 +3746,7 @@
       n1b = simplify(expand(normalize(n1)));
       var v1 = mathValue(n1b, env);
     }
-    if (n2.op === Model.PM) {
+    if (n2.op === Model.PM && n2.args.length > 1) {
       n2b = simplify(expand(normalize(n2.args[0])));
       n2t = simplify(expand(normalize(n2.args[1])));
       var v2 = mathValue(n2b, env);
@@ -3821,6 +3828,8 @@
         }
         return inverseResult ? !result : result;
       } else {
+        v1t = v1t.setScale(scale, BigDecimal.ROUND_HALF_UP);
+        v2t = v2t.setScale(scale, BigDecimal.ROUND_HALF_UP);
         var v1min = v1.subtract(v1t);
         var v2min = v2.subtract(v2t);
         var v1max = v1.add(v1t);
