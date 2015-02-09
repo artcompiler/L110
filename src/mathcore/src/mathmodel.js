@@ -1911,7 +1911,7 @@
                    return numberNode(mv1.add(mv2));
                 } else if (Ast.intern(lnode) === Ast.intern(rnode)) {
                   return multiplyNode([numberNode("2"), lnode]);
-                } else if (commonFactors(lnode, rnode).length > 0) {
+                } else if (!option("dontFactorTerms") && commonFactors(lnode, rnode).length > 0) {
                   return [factorTerms(lnode, rnode)];
                 } else {
                   return [lnode, rnode];
@@ -1925,7 +1925,7 @@
               return rnode;
             } else if (isZero(mathValue(rcoeff))) {
               return lnode;
-            } else if (!isOne(mathValue(lcoeff)) && !isOne(mathValue(rcoeff))) {
+            } else if (!option("dontFactorTerms") && !isOne(mathValue(lcoeff)) && !isOne(mathValue(rcoeff))) {
               if (commonFactors(lnode, rnode).length > 0) {
                 var node = [factorTerms(lnode, rnode)];
                 return node;
@@ -2508,9 +2508,17 @@
           return val;
         },
         variable: function(node) {
-          var val;
+          var val, n;
           if (env && (val = env[node.args[0]])) {
-            return toDecimal(val);
+            switch (val.type) {
+            case "unit":
+              n = val.value;
+              break;
+            default:
+              n = val;
+              break;
+            }
+            return toDecimal(n);
           }
           return null;
         },
@@ -2573,11 +2581,11 @@
           return [];
         },
         variable: function(node) {
-          // NOTE This assumes that all names in the environment with number
-          // values are units, which is currently the case.
-          var env = Model.env;
-          if (env && typeof env[node.args[0]] === "number") {
-            return [node.args[0]];
+          var val, env = Model.env;
+          if (env && (val = env[node.args[0]])) {
+            if (val.type === "unit") {
+              return [node.args[0]];
+            }
           }
           return [];
         },
@@ -2755,6 +2763,12 @@
           } else {
             node = binaryNode(node.op, n0);
           }
+          if (node.op === Model.MATRIX) {
+            // Don't flatten matrix nodes.
+            return node;
+          }
+          node = flattenNestedNodes(node);
+          node = groupLikes(node);
           return node;
           function unfold(lnode, rnode) {
             if (lnode.op === Model.MATRIX || rnode.op === Model.MATRIX) {
@@ -4044,7 +4058,7 @@
     var dontExpandPowers = option("dontExpandPowers", true);
     n1 = normalize(n1);
     var nid1 = Ast.intern(n1);
-    var nid2 = Ast.intern(normalize(expand(n1)));
+    var nid2 = Ast.intern(sort(expand(normalize(n1))));
     option("dontExpandPowers", dontExpandPowers);
     var inverseResult = option("inverseResult");
     if (nid1 === nid2 && !hasLikeFactors(n1)) {
@@ -4057,6 +4071,7 @@
   Model.fn.isSimplified = function (node) {
     var dontExpandPowers = option("dontExpandPowers", true);
     var dontFactorDenominators = option("dontFactorDenominators", true);
+    var dontFactorTerms = option("dontFactorTerms", true);
     var inverseResult = option("inverseResult");
     var n1 = normalize(node);
     var n2 = normalize(simplify(expand(normalize(node))));
@@ -4064,6 +4079,7 @@
     var nid2 = Ast.intern(n2);
     option("dontExpandPowers", dontExpandPowers);
     option("dontFactorDenominators", dontFactorDenominators);
+    option("dontFactorTerms", dontFactorTerms);
     if (nid1 === nid2) {
       return inverseResult ? false : true;
     }

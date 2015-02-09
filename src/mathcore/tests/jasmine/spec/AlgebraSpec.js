@@ -519,7 +519,6 @@ define(["mathcore"], function (MathCore) {
           ["x^2-3x+2"],
           ["x+1"],
           ["x+2"],
-          ["x^2+5x+5x+25"],
           ["x^2+10x+25"],
         ]);
       });
@@ -534,6 +533,7 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["x^2+5x+5x+25"],
           ["xyxy"],
           ["x(x)"],
           ["(x-2)(x-1)"],
@@ -555,6 +555,17 @@ define(["mathcore"], function (MathCore) {
           });
         };
         run([
+          ["219+3x"],
+          ["219+3c"],
+          ["3x+219"],
+          ["3c+219"],
+          ["219"],
+          ["3c"],
+          ["x+y"],
+          ["a+b+c"],
+          ["3a+b+c"],
+          ["5x^2+5x+10"],
+          ["x^2+x+2"],
           ["x^2 + \\frac{1}{4}x"],
           ["x^2 + \\frac{x}{4}"],
           ["\\frac{1}{2}"],
@@ -562,7 +573,6 @@ define(["mathcore"], function (MathCore) {
           ["1/2"],
           ["x^2"],
           ["x"],
-          ["10x(1+x)"],
         ]);
       });
       describe("NOT isSimplified", function() {
@@ -576,6 +586,7 @@ define(["mathcore"], function (MathCore) {
           });
         };
         run([
+          ["10x(1+x)"],
           ["(x+2)^2"],
           ["(x+2)^-2"],
           ["\\frac{2}{4}"],
@@ -946,7 +957,6 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
-          ["x^3+3x^2y+3x^2+3y^2+10xy"],
           ["xy^2-3x+2y"],
           ["x+1y"],
           ["x+y^2"],
@@ -955,7 +965,7 @@ define(["mathcore"], function (MathCore) {
           ["x^6+1"],
           ["x^4+x^4"],
           ["x^3+6x^2+13x+10"],
-          ["x^3+2x^2+4x^2+13x+10"],
+          ["x^3+3x^2y+3x^2+3y^2+10xy"],
         ]);
       });
       describe("NOT isExpanded", function() {
@@ -969,6 +979,7 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["x^3+2x^2+4x^2+13x+10"],
           ["(x^3-2)(x^2-1)"],
           ["x(x^4+x^3)"],
         ]);
