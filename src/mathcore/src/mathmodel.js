@@ -1523,7 +1523,7 @@
       if (n.op === Model.NUM) {
         n = mathValue(n, true);
       }
-      return bd.compareTo(bigZero) < 0;
+      return n.compareTo(bigZero) < 0;
     }
 
     function isPos(bd) {

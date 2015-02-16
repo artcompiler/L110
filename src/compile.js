@@ -199,6 +199,7 @@ var transformer = function() {
         value: reference,
       }, response);
     }
+    console.log("equivSymbolic() result=" + result);
     return {
       score: result.result ? 1 : -1,
       response: response,
