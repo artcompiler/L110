@@ -364,8 +364,6 @@ define(["mathcore"], function (MathCore) {
           [["\\format{number}"], "1,000.0"],
         ]);
       });
-=======
->>>>>>> 53055f18a62f1163b427a0dc216d7921cfdc077e
     });
   });
 });

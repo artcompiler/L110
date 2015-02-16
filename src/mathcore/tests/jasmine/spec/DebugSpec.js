@@ -104,23 +104,6 @@ var forEach = function forEach(array, fun) {
 define(["mathcore"], function (MathCore) {
   describe("Math Core", function() {
     describe("Debug", function() {
-      describe("NOT isFactorised field:integer", function() {
-        function run(tests) {
-          forEach(tests, function (v, i) {
-            it(v[0], function() {
-              expect(MathCore.evaluate({
-                method: "isFactorised",
-                options: {
-                  field: "integer"
-                },
-              }, v[0])).toBe(false);
-            });
-          });
-        };
-        run([
-          ["4x^y+1"],
-        ]);
-      });
     });
   });
 });

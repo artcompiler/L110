@@ -746,6 +746,9 @@ define(["mathcore"], function (MathCore) {
         };
         run([
           ["(3x+2)(3x+2)"],
+          ["x^y"],
+          ["xyz"],
+          ["3\\sin(x)"],
         ]);
       });
       describe("NOT isFactorised field:real", function() {
@@ -762,12 +765,6 @@ define(["mathcore"], function (MathCore) {
           });
         };
         run([
-          ["3x(3x+2)+6x+4"],
-          ["9x^2+12x+4"],
-          ["x(x+5)+15+3x"],
-          ["2(s^2-8)"],
-          ["x^2-3"],
-          ["(x+2)x+3x+6"],
         ]);
       });
       describe("isFactorised field:complex", function() {
@@ -1212,7 +1209,7 @@ define(["mathcore"], function (MathCore) {
           ["x^3+2x^2+3x+4"],
         ]);
       });
-      describe("NOT isFactorised field:integer", function() {
+      describe("NOT isFactorised field:real", function() {
         function run(tests) {
           forEach(tests, function (v, i) {
             it(v[0], function() {

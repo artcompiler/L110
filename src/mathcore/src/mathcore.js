@@ -65,6 +65,7 @@ var MathCore = (function () {
     "cwt": { type: "unit", value: 112, base: "lb" },
     "t": { type: "unit", value: 2240, base: "lb" },
     "$": { type: "unit", value: u, base: "$" },
+    "i": { type: "unit", value: null, base: "i" },
     "\\radian": u,
     "\\degree": Math.PI / 180,
     "\\pi": Math.PI,

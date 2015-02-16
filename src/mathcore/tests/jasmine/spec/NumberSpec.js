@@ -160,7 +160,7 @@ define(["mathcore"], function (MathCore) {
               expect(MathCore.evaluate({
                 method: "equivLiteral",
                 value: v[0],
-              }, v[1])).toBe(false);
+              }, v[1])).not.toBe(true);
             });
           });
         }
@@ -239,6 +239,7 @@ define(["mathcore"], function (MathCore) {
           ["1 000", "1000"],
           ["1 000 000", "1000000"],
           ["1 000 000,00", "1000000,00"],
+          ["1999", "1\\ 999"]
         ]);
       });
       describe("NOT equivLiteral allowThousandsSeparator=[' '] setDecimalSeparator=undefined", function() {
@@ -293,6 +294,8 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["\\pm\\sqrt{180}", "\\pm3\\sqrt{20}"],
+          ["1\\pm\\sqrt{180}", "1\\pm3\\sqrt{20}"],
           ["2>1", "1<2"],
           ["2=1", "1=2"],
           ["\\pm\\sqrt{180}", "\\pm3\\sqrt{20}"],
@@ -420,6 +423,8 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["\\pm\\sqrt{180}", "\\pm3\\sqrt{20}"],
+          ["1\\pm\\sqrt{180}", "1\\pm3\\sqrt{20}"],
           ["1=2", "1>4"],
           ["2>1", "2>1"],
           ["2>1", "4>1"],

@@ -238,7 +238,9 @@ define(["mathcore"], function (MathCore) {
                 method: "equivSymbolic",
                 value: v[0],
                 options: {
-                  allowThousandsSeparator: true
+                  allowThousandsSeparator: true,
+                  setThousandsSeparator: [" "],
+                  setDecimalSeparator: "."
                 }
               }, v[1])).toBe(true);
             });
