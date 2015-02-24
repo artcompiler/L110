@@ -4313,7 +4313,7 @@
 
   Model.fn.isExpanded = function (n1) {
     var dontExpandPowers = option("dontExpandPowers", true);
-    n1 = sort(n1);
+    n1 = normalize(n1);
     var nd1 = n1;
     var nd2 = normalize(expand(normalize(n1)));
     var nid1 = Ast.intern(nd1);
