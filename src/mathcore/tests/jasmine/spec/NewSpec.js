@@ -141,23 +141,6 @@ define(["mathcore"], function (MathCore) {
         run([
         ]);
       });
-      describe("equivLiteral allowThousandsSeparator", function() {
-        function run(tests) {
-          forEach(tests, function (v, i) {
-            it(v[0] + " | " + v[1], function() {
-              expect(MathCore.evaluate({
-                method: "equivLiteral",
-                value: v[0],
-                options: {
-                  allowThousandsSeparator: true
-                }
-              }, v[1])).toBe(true);
-            });
-          });
-        }
-        run([
-        ]);
-      });
       describe("equivSymbolic allowDecimal", function() {
         function run(tests) {
           forEach(tests, function (v, i) {
@@ -224,25 +207,6 @@ define(["mathcore"], function (MathCore) {
                 },
                 value: v[0],
               }, v[1])).toBe(false);
-            });
-          });
-        }
-        run([
-        ]);
-      });
-      describe("equivSymbolic allowThousandsSeparator", function() {
-        function run(tests) {
-          forEach(tests, function (v, i) {
-            it(v[0] + " | " + v[1], function() {
-              expect(MathCore.evaluate({
-                method: "equivSymbolic",
-                value: v[0],
-                options: {
-                  allowThousandsSeparator: true,
-                  setThousandsSeparator: [" "],
-                  setDecimalSeparator: "."
-                }
-              }, v[1])).toBe(true);
             });
           });
         }
@@ -365,13 +329,13 @@ define(["mathcore"], function (MathCore) {
         run([
         ]);
       });
-      describe("isTrue", function() {
+      describe("NOT isExpanded", function() {
         function run(tests) {
           forEach(tests, function (v, i) {
             it(v[0], function() {
               expect(MathCore.evaluate({
-                method: "isTrue",
-              }, v[0])).toBe(true);
+                method: "isExpanded",
+              }, v[0])).toBe(false);
             });
           });
         }

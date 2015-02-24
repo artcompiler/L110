@@ -533,6 +533,10 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["2x+6x"],
+          ["2x+6x+6"],
+          ["2*3"],
+          ["2+3"],
           ["x^2+5x+5x+25"],
           ["xyxy"],
           ["x(x)"],
@@ -616,10 +620,7 @@ define(["mathcore"], function (MathCore) {
           });
         };
         run([
-<<<<<<< HEAD
-=======
           ["x^2+4y-4"],
->>>>>>> dd6f049af25d51145e2f7ba59448406009607b2a
           ["xy\\left(x-y\\right)"],
           ["3xy(x-3y^2+4xy)"],
           ["xy\\left(x-y\\right)"],
@@ -955,12 +956,10 @@ define(["mathcore"], function (MathCore) {
         }
         run([
           ["xy^2-3x+2y"],
-          ["x+1y"],
           ["x+y^2"],
           ["x+y-1"],
           ["x^4-3x+2"],
           ["x^6+1"],
-          ["x^4+x^4"],
           ["x^3+6x^2+13x+10"],
           ["x^3+3x^2y+3x^2+3y^2+10xy"],
         ]);
@@ -976,6 +975,8 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["x+1y"],
+          ["x^4+x^4"],
           ["x^3+2x^2+4x^2+13x+10"],
           ["(x^3-2)(x^2-1)"],
           ["x(x^4+x^3)"],

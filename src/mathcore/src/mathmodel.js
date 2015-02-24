@@ -422,10 +422,93 @@
       });
     }
 
+    // Compute the constant part of an expression. The result of 'constantPart'
+    // and 'variablePart' are complements. Their product are equivSymbolic with
+    // the original expression.
+    function constantPart(root) {
+      var env = Model.env;
+      if (!root || !root.args) {
+        assert(false, "Should not get here. Illformed node.");
+        return nodeZero;
+      }
+      return visit(root, {
+        name: "constantPart",
+        exponential: function (node) {
+          var vars = variables(node.args[0], env);
+          vars = vars.concat(variables(node.args[1], env));
+          if (vars.length === 0) {
+            return node;
+          } else {
+            return nodeOne;
+          }
+        },
+        multiplicative: function (node) {
+          var args = node.args;
+          var val = bigOne;
+          var ff = [];
+          forEach(args, function (n) {
+            var vars = variables(n);
+            if (vars.length === 0) {
+              // No vars so we have a constant.
+              var mv = mathValue(n, env);
+              if (isOne(mv)) {
+                // Got one, skip it.
+              } else if (isZero(mv)) {
+                ff.push(nodeZero);
+              } else {
+                ff.push(n);
+              }
+            } // Otherwise it's a variable part. Skip it.
+          });
+          if (ff.length === 0) {
+            return nodeOne;
+          } else if (ff.length === 1) {
+            return ff[0];
+          }
+          return multiplyNode(ff);
+        },
+        additive: function (node) {
+          var vars = variables(node);
+          if (vars.length === 0) {
+            return node;
+          } else {
+            node = nodeOne;
+          }
+        },
+        unary: function(node) {
+          var vars = variables(node.args[0], env);
+          if (vars.length === 0) {
+            return node;
+          } else {
+            return nodeOne;
+          }
+        },
+        numeric: function(node) {
+          return node;
+        },
+        variable: function(node) {
+          return nodeOne;
+        },
+        comma: function(node) {
+          var vars = variables(node.args[0], env);
+          if (vars.length === 0) {
+            return node;
+          } else {
+            return nodeOne;
+          }
+          return null;
+        },
+        equals: function(node) {
+          return null;
+        },
+      });
+    }
+
     // Compute the coefficient of an expression. The result of 'coeff' and
     // 'variablePart' are complements. Their product are equivSymbolic with
     // the original expression.
     function coeff(root) {
+      var env = Model.env;
       if (!root || !root.args) {
         assert(false, "Should not get here. Illformed node.");
         return nodeZero;
@@ -476,18 +559,24 @@
         },
         unary: function(node) {
           // If it's a constant, it's a coefficient. Otherwise, it's not.
-          var mv = mathValue(node.args[0], true);
-          if (mv !== null) {
-            mv = mathValue(node, true);
+          switch (node.op) {
+          case Model.M:
+            return null;
+            break;
+          default:
+            var mv = mathValue(node.args[0], true);
             if (mv !== null) {
-              node = numberNode(mv);
+              mv = mathValue(node, env);
+              if (mv !== null) {
+                node = numberNode(mv);
+              } else {
+                node = null;
+              }
             } else {
-              node = null;
+              node = nodeOne;
             }
-          } else {
-            node = nodeOne;
+            return node;
           }
-          return node;
         },
         numeric: function(node) {
           return node;
@@ -585,6 +674,7 @@
     // 'variablePart' are complements. Their product are equivSymbolic with the
     // original expression.
     function variablePart(root) {
+      var env = Model.env;
       if (!root || !root.args) {
         assert(false, "Should not get here. Illformed node.");
         return null;
@@ -632,13 +722,13 @@
           return null;
         },
         variable: function(node) {
-          if (Model.env[node.args[0]]) {
-            // A unit or other keyword, so not a variable.
-            return null;
-          }
           return node;
         },
         comma: function(node) {
+          var vars = variables(node.args[0], env);
+          if (vars.length !== 0) {
+            return node;
+          }
           return null;
         },
         equals: function(node) {
@@ -989,6 +1079,10 @@
             ]);
           }
           var args = [];
+          if (node.op === Model.MATRIX) {
+            // Don't flatten matrix nodes.
+            return node;
+          }
           node = flattenNestedNodes(node);
           return sort(node);
         },
@@ -1662,44 +1756,100 @@
 
     function groupLikes(node) {
       var hash = {};
-      var vp, vpnid, list;
+      var vp, keyid;
+      if (node.op !== Model.MUL && node.op !== Model.ADD) {
+        // Don't group.
+        return node;
+      }
       forEach(node.args, function (n, i) {
+        var key;
         if (node.op === Model.MUL) {
           // If factors, then likes have same variables.
-          vp = variables(n).join("");
-        } else {
-          // If terms, then likes have the same variable parts.
-          vp = variablePart(n);
+          key = variables(n).join("");
+        } else if (node.op === Model.ADD) {
+          // If terms, likes have the same variable parts.
+          key = variablePart(n);
         }
-        if (vp) {
-          if (typeof vp === "string") {
-            vp = variableNode(vp);
-          }
-          vpnid = Ast.intern(vp);
-        } else if (n.op === Model.POW) {
-          if (exponent(n) < 0) {
-            vpnid = "denom";
+        if (!key) {
+          // No variable key, so get a constant based key
+          if (mathValue(n, true) !== null) {
+            // Group nodes that have computable math values.
+            if (n.op === Model.POW) {
+              if (exponent(n) < 0) {
+                key = "denom";
+              } else {
+                key = "numer";
+              }
+            } else {
+              key = "none";
+            }
           } else {
-            vpnid = "numer";
+            key = n;
           }
-        } else {
-          vpnid = "none";
         }
-        list = hash[vpnid] ? hash[vpnid] : (hash[vpnid] = []);
+        assert(key);
+        if (typeof key === "string") {
+          key = variableNode(key);
+        }
+        keyid = Ast.intern(key);
+        var list = hash[keyid] ? hash[keyid] : (hash[keyid] = []);
         list.push(n);
       });
       var args = [];
+      var noneKey = Ast.intern(variableNode("none"));
+      var denomKey = Ast.intern(variableNode("denom"));
+      var numerKey = Ast.intern(variableNode("numer"));
       forEach(keys(hash), function (k) {
         var aa = hash[k];
         assert(aa);
-        if (aa.length > 1) {
-          args.push(binaryNode(node.op, aa));
+        var cp = [];
+        forEach(aa, function (n) {
+          cp.push(constantPart(n));
+        });
+        var vp = variablePart(aa[0]);
+        if (cp.indexOf(null) >= 0) {
+          // We've got some strange equation, so just return it as is.
+          return node;
+        }
+        if (node.op === Model.ADD) {
+          if (cp.length > 1) {
+            var c = simplify(binaryNode(node.op, cp), {dontGroup: true});
+          } else {
+            var c = cp[0];
+          }
+          if (vp) {
+            if (isOne(c)) {
+              args.push(vp);
+            } else if (isZero(c)) {
+              args.push(nodeZero);
+            } else {
+              args.push(binaryNode(Model.MUL, [c, vp]));
+            }
+          } else if (c) {
+            args.push(c);
+          } else {
+            args.push(vp);
+          }
+        } else if (node.op === Model.MUL && cp.length > 1 &&
+                   (+k === noneKey || +k === numerKey || +k === denomKey)) {
+          // 3*4 -> 12
+          var nd = binaryNode(node.op, cp);
+          var mv = mathValue(nd);
+          if (mv === null) {
+            args.push(nd);
+          } else {
+            args.push(numberNode(mv.toString()));
+          }
         } else {
-          args.push(aa[0]);
+          if (aa.length > 1) {
+            args.push(binaryNode(node.op, aa));
+          } else {
+            args.push(aa[0]);
+          }
         }
       });
       if (args.length > 1) {
-        node = binaryNode(node.op, args);
+          node = binaryNode(node.op, args);
       } else {
         assert(args.length !== 0);
         node = args[0];
@@ -1741,8 +1891,13 @@
         additive: function (node) {
           assert(node.op !== Model.SUB,
                  "simplify() additive node not normalized: " + JSON.stringify(node));
-          node = flattenNestedNodes(node);
-          node = groupLikes(node);
+          if (node.op === Model.PM) {
+            return node;
+          }
+          if (!env || !env.dontGroup) {
+            node = flattenNestedNodes(node);
+            node = groupLikes(node);
+          }
           if (!isAdditive(node)) {
             // Have a new kind of node so start over.
             return node;
@@ -1975,8 +2130,10 @@
         },
         multiplicative: function (node) {
           assert(node.op === Model.MUL, "simplify() multiplicative node not normalized: " + JSON.stringify(node));
-          node = flattenNestedNodes(node);
-          node = groupLikes(node);
+          if (!env || !env.dontGroup) {
+            node = flattenNestedNodes(node);
+            node = groupLikes(node);
+          }
           if (!isMultiplicative(node)) {
             // Have a new kind of node start over.
             return node;
@@ -2350,22 +2507,6 @@
                 return binaryNode(Model.POW, [base.args[0], multiplyNode([base.args[1], expo])]);
               } else if (bmv !== null && emv !== null && !isNeg(bmv)) {
                 // 2^3, 16^(-1*1^-2)
-/*
-                // FIXME this is still a bit finicky as the order and number of exponents matter.
-                var ff = factors(expo, null, false, true);
-                // Apply each factor until an integer is not the result, or non-integers are allowed
-                var b = mv = bmv;
-                for (var i = ff.length-1; i >= 0; i--) {
-                  var e = mathValue(ff[i], {}, true);
-                  var mv = pow(mv, e);
-                  if (mv !== null) {
-                    b = mv;
-                    ff.pop();
-                    continue;
-                  }
-                  break;
-                }
-*/
                 var b = pow(bmv, emv)
                 base = numberNode(b);
                 return base;
@@ -2381,9 +2522,15 @@
             } else if (op === Model.LOG) {
               if (emv !== null) {
                 if (bmv !== null) {
-                  return numberNode(logBase(bmv, emv));
+                  node = numberNode(logBase(bmv, emv));
                 } else if (base.op === Model.VAR && base.args[0] === "e") {
-                  return numberNode(Math.log(toNumber(emv)).toString());
+                  var mv = toDecimal(Math.log(toNumber(emv)));
+                  if (option("allowDecimal") || isInteger(mv)) {
+                    node = numberNode(mv.toString());
+                  } else {
+                    node = binaryNode(Model.LOG, [base, expo]);
+                  }
+                  return node;
                 }
               }
             }
@@ -2862,6 +3009,10 @@
             // Don't flatten matrix nodes.
             return node;
           }
+          if (node.op === Model.MATRIX) {
+            // Don't flatten matrix nodes.
+            return node;
+          }
           node = flattenNestedNodes(node);
           node = groupLikes(node);
           return node;
@@ -2886,6 +3037,12 @@
           } else {
             node = multiplyNode(n0);
           }
+          if (node.op === Model.MATRIX) {
+            // Don't flatten matrix nodes.
+            return node;
+          }
+          node = flattenNestedNodes(node);
+          node = groupLikes(node);
           return node;
           function unfold(lnode, rnode) {
             // FIXME if the bases are additive and the expo are the same power,
@@ -3625,6 +3782,7 @@
     this.normalizeSyntax = normalizeSyntax;
     this.degree = degree;
     this.coeff = coeff;
+    this.constantPart = constantPart;
     this.variables = variables;
     this.variablePart = variablePart;
     this.sort = sort;
@@ -3645,6 +3803,10 @@
 
   function coeff(node, name) {
     return visitor.coeff(node, name);
+  }
+
+  function constantPart(node) {
+    return visitor.constantPart(node);
   }
 
   function variables(node) {
@@ -4110,8 +4272,6 @@
   Model.fn.equivSymbolic = function (n1, n2) {
     n1 = scale(normalize(simplify(expand(normalize(n1)))));
     n2 = scale(normalize(simplify(expand(normalize(n2)))));
-    console.log("equivSymbolic() n1=" + JSON.stringify(n1, null, 2));
-    console.log("equivSymbolic() n2=" + JSON.stringify(n2, null, 2));
     var nid1 = Ast.intern(n1);
     var nid2 = Ast.intern(n2);
     var inverseResult = option("inverseResult");
@@ -4153,9 +4313,11 @@
 
   Model.fn.isExpanded = function (n1) {
     var dontExpandPowers = option("dontExpandPowers", true);
-    n1 = normalize(n1);
-    var nid1 = Ast.intern(n1);
-    var nid2 = Ast.intern(sort(expand(normalize(n1))));
+    n1 = sort(n1);
+    var nd1 = n1;
+    var nd2 = normalize(expand(normalize(n1)));
+    var nid1 = Ast.intern(nd1);
+    var nid2 = Ast.intern(nd2);
     option("dontExpandPowers", dontExpandPowers);
     var inverseResult = option("inverseResult");
     if (nid1 === nid2 && !hasLikeFactors(n1)) {
@@ -4239,57 +4401,8 @@
 
     trace("\nMath Model self testing");
     (function () {
-      Model.pushEnv(env);
-//      Model.options = {allowDecimal: true, decimalPlaces: 3};
-//          ["x^{yy}", "x^{yy}"],
-//          ["\\lg(\\sqrt{x})", "\\frac{\\frac{\\ln(x)}{\\ln(10)}}{2}"],
-//          ["x^(1-1)", "1"],
-//          [, "\\frac{33}{8}in^3"],
-//          ["\\frac{7}{-2}-11(-2)+2", "20+1/2"],
-//          ["12.5=\\frac{100}{v}", "12.5v=100"],
-//          ["3\\sqrt{8}-6\\sqrt{32}", "-18\\sqrt{2}"],
-//          ["1\\frac{1}{2}= \\frac{3}{2}", "1+\\frac{2-1}{2}= \\frac{3}{2}"],
-//          ["5=y+x", "-5=y+(-x-2y)"],
-//          ["1/4(2x+8)", "2+x/2"],
-//          ["5=y+x", "\\frac{5}{5}=y+\\frac{x}{5}-\\frac{4y}{5}"],
-//          ["y=7/6(x+4)-2", "y=7/6(x-8)+12"],
-//          ["5+2y=y+x", "5+y=x"],
-      var nd1 = Model.create("[x+1]");
-      var nd2 = Model.create("x+2");
-      var val = nd1.equivSyntax(nd2);
-//      var val = nd1.equivSymbolic(nd2);
-      var result = val ? "PASS": "FAIL";
-      trace(result);
-      trace(Ast.dumpAll());
-//      var val = nd1.isTrue();
-      trace("start");
-      trace("nd1=" + JSON.stringify(nd1, null, 2));
-      trace("nd2=" + JSON.stringify(nd2, null, 2));
-      trace("normalize");
-      var nd1 = normalize(nd1);
-      var nd2 = normalize(nd2);
-      trace("nd1=" + JSON.stringify(nd1, null, 2));
-      trace("nd2=" + JSON.stringify(nd2, null, 2));
-      trace("expand");
-      var nd1 = expand(nd1);
-      var nd2 = expand(nd2);
-      trace("nd1=" + JSON.stringify(nd1, null, 2));
-      trace("nd2=" + JSON.stringify(nd2, null, 2));
-      trace("simplify");
-      var nd1 = simplify(nd1);
-      var nd2 = simplify(nd2);
-      trace("nd1=" + JSON.stringify(nd1, null, 2));
-      trace("nd2=" + JSON.stringify(nd2, null, 2));
-      trace("normalize");
-      var nd1 = normalize(nd1);
-      var nd2 = normalize(nd2);
-      trace("nd1=" + JSON.stringify(nd1, null, 2));
-      trace("nd2=" + JSON.stringify(nd2, null, 2));
-      trace("scale");
-      var nd1 = scale(nd1);
-      var nd2 = scale(nd2);
-      trace("nd1=" + JSON.stringify(nd1, null, 2));
-      trace("nd2=" + JSON.stringify(nd2, null, 2));
+      var node = Model.create("1+2");
+      SymPy.simplify(node);
     })();
   }
 })();

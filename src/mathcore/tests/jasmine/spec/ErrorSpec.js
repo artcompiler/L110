@@ -137,6 +137,7 @@ define(["mathcore"], function (MathCore) {
               setThousandsSeparator: [','],
               setDecimalSeparator: [',', '.'],
             }, 3007],
+            ["isFactorised", ["3xy(x^2-3y^2+4xy)"], {field: "integer"}, 2001],          
             ["equivLiteral", ["(1+2]", "(1+2)"], {}, 1001],
             ["equivLiteral", ["\\text{Range: }\\left[-\\infty,0\\right)",
                               "\\text{Range: }\\left(-\\infty,0\\right)"], {}, 1001],
