@@ -3984,10 +3984,7 @@
   }
 
   Model.fn.equivValue = function (n1, n2, op) {
-    console.log("Model.fn.equivValue() n1=" + JSON.stringify(n1, null, 2));
-    console.log("Model.fn.equivValue() n2=" + JSON.stringify(n2, null, 2));
     var options = Model.options = Model.options ? Model.options : {};
-    console.log("Model.fn.equivValue() options=" + JSON.stringify(options, null, 2));
     var scale = options.decimalPlaces != undefined ? +(options.decimalPlaces) : 10;
     var env = Model.env;
     var inverseResult = option("inverseResult");
