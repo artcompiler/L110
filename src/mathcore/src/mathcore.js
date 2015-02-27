@@ -78,44 +78,48 @@ var MathCore = (function () {
     "Vmatrix": {},
     "array": {},
   };
-
-  function evaluate(spec, solution) {
+  function evaluate(spec, solution, resume) {
     try {
       assert(spec, message(3001, [spec]));
       assert(solution, message(3002, [solution]));
       Assert.setCounter(1000000, message(3005));
       var evaluator = makeEvaluator(spec);
-      var result = evaluator.evaluate(solution);
+      var result = evaluator.evaluate(solution, function (err, val) {
+        resume(null, result);
+      });
     } catch (e) {
       trace(e + "\n" + e.stack);
-      result = undefined;
+      resume(e.stack, undefined);
     }
-    return result;
   }
-  function evaluateVerbose(spec, solution) {
+  function evaluateVerbose(spec, solution, resume) {
     try {
       assert(spec, message(3001, [spec]));
       Assert.setCounter(1000000, message(3005));
       var evaluator = makeEvaluator(spec);
-      var result, errorCode = 0, msg = "Normal completion", stack, location;
-      result = evaluator.evaluate(solution);
+      var errorCode = 0, msg = "Normal completion", stack, location;
+      evaluator.evaluate(solution, function (err, val) {
+        console.log("evaluateVerbose() val=" + val);
+        resume(null, {
+          result: val,
+          errorCode: errorCode,
+          message: msg,
+          stack: stack,
+          location: location,
+          toString: function () {
+            return this.errorCode + ": (" + location + ") " + msg + "\n" + this.stack;
+          }
+        });
+      });
     } catch (e) {
-      result = undefined;
       errorCode = parseErrorCode(e.message);
       msg = parseMessage(e.message);
       stack = e.stack;
       location = e.location;
+      console.log("ERROR evaluateVerbose stack=" + stack);
+      resume(e.stack, undefined);
     }
-    return {
-      result: result,
-      errorCode: errorCode,
-      message: msg,
-      stack: stack,
-      location: location,
-      toString: function () {
-        return this.errorCode + ": (" + location + ") " + msg + "\n" + this.stack;
-      }
-    }
+
     function parseErrorCode(e) {
       var code = +e.slice(0, e.indexOf(":"));
       if (!isNaN(code)) {
@@ -239,7 +243,7 @@ var MathCore = (function () {
     Model.pushEnv(env);
     var valueNode = value ? Model.create(value, "spec") : undefined;
     Model.popEnv();
-    var evaluate = function evaluate(solution) {
+    var evaluate = function evaluate(solution, resume) {
       Ast.clearPool();
       Assert.setLocation("user");
       assert(solution, message(3002));
@@ -292,7 +296,8 @@ var MathCore = (function () {
         break;
       }
       Model.popEnv();
-      return result;
+      console.log("evaluate() result=" + JSON.stringify(result));
+      resume(null, result);
     }
     return {
       evaluate: evaluate,

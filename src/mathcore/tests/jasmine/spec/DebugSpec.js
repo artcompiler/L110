@@ -31,6 +31,7 @@ if (TEST_LIB) {
       'model': '../lib/model/src/model',
       'bigdecimal': '../lib/BigDecimal',
       'mathmodel': 'mathmodel',
+      'sympy': 'sympy',
       'mathcore': 'mathcore'
     },
     shim: {
@@ -59,7 +60,7 @@ if (TEST_LIB) {
         exports: 'MathModel'
       },
       'mathcore': {
-        deps: ['mathmodel'],
+        deps: ['mathmodel', 'sympy'],
         exports: 'MathCore'
       },
     }
@@ -104,6 +105,33 @@ var forEach = function forEach(array, fun) {
 define(["mathcore"], function (MathCore) {
   describe("Math Core", function() {
     describe("Debug", function() {
+      describe("equivSymbolic", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivSymbolic",
+                value: v[0],
+              }, v[1])).toBe(true);
+            });
+          });
+        }
+        run([
+          ["\\pm\\sqrt{180}", "\\pm3\\sqrt{20}"],
+          ["1\\pm\\sqrt{180}", "1\\pm3\\sqrt{20}"],
+          ["2>1", "1<2"],
+          ["2=1", "1=2"],
+          ["\\pm\\sqrt{180}", "\\pm3\\sqrt{20}"],
+          ["1\\pm\\sqrt{180}", "1\\pm3\\sqrt{20}"],
+          ["0.2", "0.2+0.1-0.1"],
+          ["0.2", "0.2+0.1-0.1+0.3-0.3"],
+          ["\\frac{5}{2}+\\frac{5}{2}=5", "\\frac{5}{2}+\\frac{5}{2}=5"],
+          ["\\frac{5}{2}+\\frac{5}{2}=5", "2.5+2.5=5"],
+          ["|-10|", "10"],
+          ["\\left|-10\\right|", "10"],
+          ["3.06\\div3=1.02", "3.06\\div3=1.02"],
+        ]);
+      });
     });
   });
 });

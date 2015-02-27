@@ -3984,7 +3984,10 @@
   }
 
   Model.fn.equivValue = function (n1, n2, op) {
+    console.log("Model.fn.equivValue() n1=" + JSON.stringify(n1, null, 2));
+    console.log("Model.fn.equivValue() n2=" + JSON.stringify(n2, null, 2));
     var options = Model.options = Model.options ? Model.options : {};
+    console.log("Model.fn.equivValue() options=" + JSON.stringify(options, null, 2));
     var scale = options.decimalPlaces != undefined ? +(options.decimalPlaces) : 10;
     var env = Model.env;
     var inverseResult = option("inverseResult");
@@ -4252,7 +4255,7 @@
         if (n1.op === Model.MUL) {
           for (var i = 0; i < n1.args.length; i++) {
             if (n1.args[i].op === Model.INTERVAL &&
-                !equivLiteral(n1.args[i], n2.args[i])) {
+                !equivLiteral(n1.args[i], n2.args[i], resume)) {
               // Check immediately nested intervals.
               return inverseResult ? true : false;
             }
@@ -4269,7 +4272,7 @@
   // Check if two equations are mathematically equivalent. Two equations are
   // mathematically equivalent if they are literally equal after simplification
   // and normalization.
-  Model.fn.equivSymbolic = function (n1, n2) {
+  Model.fn.equivSymbolic = function (n1, n2, resume) {
     n1 = scale(normalize(simplify(expand(normalize(n1)))));
     n2 = scale(normalize(simplify(expand(normalize(n2)))));
     var nid1 = Ast.intern(n1);
@@ -4394,15 +4397,22 @@
     return opt;
   }
 
-  var RUN_SELF_TESTS = false;
+  var RUN_SELF_TESTS = true;
   if (RUN_SELF_TESTS) {
     var env = {
     };
 
     trace("\nMath Model self testing");
     (function () {
-      var node = Model.create("1+2");
-      SymPy.simplify(node);
+      simplify("1+2");
+      simplify("2+4");
+      function simplify(str) {
+        var node = Model.create(str);
+        var val = SymPy.simplify(node, resume);
+      }
+      function resume(err, val) {
+        console.log("SymPy.simplify() val=" + val);
+      }
     })();
   }
 })();

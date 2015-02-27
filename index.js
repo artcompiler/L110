@@ -25,8 +25,10 @@ app.get('/compile', function(req, res) {
   });
   req.on('end', function () {
     var src = JSON.parse(data).src;
-    var obj = compiler.compile(src);
-    res.send(obj);
+    var obj = compiler.compile(src, function (err, val) {
+      console.log("GET /compile val=" + JSON.stringify(val, null, 2));
+      res.send(val);
+    });
   });
   req.on('error', function(e) {
     console.log(e);

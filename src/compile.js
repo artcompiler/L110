@@ -34,14 +34,18 @@ var transformer = function() {
   var nodePool;
   function reset() {
   }
-  function transform(pool) {
+  function transform(pool, resume) {
     reset();
     nodePool = pool;
-    return visit(pool.root);
+    return visit(pool.root, {}, resume);
   }
-  function visit(nid, options) {
+  function visit(nid, options, resume) {
+    if (typeof resume !== "function") {
+      throw new Error("no resume");
+    }
     // Get the node from the pool of nodes.
     var node = nodePool[nid];
+    console.log("visit() node=" + JSON.stringify(node, null, 2));
     if (node == null) {
       return null;
     } else if (node.tag === void 0) {
@@ -49,7 +53,7 @@ var transformer = function() {
     }
     if (isFunction(table[node.tag])) {
       // There is a visitor method for this node, so call it.
-      return table[node.tag](node, options);
+      return table[node.tag](node, options, resume);
     } else {
       console.log("Missing method for " + node.tag);
       //throw "missing visitor method for " + node.tag;
@@ -80,40 +84,45 @@ var transformer = function() {
 
   var edgesNode;
 
-  function str(node, options) {
-    return node.elts[0]
+  function str(node, options, resume) {
+    var val = node.elts[0];
+    resume(null, val);
   }
 
-  function num(node, options) {
-    return node.elts[0]
+  function num(node, options, resume) {
+    var val = node.elts[0];
+    resume(null, val);
   }
 
-  function ident(node, options) {
-    return node.elts[0]
+  function ident(node, options, resume) {
+    var val = node.elts[0];
+    resume(null, val);
   }
 
-  function bool(node, options) {
-    return node.elts[0]
+  function bool(node, options, resume) {
+    var val = node.elts[0];
+    resume(null, val);
   }
 
-  function list(node, options) {
-    var elts = visit(node.elts[0], options);
-    if (!(elts instanceof Array)) {
-      elts = [elts];
-    }
-    return elts;
+  function list(node, options, resume) {
+    visit(node.elts[0], options, function (err, val) {
+      if (!(val instanceof Array)) {
+        val = [val];
+      }
+      resume(null, val);
+    });
   }
 
-  function program(node) {
+  function program(node, options, resume) {
     var options = {};
-    return visit(node.elts[0], options);
+    return visit(node.elts[0], options, resume);
   }
 
-  function exprs(node, options) {
+  function exprs(node, options, resume) {
     var elts = []
     if (node.elts) {
       for (var i = 0; i < node.elts.length; i++) {
-        elts.push(visit(node.elts[i], options));
+        elts.push(visit(node.elts[i], options, resume));
       }
     }
     return elts;
@@ -128,129 +137,138 @@ var transformer = function() {
     return old;
   }
 
-  function equivSyntax(node, options) {
-    var reference = visit(node.elts[1], options);
-    var response = visit(node.elts[0], options);
+  function equivSyntax(node, options, resume) {
+    var reference = visit(node.elts[1], options, resume);
+    var response = visit(node.elts[0], options, resume);
     var result = false;
     if (response) {
       result = MathCore.evaluateVerbose({
         method: "equivSyntax",
         options: options,
         value: reference,
-      }, response);
-    }
-    return {
-      score: result.result ? 1 : -1,
-      response: response,
-      json: {
-        "validation": {
-          "scoring_type": "exactMatch",
-          "valid_response": {
-            "score": 1,
-            "value": [{
-              "method": "equivSyntax",
-              "value": reference,
-              "options": options,
-            }]
+      }, response, function (err, val) {
+        resume(null, {
+          score: val.result ? 1 : -1,
+          response: response,
+          json: {
+            "validation": {
+              "scoring_type": "exactMatch",
+              "valid_response": {
+                "score": 1,
+                "value": [{
+                  "method": "equivSyntax",
+                  "value": reference,
+                  "options": options,
+                }]
+              }
+            }
           }
-        }
-      },
-    };
+        });
+      });
+    }
   }
 
-  function equivLiteral(node, options) {
-    var reference = visit(node.elts[1], options);
-    var response = visit(node.elts[0], options);
+  function equivLiteral(node, options, resume) {
+    var reference = visit(node.elts[1], options, resume);
+    var response = visit(node.elts[0], options, resume);
     var result = false;
     if (response) {
       result = MathCore.evaluateVerbose({
         method: "equivLiteral",
         options: options,
         value: reference,
-      }, response);
-    }
-    return {
-      score: result.result ? 1 : -1,
-      response: response,
-      json: {
-        "validation": {
-          "scoring_type": "exactMatch",
-          "valid_response": {
-            "score": 1,
-            "value": [{
-              "method": "equivLiteral",
-              "value": reference,
-              "options": options,
-            }]
+      }, response, function (err, val) {
+        resume(null, {
+          score: val.result ? 1 : -1,
+          response: response,
+          json: {
+            "validation": {
+              "scoring_type": "exactMatch",
+              "valid_response": {
+                "score": 1,
+                "value": [{
+                  "method": "equivLiteral",
+                  "value": reference,
+                  "options": options,
+                }]
+              }
+            }
           }
-        }
-      },
-    };
+        });
+      });
+    }
   }
 
-  function equivSymbolic(node, options) {
-    var reference = visit(node.elts[1], options);
-    var response = visit(node.elts[0], options);
+  function equivSymbolic(node, options, resume) {
+    var reference = visit(node.elts[1], options, resume);
+    var response = visit(node.elts[0], options, resume);
     var result = false;
     if (response) {
       result = MathCore.evaluateVerbose({
         method: "equivSymbolic",
         options: options,
         value: reference,
-      }, response);
+      }, response, function (err, val) {
+        resume(null, {
+          score: val.result ? 1 : -1,
+          response: response,
+          json: {
+            "validation": {
+              "scoring_type": "exactMatch",
+              "valid_response": {
+                "score": 1,
+                "value": [{
+                  "method": "equivSymbolic",
+                  "value": reference,
+                  "options": options,
+                }]
+              }
+            }
+          },
+        });
+      });
     }
-    console.log("equivSymbolic() result=" + result);
-    return {
-      score: result.result ? 1 : -1,
-      response: response,
-      json: {
-        "validation": {
-          "scoring_type": "exactMatch",
-          "valid_response": {
-            "score": 1,
-            "value": [{
-              "method": "equivSymbolic",
-              "value": reference,
-              "options": options,
-            }]
-          }
-        }
-      },
-    };
   }
 
-  function equivValue(node, options) {
-    var reference = visit(node.elts[1], options);
-    var response = visit(node.elts[0], options);
-    var result = false;
-    if (response) {
-      result = MathCore.evaluateVerbose({
-        method: "equivValue",
-        options: options,
-        value: reference,
-      }, response);
-    }
-    return {
-      score: result.result ? 1 : -1,
-      response: response,
-      json: {
-        "validation": {
-          "scoring_type": "exactMatch",
-          "valid_response": {
-            "score": 1,
-            "value": [{
-              "method": "equivValue",
-              "value": reference,
-              "options": options,
-            }]
-          }
+  function equivValue(node, options, resume) {
+    visit(node.elts[1], options, function (err, val) {
+      var reference = val;
+      console.log("equivValue() reference=" + JSON.stringify(reference, null, 2));
+      visit(node.elts[0], options, function (err, val) {
+        var response = val;
+        var result = false;
+        console.log("equivValue() response=" + JSON.stringify(response, null, 2));
+        if (response) {
+          result = MathCore.evaluateVerbose({
+            method: "equivValue",
+            options: options,
+            value: reference,
+          }, response, function (err, val) {
+            resume(null, {
+              score: val.result ? 1 : -1,
+              response: response,
+              json: {
+                "validation": {
+                  "scoring_type": "exactMatch",
+                  "valid_response": {
+                    "score": 1,
+                    "value": [{
+                      "method": "equivValue",
+                      "value": reference,
+                      "options": options,
+                    }]
+                  }
+                }
+              }
+            });
+          });
         }
-      },
-    };
+      });
+    });
   }
 
-  function isFactorised(node, options) {
-    var response = visit(node.elts[0], options);
+  function isFactorised(node, options, resume) {
+    var response = visit(node.elts[0], options, resume);
     var result = false;
     if (response) {
       result = MathCore.evaluateVerbose({
@@ -276,35 +294,37 @@ var transformer = function() {
     };
   }
 
-  function isSimplified(node, options) {
-    var response = visit(node.elts[0], options);
-    var result = false;
-    if (response) {
-      result = MathCore.evaluateVerbose({
-        method: "isSimplified",
-        options: options,
-      }, response);
-    }
-    return {
-      score: result.result ? 1 : -1,
-      response: response,
-      json: {
-        "validation": {
-          "scoring_type": "exactMatch",
-          "valid_response": {
-            "score": 1,
-            "value": [{
-              "method": "isSimplified",
-              "options": options,
-            }]
-          }
-        }
-      },
-    };
+  function isSimplified(node, options, resume) {
+    visit(node.elts[0], options, function (err, val) {
+      var response = val;
+      if (response) {
+        result = MathCore.evaluateVerbose({
+          method: "isSimplified",
+          options: options,
+        }, response, function (err, val) {
+          resume(err, {
+            score: val.result ? 1 : -1,
+            response: response,
+            json: {
+              "validation": {
+                "scoring_type": "exactMatch",
+                "valid_response": {
+                  "score": 1,
+                  "value": [{
+                    "method": "isSimplified",
+                    "options": options,
+                  }]
+                }
+              }
+            }
+          });
+        });
+      }
+    });
   }
 
-  function isExpanded(node, options) {
-    var response = visit(node.elts[0], options);
+  function isExpanded(node, options, resume) {
+    var response = visit(node.elts[0], options, resume);
     var result = false;
     if (response) {
       result = MathCore.evaluateVerbose({
@@ -330,41 +350,46 @@ var transformer = function() {
     };
   }
 
-  function allowTrailingZeros(node, options) {
-    var n2 = visit(node.elts[0], options);
+  function allowTrailingZeros(node, options, resume) {
     option(options, "allowTrailingZeros", true);
-    return n2;
+    visit(node.elts[0], options, function (err, val) {
+      resume(err, val);
+    });
   }
 
-  function allowDecimal(node, options) {
-    var n1 = visit(node.elts[0], options);
+  function allowDecimal(node, options, resume) {
     option(options, "allowDecimal", true);
-    return n1;
+    visit(node.elts[0], options, function (err, val) {
+      resume(err, val);
+    });
   }
 
-  function not(node, options) {
+  function not(node, options, resume) {
     option(options, "inverseResult", true);  // Synthetic option
-    var n1 = visit(node.elts[0], options);
-    return n1;
+    visit(node.elts[0], options, function (err, val) {
+      resume(err, val);
+    });
   }
 
-  function inverseResult(node, options) {
+  function inverseResult(node, options, resume) {
     option(options, "inverseResult", true);  // Synthetic option
-    var n1 = visit(node.elts[0], options);
-    return n1;
+    visit(node.elts[0], options, function (err, val) {
+      resume(err, val);
+    });
   }
 
-  function decimalPlaces(node, options) {
-    var n1 = visit(node.elts[1], options);
-    var n0 = visit(node.elts[0], options);
-    console.log("decimalPlaces() n1=" + n1);
-    option(options, "decimalPlaces", n1);
-    return n0;
+  function decimalPlaces(node, options, resume) {
+    visit(node.elts[1], options, function (err, val) {
+      option(options, "decimalPlaces", val);
+      visit(node.elts[0], options, function (err, val) {
+        resume(err, val);
+      });
+    });
   }
 
-  function field(node, options) {
-    var n1 = visit(node.elts[1], options);
-    var n0 = visit(node.elts[0], options);
+  function field(node, options, resume) {
+    var n1 = visit(node.elts[1], options, resume);
+    var n0 = visit(node.elts[0], options, resume);
     option(options, "field", n1);
     return n0;
   }
@@ -405,9 +430,9 @@ var renderer = function() {
   
   var nodePool
 
-  function render(node) {
+  function render(node, resume) {
     //node = visit(node, "  ")
-    return node;
+    resume(null, node);
   }
 
   function visit(node, padding) {
@@ -457,15 +482,19 @@ var renderer = function() {
 
 exports.compiler = function () {
   exports.compile = compile;
-  function compile(src) {
+  function compile(src, resume) {
     try {
-      return renderer.render(transformer.transform(src));
+      resume(null, transformer.transform(src, function (err, val) {
+        renderer.render(val, function (err, val) {
+          resume(err, val);
+        });
+      }));
     } catch (x) {
       console.log("ERROR with code");
       console.log(x.stack);
-      return {
+      resume("Compiler error", {
         score: 0
-      };
+      });
     }
   }
 }();
