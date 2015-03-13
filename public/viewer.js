@@ -44,7 +44,7 @@ exports.viewer = (function () {
       svg = svg.slice(svg.indexOf("width=") + 7);
       var width = svg.slice(0, svg.indexOf("ex")) * 8;  // ex=8px
       svg = svg.slice(svg.indexOf("height=") + 8);
-      var height = svg.slice(0, svg.indexOf("ex")) * 8;
+      var height = svg.slice(0, svg.indexOf("ex")) * 8 + 5;
       if (isNaN(width) || isNaN(height)) {
         width = 640;
         height = 30;
