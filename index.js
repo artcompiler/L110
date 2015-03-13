@@ -18,7 +18,6 @@ app.get('/', function(req, res) {
 var compiler = require("./lib/compile.js");
 
 app.get('/compile', function(req, res) {
-  console.log("L106 /compile");
   var data = "";
   req.on("data", function (chunk) {
     data += chunk;
@@ -26,7 +25,6 @@ app.get('/compile', function(req, res) {
   req.on('end', function () {
     var src = JSON.parse(data).src;
     var obj = compiler.compile(src, function (err, val) {
-      console.log("GET /compile val=" + JSON.stringify(val, null, 2));
       res.send(val);
     });
   });

@@ -221,33 +221,33 @@
   function Visitor() {
     var normalNumber = numberNode("298230487121230434902874");
     normalNumber.is_normal = true;
-    function visit(node, visit) {
+    function visit(node, visit, resume) {
       assert(node.op && node.args, "Visitor.visit() op=" + node.op + " args = " + node.args);
       switch (node.op) {
       case Model.NUM:
-        node = visit.numeric(node);
+        node = visit.numeric(node, resume);
         break;
       case Model.ADD:
       case Model.SUB:
       case Model.PM:
         if (node.args.length === 1) {
-          node = visit.unary(node);
+          node = visit.unary(node, resume);
         } else {
-          node = visit.additive(node);
+          node = visit.additive(node, resume);
         }
         break;
       case Model.MUL:
       case Model.DIV:
       case Model.FRAC:
-        node = visit.multiplicative(node);
+        node = visit.multiplicative(node, resume);
         break;
       case Model.POW:
       case Model.LOG:
-        node = visit.exponential(node);
+        node = visit.exponential(node, resume);
         break;
       case Model.VAR:
       case Model.SUBSCRIPT:
-        node = visit.variable(node);
+        node = visit.variable(node, resume);
         break;
       case Model.SQRT:
       case Model.SIN:
@@ -272,7 +272,8 @@
       case Model.TO:
       case Model.INT:
       case Model.PROD:
-        node = visit.unary(node);
+      case Model.ION:
+        node = visit.unary(node, resume);
         break;
       case Model.COMMA:
       case Model.MATRIX:
@@ -281,7 +282,7 @@
       case Model.COL:
       case Model.INTERVAL:
       case Model.LIST:
-        node = visit.comma(node);
+        node = visit.comma(node, resume);
         break;
       case Model.EQL:
       case Model.LT:
@@ -290,7 +291,11 @@
       case Model.GE:
       case Model.COLON:
       case Model.RIGHTARROW:
-        node = visit.equals(node);
+        node = visit.equals(node, resume);
+        break;
+      case Model.FORMAT:
+        // Only supported by normalizeSyntax
+        node = visit.format(node, resume);
         break;
       case Model.FORMAT:
         // Only supported by normalizeSyntax
@@ -780,6 +785,149 @@
             vals = vals.concat(terms(n));
           });
           return vals;
+        },
+      });
+    }
+
+    // Test for specific syntax
+    function hasSyntax(root, env) {
+      var syntaxClass = option("class");
+      if (!root || !root.args) {
+        assert(false, "Should not get here. Illformed node.");
+        return 0;
+      }
+
+      return visit(root, {
+        name: "hasSyntax",
+        exponential: function (node) {
+          switch (syntaxClass) {
+          case "polynomial":
+            return (function () {
+              var v = node.args.shift();   // Shift the var out of the args leaving only exponents in the node
+              var e = mathValue(node);     // Now get the math value of the exponents
+              if (isInteger(e) && !isNeg(e)) {
+                env.variable = v;
+                env.expo = toNumber(e);
+                return true;
+              }
+              //assert(false, "ERROR: Invalid exponent in hasSyntax.");
+              return false;
+            })();
+          case "number":
+            return false;
+          default:
+            return true;
+          }
+        },
+        multiplicative: function (node) {
+          switch (syntaxClass) {
+          case "polynomial":
+            return every(node.args, function (n) {
+              return hasSyntax(n, env);
+            });
+          case "number":
+            return false;
+          default:
+            return true;
+          }
+        },
+        additive: function (node) {
+          switch (syntaxClass) {
+          case "polynomial":
+            var args = [];
+            var self = this;
+            var okay = every(node.args, function (n) {
+              env.coeff = 1;
+              env.variable = "";
+              env.expo = 0;
+              var okay = hasSyntax(n, env);
+              if (okay) {
+                args = args.concat(newNode("term", [env.coeff, env.variable, env.expo]));
+              }
+              return okay;
+            });
+            env.polynomial = newNode("polynomial", args);
+            return okay;
+          case "number":
+            return false;
+          default:
+            return true;
+          }
+        },
+        numeric: function(node) {
+          var mv, result;
+          switch (syntaxClass) {
+          case "polynomial":
+            env.coeff *= toNumber(mathValue(node));
+            break;
+          case "number":
+          default:
+            break;
+          }
+          var decimalPlaces = option("decimalPlaces");
+          if (decimalPlaces !== undefined) {
+            mv = mathValue(node);
+            assert(mv !== null, "ERROR invalid math value in hasSyntax/numeric");
+            if (mv.scale() > decimalPlaces) {
+              assert(false, message(2014));
+            }
+          }
+          var numberFormat = option("numberFormat");
+          if (numberFormat !== undefined) {
+            if (numberFormat !== node.numberFormat) {
+              assert(false, message(2014));
+            }
+          }
+          var requireThousandsSeparator = option("requireThousandsSeparator");
+          if (requireThousandsSeparator && !node.hasThousandsSeparator) {
+            assert(false, message(2014));
+          }
+          return true;
+        },
+        variable: function(node) {
+          var vars = option("variables");
+          if (vars && vars.indexOf(node.args[0]) < 0) {
+            return false;
+          }
+          env.variable = node;
+          switch (syntaxClass) {
+          case "number":
+            return false;
+          case "polynomial":
+          default:
+            break;
+          }
+          return true;
+        },
+        unary: function(node) {
+          switch (syntaxClass) {
+          case "number":
+          case "polynomial":
+            return false;
+          default:
+            break;
+          }
+          return true;
+        },
+        comma: function(node) {
+          switch (syntaxClass) {
+          case "number":
+          case "polynomial":
+            return false;
+          default:
+            break;
+          }
+          return true;
+        },
+        equals: function(node) {
+          switch (syntaxClass) {
+          case "number":
+          case "polynomial":
+            return false;
+          default:
+            break;
+          }
+          return true;
         },
       });
     }
@@ -1311,6 +1459,10 @@
             args.push(sort(n));
           });
           node = binaryNode(node.op, args);
+          if (node.op === Model.FRAC) {
+            // Don't sort numerators and denominator
+            return node;
+          }
           var d0, d1;
           var n0, n1;
           var v0, v1;
@@ -1330,7 +1482,6 @@
               var e1 = exponent(n1);
               if (e0 !== e1 && !isNaN(e0) && !isNaN(e1)) {
                 if (e0 < e1) {
-                  // Swap adjacent elements
                   node.args[i] = n1;
                   node.args[i + 1] = n0;
                 }
@@ -1876,7 +2027,7 @@
       return result;
     }
 
-    function simplify(root, env) {
+    function simplify(root, env, resume) {
       if (!root || !root.args) {
         assert(false, "Should not get here. Illformed node.");
         return 0;
@@ -2848,6 +2999,34 @@
       }));
     }
 
+    function dummy(root, env, resume) {
+      console.log("dummy() root=" + JSON.stringify(root, null, 2));
+      if (!root || !root.args) {
+        // FIXME pass resume to assert
+        assert(false, "Should not get here. Illformed node.");
+      }
+      var nid = Ast.intern(root);
+      visit(root, {
+        name: "dummy",
+        exponential: function (node) {
+          //Helper.dummy(node, {}, resume);
+        },
+        multiplicative: function (node) {
+          resume(null, node);
+        },
+        additive: function (node) {
+          resume(null, node);
+        },
+      }, function (err, val) {
+        if (Ast.intern(val) === nid) {
+          // Found a fixed point. Resume.
+          resume(err, val);
+        }
+        // Do it again.
+        dummy(val, env, resume);
+      });
+    }
+
     function multiplyMatrix(lnode, rnode) {
       var snode, mnode;
       // Scalar * Matrix
@@ -3787,6 +3966,7 @@
     this.variablePart = variablePart;
     this.sort = sort;
     this.simplify = simplify;
+    this.dummy = dummy;
     this.expand = expand;
     this.factors = factors;
     this.isFactorised = isFactorised;
@@ -3885,6 +4065,17 @@
     var result = visitor.simplify(node, env);
     Assert.setLocation(prevLocation);
     return result;
+  }
+
+  function dummy(node, env, resume) {
+    var prevLocation = Assert.location;
+    if (node.location) {
+      Assert.setLocation(node.location);
+    }
+    visitor.dummy(node, env, function (err, val) {
+      Assert.setLocation(prevLocation);
+      resume(err, val);
+    });
   }
 
   function hasLikeFactors(node, env) {
@@ -4327,7 +4518,7 @@
     return inverseResult ? true : false;
   }
 
-  Model.fn.isSimplified = function (node) {
+  Model.fn.isSimplified = function (node, resume) {
     var dontExpandPowers = option("dontExpandPowers", true);
     var dontFactorDenominators = option("dontFactorDenominators", true);
     var dontFactorTerms = option("dontFactorTerms", true);
@@ -4339,10 +4530,28 @@
     option("dontExpandPowers", dontExpandPowers);
     option("dontFactorDenominators", dontFactorDenominators);
     option("dontFactorTerms", dontFactorTerms);
-    if (nid1 === nid2) {
-      return inverseResult ? false : true;
+    if(nid1 === nid2) {
+      return inverseResult ? false : true
     }
-    return inverseResult ? true : false;
+    return inverseResult ? true : false
+/*
+    dummy(node, {}, function (err, val) {
+      var nid1 = Ast.intern(n1);
+      var nid2 = Ast.intern(normalize(val));
+      console.log("isSimplified() n1=" + JSON.stringify(n1, null, 2));
+      console.log("isSimplified() n2=" + JSON.stringify(val, null, 2));
+      option("dontExpandPowers", dontExpandPowers);
+      option("dontFactorDenominators", dontFactorDenominators);
+      option("dontFactorTerms", dontFactorTerms);
+      var result;
+      if (nid1 === nid2) {
+        result = inverseResult ? false : true;
+      } else {
+        result = inverseResult ? true : false;
+      }
+      resume(err, result);
+    });
+*/
   }
 
   Model.fn.isFactorised = function (n1) {

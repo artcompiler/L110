@@ -118,7 +118,10 @@ define(["mathcore"], function (MathCore) {
             it(v[0] + " | " + v[1], function() {
               expect(MathCore.evaluate({
                 method: "equivLiteral",
-                options: {ignoreText: true},
+                options: {
+                  ignoreOrder: true,
+                  inverseResult: false
+                },
                 value: v[0],
               }, v[1])).toBe(true);
             });

@@ -45,7 +45,6 @@ var transformer = function() {
     }
     // Get the node from the pool of nodes.
     var node = nodePool[nid];
-    console.log("visit() node=" + JSON.stringify(node, null, 2));
     if (node == null) {
       return null;
     } else if (node.tag === void 0) {
@@ -151,6 +150,7 @@ var transformer = function() {
             resume(null, {
               score: val.result ? 1 : -1,
               response: response,
+              value: reference,
               json: {
                 "validation": {
                   "scoring_type": "exactMatch",
@@ -185,6 +185,7 @@ var transformer = function() {
             resume(null, {
               score: val.result ? 1 : -1,
               response: response,
+              value: reference,
               json: {
                 "validation": {
                   "scoring_type": "exactMatch",
@@ -219,6 +220,7 @@ var transformer = function() {
             resume(null, {
               score: val.result ? 1 : -1,
               response: response,
+              value: reference,
               json: {
                 "validation": {
                   "scoring_type": "exactMatch",
@@ -253,6 +255,7 @@ var transformer = function() {
             resume(null, {
               score: val.result ? 1 : -1,
               response: response,
+              value: reference,
               json: {
                 "validation": {
                   "scoring_type": "exactMatch",
@@ -425,6 +428,16 @@ var transformer = function() {
   };
 }();
 
+var mjAPI = require("MathJax-node/lib/mj-single.js");
+mjAPI.config({
+  MathJax: {
+    SVG: {
+      font: "Tex"
+    }
+  }
+});
+mjAPI.start();
+
 var renderer = function() {
 
   var scripts;
@@ -440,9 +453,39 @@ var renderer = function() {
   
   var nodePool
 
+  function tex2SVG(str, resume) {
+    mjAPI.typeset({
+      math: str,
+      format: "inline-TeX",
+      svg: true,
+      ex: 6,
+      width: 100,
+    }, function (data) {
+      if (!data.errors) {
+        resume(null, data.svg);
+      } else {
+        console.log("ERROR " + data.errors);
+        resume("ERROR " + data.errors);
+      }
+    });
+  }
+
   function render(node, resume) {
-    //node = visit(node, "  ")
-    resume(null, node);
+    if (!node.response) {
+      resume("ERROR Invalid input: " + JSON.stringify(node));
+    } else {
+      tex2SVG(node.response, function (err, val) {
+        node.responseSVG = val;
+        if (node.value) {
+          tex2SVG(node.value, function (err, val) {
+            node.valueSVG = val;
+            resume(null, node);
+          });
+        } else {
+          resume(null, node);
+        }
+      });
+    }
   }
 
   function visit(node, padding) {
@@ -494,11 +537,11 @@ exports.compiler = function () {
   exports.compile = compile;
   function compile(src, resume) {
     try {
-      resume(null, transformer.transform(src, function (err, val) {
+      transformer.transform(src, function (err, val) {
         renderer.render(val, function (err, val) {
           resume(err, val);
         });
-      }));
+      });
     } catch (x) {
       console.log("ERROR with code");
       console.log(x.stack);

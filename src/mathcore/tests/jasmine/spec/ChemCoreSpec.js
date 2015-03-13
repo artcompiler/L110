@@ -206,6 +206,9 @@ define(["chemcore"], function (ChemCore) {
           });
         }
         run([
+          ["Mg^2+(aq)+S^{2-}(aq)\\longrightarrow MgS(s)", "Mg^2+(aq)+S^{2-}(aq)\\longrightarrow MgS(s)"],
+          ["Cr_2O_7^{2-}(aq)+14H^+(aq)+6^{e-}\\longrightarrow 2Cr^{3+}(aq)+7H_2O(l)", "Cr_2O_7^{2-}(aq)+14H^+(aq)+6^{e-}\\longrightarrow 2Cr^{3+}(aq)+7H_2O(l)"],
+          ["Cr_2O_7^{2-}(aq)+14H^+(aq)+6^{e-}\\ \\longrightarrow\\ 2Cr^{3+}(aq)+7H_2O(l)", "Cr_2O_7^{2-}(aq)+14H^+(aq)+6^{e-}\\ \\longrightarrow\\ 2Cr^{3+}(aq)+7H_2O(l)"],
           ["H^+\\left(aq\\right)+SO_4^{2-}\\left(aq\\right)+K^+\\left(aq\\right)+OH^-\\left(aq\\right)\\rightarrow SO_{4^{2-}}\\left(aq\\right)+K^+\\left(aq\\right)+H_2O\\left(l\\right)",
            "H^+\\left(aq\\right)+SO_4^{2-}\\left(aq\\right)+K^+\\left(aq\\right)+OH^-\\left(aq\\right)\\rightarrow SO_{4^{2-}}\\left(aq\\right)+K^+\\left(aq\\right)+H_2O\\left(l\\right)"],
           ["H^+\\left(aq\\right)+SO_4^{2-}",
@@ -216,9 +219,11 @@ define(["chemcore"], function (ChemCore) {
           ["CH_3COO^-", "CH_3COO^-"],
           ["SO_4^2-", "SO_4^2-"],
           ["Cu^2+", "Cu^2+"],
+          ["\Na^+\Cl^-", "\Na^+\Cl^-"],
           ["Na^+Cl^-", "Na^+Cl^-"],
           ["Fe_2O_3", "Fe_2O_3"],
           ["Mg+2HCl", "Mg+2HCl"],
+          ["\Na\Cl", "NaCl"],
           ["NaCl", "NaCl"],
           ["M(NaCl)", "M(NaCl)"],
         ]);

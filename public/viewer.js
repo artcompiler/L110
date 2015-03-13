@@ -17,6 +17,9 @@ exports.viewer = (function () {
     exports.pool = pool;
     exports.obj = obj;
     obj = JSON.parse(obj);
+    if (!obj.json) {
+      return;
+    }
     var fill, fontStyle;
     var value = obj.json.validation.valid_response.value[0];
     var options = "";
@@ -36,18 +39,59 @@ exports.viewer = (function () {
       }
     });
     updateObj(JSON.stringify(obj.json, null, 2));
-    var input =
+    var svg = obj.svg;
+    function getSize(svg) {
+      svg = svg.slice(svg.indexOf("width=") + 7);
+      var width = svg.slice(0, svg.indexOf("ex")) * 8;  // ex=8px
+      svg = svg.slice(svg.indexOf("height=") + 8);
+      var height = svg.slice(0, svg.indexOf("ex")) * 8;
+      if (isNaN(width) || isNaN(height)) {
+        width = 640;
+        height = 30;
+      }
+      return {
+        width: width,
+        height: height
+      }
+    }
+    var text =
+      "<text x='30' y='20'>" +
       "<tspan font-size='14' font-weight='600'>" + method + "</tspan> " +
-      "<tspan font-weight='400' font-style='italic'>" + options  +"</tspan> " +
-      (value.value !== undefined ? "<tspan font-weight='400'>\"" + value.value  +"\"</tspan> " : "") +
-      "<tspan font-weight='400'>\"" + obj.response + "\"</tspan>";   // obj.input;
-    var response = obj.response;
+      "<tspan font-weight='400' font-style='italic'>" + options  + "</tspan>" +
+      "</text> ";
+    var svg;
+    if (obj.valueSVG) {
+      var valueSize = getSize(obj.valueSVG);
+      var responseSize = getSize(obj.responseSVG);
+      svg =
+        "<image width='" + valueSize.width +
+        "' height='" + valueSize.height +
+        "' x='4' y='30' xlink:href='data:image/svg+xml;utf8," + obj.valueSVG +
+        "'/><image width='" + responseSize.width +
+        "' height='" + responseSize.height +
+        "' x='4' y='" + (valueSize.height + 40) +
+        "' xlink:href='data:image/svg+xml;utf8," + obj.responseSVG +
+        "'/>";
+    } else {
+      var valueHeight = 0;
+      if (obj.value) {
+        text += 
+        "<text x='4' y='45'><tspan font-size='12' font-weight='400'>" + obj.value + "</tspan></text>";
+        valueHeight = 20;
+      }
+      var responseSize = getSize(obj.responseSVG);
+      svg =
+        "<image width='" + responseSize.width +
+        "' height='" + responseSize.height +
+        "' x='4' y='" + (valueHeight + 35) + "' xlink:href='data:image/svg+xml;utf8," + obj.responseSVG +
+        "'/>";
+    }
     var border;
     if (obj.score > 0) {
       fill = "#FFF";
       border = "rgb(100,255,100)";
       fontStyle = "normal";
-      heading = input;
+      heading = text;
       checkSrc = 
         '<rect x="4" y="4" width="20" height="20" fill="rgb(100, 255, 100)" ' +
         'fill-opacity="1" stroke-opacity="0"/> ';
@@ -55,7 +99,7 @@ exports.viewer = (function () {
       fill = "#FFF";
       border = "rgb(255,100,100)";
       fontStyle = "normal";
-      heading = input;
+      heading = text;
       checkSrc = 
         '<rect x="4" y="4" width="20" height="20" fill="rgb(255, 100, 100)" ' +
         'fill-opacity="1" stroke-opacity="0"/> ';
@@ -69,65 +113,24 @@ exports.viewer = (function () {
         '<rect x="4" y="4" width="20" height="20" fill="rgb(255, 255, 100)" ' +
         'fill-opacity="1" stroke-opacity="0"/> ';
     }
-    var data = []; //text.split("\n");
-    data.push(input);
-    height = (data.length * 13 + 15);
+    var data = [];
+    data.push(text);
+    height = 28;
     $("#graff-view")
-      .html('<svg style="background-color:' + fill +
-            '" xmlns="http://www.w3.org/2000/svg" width="640" height="' +
+    .html('<svg style="background-color:" ' + fill +
+            'xmlns="http://www.w3.org/2000/svg" width="640" height="' +
             height +
-            '">' + checkSrc +
-    //        '<rect x="0" y="0" width="640" height="' + height +
-    //        '" fill-opacity="0" stroke-width="4" stroke-opacity="1" stroke="' + border + '"/>' +
-            '<g/></svg>');
-    var svg = d3.select("#graff-view svg g");
-    var line = svg.selectAll("text")
-      .data(data);
-    line.exit().remove();
-    line.enter()
-      .append("text")
-      .attr("x", function(d, i) {
-        for (var i = 0; i < d.length; i++) {
-          if (d.charAt(i) !== " ") {
-            break;
-          }
-        }
-        return i * 7 + 10 + 20;
-      })
-      .attr("y", function(d, i) {
-        return i * 13 + 18;
-      })
-      .attr("font-family", function (d, i) {
-        if (i < 2) {
-          return "Courier New";
-        } else {
-          return "Courier New";
-        }
-      }) 
-      .attr("font-weight", function (d, i) {
-        if (i < 2) {
-          return "400";
-        } else {
-          return "400";
-        }
-      }) 
-      .attr("font-size", 13)
-      .attr("font-style", fontStyle)
-      .style("fill", "#000")
-      .html(function(d) {
-        return d
-      });
+            '"><g>' + checkSrc + text + svg + '</g></svg>');
     var bbox = $("#graff-view svg g")[0].getBBox();
-    $("#graff-view svg").attr("height", (bbox.height + 12) + "px");
+    $("#graff-view svg").attr("height", (bbox.height + 20) + "px");
     $("#graff-view svg").attr("width", (bbox.width + 40) + "px");
-
   }
   function capture() {
     // My SVG file as s string.
     var mySVG = $("#graff-view").html();
+/*
     // Create a Data URI.
     // Load up our image.
-
     // Set up our canvas on the page before doing anything.
     var old = document.getElementById('graff-view').children[0];
     var myCanvas = document.createElement('canvas');
@@ -145,9 +148,12 @@ exports.viewer = (function () {
     var dataURL = myCanvas.toDataURL();
     document.getElementById('graff-view').replaceChild(old, myCanvas);
     return '<html><img class="thumbnail" src="' + dataURL + '"/></html>';
+*/
+    return '<html>' + mySVG + '</html>';
   }
   return {
     update: update,
     capture: capture,
   };
 })();
+

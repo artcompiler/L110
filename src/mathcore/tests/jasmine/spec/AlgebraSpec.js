@@ -171,6 +171,27 @@ define(["mathcore"], function (MathCore) {
           ["2+3", "3+2"]
         ]);
       });
+      describe("NOT equivLiteral ignoreOrder", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivLiteral",
+                value: v[0],
+                options: {
+                  ignoreOrder: true
+                }
+              }, v[1])).not.toBe(true);
+            });
+          });
+        }
+        run([
+          [
+            '10\\times4\\times\\frac{11}{4}=110 \\text{cubic} \\text{inches}',
+            '10\\times4\\times\\frac{4}{11}=110 \\text{cubic} \\text{inches}'
+          ]
+        ]);
+      });
       describe("equivSymbolic", function() {
         function run(tests) {
           forEach(tests, function (v, i) {
@@ -515,6 +536,7 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["2x-2"],
           ["x^2"],
           ["x^2-3x+2"],
           ["x+1"],
@@ -962,6 +984,7 @@ define(["mathcore"], function (MathCore) {
           ["x^6+1"],
           ["x^3+6x^2+13x+10"],
           ["x^3+3x^2y+3x^2+3y^2+10xy"],
+          ["x+1y"],
         ]);
       });
       describe("NOT isExpanded", function() {
@@ -975,7 +998,6 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
-          ["x+1y"],
           ["x^4+x^4"],
           ["x^3+2x^2+4x^2+13x+10"],
           ["(x^3-2)(x^2-1)"],

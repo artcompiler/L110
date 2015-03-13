@@ -84,8 +84,8 @@ var MathCore = (function () {
       assert(solution, message(3002, [solution]));
       Assert.setCounter(1000000, message(3005));
       var evaluator = makeEvaluator(spec);
-      var result = evaluator.evaluate(solution, function (err, val) {
-        resume(null, result);
+      evaluator.evaluate(solution, function (err, val) {
+        resume(null, val);
       });
     } catch (e) {
       trace(e + "\n" + e.stack);
@@ -277,8 +277,8 @@ var MathCore = (function () {
         result = solutionNode.isFactorised();
         break;
       case "isSimplified":
-        result = solutionNode.isSimplified();
-        break;
+        result = solutionNode.isSimplified(resume);
+        break; //return;  // using resume
       case "isExpanded":
         result = solutionNode.isExpanded();
         break;
