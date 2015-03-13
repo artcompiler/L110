@@ -2,6 +2,7 @@
 /* vim: set shiftwidth=2 tabstop=2 autoindent cindent expandtab: */
 /* Copyright (c) 2014, Art Compiler LLC */
 var _ = require("underscore");
+var mjAPI = require("./MathJax-node/lib/mj-single.js");
 import MathCore from "./mathcore/lib/mathcore";
 
 var transformer = function() {
@@ -22,7 +23,7 @@ var transformer = function() {
     "EQUIV-SYMBOLIC": equivSymbolic,
     "EQUIV-VALUE": equivValue,
     "IS-FACTORISED": isFactorised,
-    "IS-SIMPLIFIED": isSimplified,
+
     "IS-EXPANDED": isExpanded,
     "INVERSE-RESULT": inverseResult,
     "DECIMAL-PLACES": decimalPlaces,
@@ -428,7 +429,6 @@ var transformer = function() {
   };
 }();
 
-var mjAPI = require("MathJax-node/lib/mj-single.js");
 mjAPI.config({
   MathJax: {
     SVG: {
