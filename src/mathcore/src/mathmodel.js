@@ -4603,7 +4603,7 @@
     return opt;
   }
 
-  var RUN_SELF_TESTS = true;
+  var RUN_SELF_TESTS = false;
   if (RUN_SELF_TESTS) {
     var env = {
     };
