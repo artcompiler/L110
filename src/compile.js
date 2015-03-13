@@ -23,7 +23,7 @@ var transformer = function() {
     "EQUIV-SYMBOLIC": equivSymbolic,
     "EQUIV-VALUE": equivValue,
     "IS-FACTORISED": isFactorised,
-
+    "IS-SIMPLIFIED": isSimplified,
     "IS-EXPANDED": isExpanded,
     "INVERSE-RESULT": inverseResult,
     "DECIMAL-PLACES": decimalPlaces,
@@ -402,26 +402,32 @@ var transformer = function() {
   }
 
   function field(node, options, resume) {
-    var n1 = visit(node.elts[1], options, resume);
-    var n0 = visit(node.elts[0], options, resume);
-    option(options, "field", n1);
-    return n0;
+    visit(node.elts[1], options, function (err, val) {
+      option(options, "field", val);
+      visit(node.elts[0], options, function (err, val) {
+        resume(err, val);
+      });
+    });
   }
 
-  function setDecimalSeparator(node, options) {
-    var n1 = visit(node.elts[1], options);
-    var n0 = visit(node.elts[0], options);
-    option(options, "allowThousandsSeparator", true);
-    option(options, "setDecimalSeparator", n1);
-    return n0;
+  function setDecimalSeparator(node, options, resume) {
+    visit(node.elts[1], options, function (err, val) {
+      option(options, "allowThousandsSeparator", true);
+      option(options, "setDecimalSeparator", val);
+      visit(node.elts[0], options, function (err, val) {
+        resume(err, val);
+      });
+    });
   }
 
-  function setThousandsSeparator(node, options) {
-    var n1 = visit(node.elts[1], options);
-    var n0 = visit(node.elts[0], options);
-    option(options, "allowThousandsSeparator", true);
-    option(options, "setThousandsSeparator", n1);
-    return n0;
+  function setThousandsSeparator(node, options, resume) {
+    visit(node.elts[1], options, function (err, val) {
+      option(options, "allowThousandsSeparator", true);
+      option(options, "setThousandsSeparator", val);
+      visit(node.elts[0], options, function (err, val) {
+        resume(err, val);
+      });
+    });
   }
 
   return {

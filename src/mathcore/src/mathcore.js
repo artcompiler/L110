@@ -277,7 +277,7 @@ var MathCore = (function () {
         result = solutionNode.isFactorised();
         break;
       case "isSimplified":
-        result = solutionNode.isSimplified(resume);
+        result = solutionNode.isSimplified();
         break; //return;  // using resume
       case "isExpanded":
         result = solutionNode.isExpanded();
