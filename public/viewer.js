@@ -26,6 +26,11 @@ exports.viewer = (function () {
     var method = value.method;
     Object.keys(value.options).sort().forEach(function (v) {
       switch(v) {
+      case "inverseResult":
+        if (value.options[v] === true) {
+          method = "NOT " + method;
+        }
+        break;
       case "dontExpandPowers":
       case "dontFactorDenominators":
         // Erase.
