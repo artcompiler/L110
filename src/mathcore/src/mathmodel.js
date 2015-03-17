@@ -2094,14 +2094,16 @@
               forEach(n0, function (n1) {
                 denoms = denom(n1, denoms);
               });
-              if (denoms.length > 1 || !isOne(denoms[0])) {
-                // We have a non-trivial denominator.
+              if (denoms.length > 1 || (denoms.length === 1 && !isOne(denoms[0]))) {
+                // We have a non-trivial common denominator.
                 var denominator = binaryNode(Model.POW, [multiplyNode(denoms, true), nodeMinusOne]);
                 var n2 = [];
+                // For each term get the numerator based on the common denominator.
                 forEach(n0, function (n1) {
                   var d, n;
+                  // 2/x+3/y -> (2y+3x)/(xy)
                   d = denom(n1, []);
-                  n = numer(n1, d, denoms);
+                  n = numer(n1, d[0], denoms);
                   n2 = n2.concat(n);
                 });
                 // Now add the numerator and multiply it by the denominator.
@@ -2115,8 +2117,36 @@
             return node;
           }
           function numer(n, d, denoms) {
+            var dd = denoms.slice(0); // Copy
+            var ff = factors(n, {}, true, false);
+            var hasNumer = false;
+            var n0, nn = [];
+            forEach(ff, function (n) {
+              if (n.op !== Model.POW || !isNeg(mathValue(n.args[1], true))) {
+                nn.push(n);
+              }
+            });
+            if (nn.length === 0) {
+              // If no denominator, then add 1 if not already there.
+              n0 = nodeOne;
+            } else {
+              n0 = multiplyNode(nn);
+            }
             // Multiply top common denominator. Simplify to cancel factors.
-            return simplify(multiplyNode([].concat(n).concat(denoms), true));
+            var nid0 = Ast.intern(d);
+            var index = -1;
+            some(dd, function (n, i) {
+              var nid1 = Ast.intern(n);
+              if (nid0 === nid1) {
+                index = i;
+                return true;
+              }
+              return false
+            });
+            if (index > -1) {
+              dd.splice(index, 1);
+            }
+            return multiplyNode([].concat(n0).concat(dd), true);
           }
           function denom(n, denoms) {
             // If the current node has a different denominator as those in denoms,

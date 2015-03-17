@@ -463,6 +463,8 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["\\frac{\\sin(B)}{8.77}=\\frac{3.95}{\\sin(24.65\\degree)}",
+           "\\frac{\\sin(B)}{9.70}=\\frac{24.65\\degree}{3.95}"],
           ["|-x|", "x"],
           ["x_1", "x_2"],
           ["(((1/4)/5)/6)/7", "1/841"],
