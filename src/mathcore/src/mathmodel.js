@@ -36,6 +36,7 @@
   var nodeInfinity = numberNode("Infinity");
   var nodeOneHalf = fractionNode(numberNode("1"), numberNode("2"));
   var nodeImaginary = binaryNode(Model.POW, [nodeMinusOne, nodeOneHalf]);
+  var nodeE = variableNode("e");
 
   function hashCode(str) {
     var hash = 0, i, chr, len;
@@ -157,7 +158,7 @@
     } else if (typeof n === "number") {
       return n === -1;
     } else if (n.op !== undefined) {
-      return !bigMinusOne.compareTo(mathValue(n));
+      return !bigMinusOne.compareTo(mathValue(n, true));
     }
     assert(false, "Internal error: unable to compare with zero.");
   }
@@ -1316,15 +1317,27 @@
         variable: function(node) {
           if (node.args[0] === "\\pi") {
             node = numberNode(Math.PI);
+          } else if (node.args[0] === "e") {
+            node = numberNode(Math.E);
           }
           return node;
         },
         exponential: function(node) {
           var args = [];
-          forEach(node.args, function (n) {
-            n = normalize(n);
-            args.push(n);
-          });
+          switch(node.op) {
+          case Model.LOG:
+            // log_e has special meaning so don't normalize 'e' in that case.
+            if (Ast.intern(node.args[0]) === Ast.intern(nodeE)) {
+              args.push(nodeE);
+            } else {
+              args.push(normalize(node.args[0]));
+            }
+            break;
+          default:
+            args.push(normalize(node.args[0]));
+            break;
+          }
+          args.push(normalize(node.args[1]));
           return binaryNode(node.op, args);
         },
         comma: function(node) {
@@ -2740,7 +2753,7 @@
           });
           assert(args.length === 2);
           if (isZero(args[1])) {
-            var mv = mathValue(args[0]);
+            var mv = mathValue(args[0], true);
             if (mv !== null) {
               // If its a number, then we're done.
               return newNode(node.op, args);
@@ -2749,7 +2762,7 @@
             var args0 = [];
             var foundZero = false;
             forEach(ff, function (n) {
-              var mv = mathValue(n);
+              var mv = mathValue(n, true);
               if (foundZero ||
                   mv !== null && !isZero(mv) && ff.length > 1 ||
                   n.op === Model.POW && isNeg(mathValue(n.args[1]))) {

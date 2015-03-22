@@ -321,11 +321,32 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["\\frac{1}{2}=\\frac{1}{6}", "\\frac{1}{2}=1"],
+          ["\\frac{1}{2}\\div3=\\frac{1}{6}", "\\frac{1}{2}\\div3=16"],
           ["3.06\\div3=1.02", "3.06\\div3=5"],
           ["3.06\\div3=5", "3.06\\div3=1.02"],
           ["3.06\\div3=1.9", "3.06\\div3=1.02"],
           ["2\\div1=2", "2\\div1=5"],
           ["2.5", "\\frac{5}{2}"],
+        ]);
+      });
+      describe("NOT equivSymbolic allowDecimal=true", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivSymbolic",
+                options: {
+                  allowDecimal: true,
+                },
+                value: v[0]
+              }, v[1])).not.toBe(true);
+            });
+          });
+        }
+        run([
+          ["\\frac{1}{2}=\\frac{1}{6}", "\\frac{1}{2}=1"],
+          ["\\frac{1}{2}\\div3=\\frac{1}{6}", "\\frac{1}{2}\\div3=16"],
         ]);
       });
       describe("equivSymbolic allowThousandsSeparator allowDecimal", function() {
@@ -607,6 +628,8 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["e", "2.718", "3"],
+          ["e", "2.718281828459045", "10"],
           ["\\frac{\\pi}{2}", "1.57", "2"],
           ["\\pi", "3.14", "2"],
           [".375", "3/8", undefined],
@@ -899,6 +922,7 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["\\frac{1}{2}\\div3=16"],
           ["16=12"],
           ["x < 0.5x + 0.5x"],
         ]);
