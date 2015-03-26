@@ -116,6 +116,9 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["1/2/3/4", "\\frac{\\frac{\\frac{1}{2}}{3}}{4}"],
+          ["1/2\\div1/2", "\\frac{1}{2}\\div\\frac{1}{2}"],
+          ["1/2 \\div x_1/2", "\\frac{1}{2}\\div\\frac{x_1}{2}"],
           ["3-(-2)", "3-(-2)"],
           ["-(-2)", "-(-2)"],
           [".12", "0.12"],
@@ -294,6 +297,7 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["5!", "2*3*4*5"],
           ["\\pm\\sqrt{180}", "\\pm3\\sqrt{20}"],
           ["1\\pm\\sqrt{180}", "1\\pm3\\sqrt{20}"],
           ["2>1", "1<2"],
@@ -444,6 +448,7 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["5!", "2*3*4*5"],
           ["\\pm\\sqrt{180}", "\\pm3\\sqrt{20}"],
           ["1\\pm\\sqrt{180}", "1\\pm3\\sqrt{20}"],
           ["1=2", "1>4"],

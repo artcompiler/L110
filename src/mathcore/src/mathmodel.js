@@ -199,15 +199,19 @@
     return new BigDecimal(String(Math.log(toNumber(v)) / Math.log(toNumber(b))));
   }
 
-  function factorial(n) {
-    if (n instanceof BigDecimal) {
-      n = toNumber(n);
+  // From http://stackoverflow.com/questions/3959211/fast-factorial-function-in-javascript
+  var factCache = [bigOne, bigOne];
+  var i = 2;
+  function factorial(n)
+  {
+    if (typeof factCache[n] != 'undefined') {
+      return factCache[n];
     }
-    // n : Number
-    var rval=1;
-    for (var i = 2; i <= n; i++)
-      rval = rval * i;
-    return rval;
+    var result = factCache[i-1];
+    for (; i <= n; i++) {
+      factCache[i] = result = result.multiply(new BigDecimal(i.toString()));
+    }
+    return result;
   }
 
   var varMap = {};
@@ -1306,6 +1310,14 @@
           case Model.PM:
             if (isNeg(mathValue(arg0, true))) {
               node.args[0] = multiplyNode([nodeMinusOne, arg0], true);
+            }
+            break;
+          case Model.FACT:
+            var mv = mathValue(arg0);
+            if (mv) {
+              node = numberNode(factorial(mv));
+            } else {
+              node = unaryNode(node.op, [arg0]);
             }
             break;
           default:
@@ -4504,8 +4516,8 @@
   // mathematically equivalent if they are literally equal after simplification
   // and normalization.
   Model.fn.equivSymbolic = function (n1, n2, resume) {
-    n1 = scale(normalize(simplify(expand(normalize(n1)))));
-    n2 = scale(normalize(simplify(expand(normalize(n2)))));
+    n1 = normalize(scale(simplify(expand(normalize(n1)))));
+    n2 = normalize(scale(simplify(expand(normalize(n2)))));
     var nid1 = Ast.intern(n1);
     var nid2 = Ast.intern(n2);
     var inverseResult = option("inverseResult");

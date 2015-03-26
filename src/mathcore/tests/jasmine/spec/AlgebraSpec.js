@@ -392,7 +392,7 @@ define(["mathcore"], function (MathCore) {
 
         ]);
       });
-      describe("equivSymbolic", function() {
+      describe("equivSymbolic allowDecimal=true", function() {
         function run(tests) {
           forEach(tests, function (v, i) {
             it(v[0] + " | " + v[1], function() {
@@ -407,7 +407,27 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["\\frac{1}{9}\\div\\frac{1}{18}=\\frac{18}{9}","\\frac{1}{9}\\div\\frac{1}{18}=2"],
           ["y=\\frac{1}{2}x+1", "y=0.5x+1"],
+        ]);
+      });
+      describe("NOT equivSymbolic allowDecimal=true decimalPlace=20", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivSymbolic",
+                options: {
+                  allowDecimal: true,
+                  decimalPlaces: 20,
+                },
+                value: v[0]
+              }, v[1])).toBe(false);
+            });
+          });
+        }
+        run([
+          ["\\frac{1}{9}\\div\\frac{1}{18}=\\frac{18}{9}","\\frac{1}{9}\\div\\frac{1}{18}=2"],
         ]);
       });
       describe("equivSymbolic", function() {

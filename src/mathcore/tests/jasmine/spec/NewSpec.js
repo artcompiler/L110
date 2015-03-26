@@ -1,4 +1,4 @@
-  /* -*- Mode: js; js-indent-level: 2; indent-tabs-mode: nil; tab-width: 2 -*- */
+/* -*- Mode: js; js-indent-level: 2; indent-tabs-mode: nil; tab-width: 2 -*- */
 /* vim: set shiftwidth=2 tabstop=2 autoindent cindent expandtab: */
 /*
  * Copyright 2013 Learnosity Ltd. All Rights Reserved.
@@ -14,10 +14,12 @@
 
 "use strict";
 
+var setBaseUrl = (window.__karma__) ? "/base/lib" : "../../lib";
+
 var TEST_LIB = true;
 if (TEST_LIB) {
   requirejs.config({
-    baseUrl: "../../lib",
+    baseUrl: setBaseUrl,
     paths: {
       'mathcore': 'mathcore'
     },
@@ -89,7 +91,7 @@ splitString = boxedString[0] != "a" || !(0 in boxedString);
 var forEach = function forEach(array, fun) {
   var thisp = arguments[2];
   if (Array.prototype.forEach) {
-	  return array.forEach(fun);
+    return array.forEach(fun);
   }
   var object = toObject(array),
   self = splitString && _toString(object) == "[object String]" ? object.split("") : object,
@@ -112,6 +114,8 @@ var forEach = function forEach(array, fun) {
 define(["mathcore"], function (MathCore) {
   describe("MathCore", function() {
     describe("New", function() {
+      // PUT NEW TESTS HERE.
+      // COPY THE INNER TEST DRIVER FROM ONE OF THE PRODUCTION TESTS
     });
   });
 });

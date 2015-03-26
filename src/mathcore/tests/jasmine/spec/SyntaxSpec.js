@@ -198,11 +198,14 @@ define(["mathcore"], function (MathCore) {
               expect(MathCore.evaluate({
                 method: "equivLiteral",
                 value: v[0]
-              }, v[1])).toBe(false);
+              }, v[1])).not.toBe(true);
             });
           });
         }
         run([
+          [".", "."],
+          ["558x3=\\text{6\\ and\\ it\\ is\\ position\\ 25\\ or\\ 28\\ or\\ something\\ like\\ that.\\ }65", "(-2,-16), (-1,-4), (0,0), (1,-4), (2,-16)"],
+          ["558x3=6\\ and\\ it\\ is\\ position\\ 25\\ or\\ 28\\ or\\ something\\ like\\ that.\\ 65", "(-2,-16), (-1,-4), (0,0), (1,-4), (2,-16)"],
           ["[1,2]", "(1,2)"],
           ["10 \\text{foo bar abc}", "\\text{foo bar abc} 10"],
           ["x_y^z", "x_y_z"],
