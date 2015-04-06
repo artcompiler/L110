@@ -477,7 +477,12 @@ var renderer = function() {
   }
 
   function escapeXML(xml) {
-    return String(xml).replace(/"/g, "&quot;");
+    return String(xml)
+      .replace(/&(?!\w+;)/g, "&amp;")
+      .replace(/\\/g, "\\\\")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
   }
 
   function render(node, resume) {
