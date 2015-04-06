@@ -479,6 +479,7 @@ var renderer = function() {
   function escapeXML(xml) {
     return String(xml)
       .replace(/&(?!\w+;)/g, "&amp;")
+      .replace(/\n/g, " ")
       .replace(/\\/g, "\\\\")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
