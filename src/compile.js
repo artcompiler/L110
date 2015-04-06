@@ -35,6 +35,15 @@ var transformer = function() {
   var nodePool;
   function reset() {
   }
+  function escapeStr(str) {
+    return String(str)
+      .replace(/&(?!\w+;)/g, "&amp;")
+      .replace(/\n/g, " ")
+      .replace(/\\/g, "\\\\")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
   function transform(pool, resume) {
     reset();
     nodePool = pool;
@@ -209,9 +218,9 @@ var transformer = function() {
 
   function equivSymbolic(node, options, resume) {
     visit(node.elts[1], options, function (err, val) {
-      var reference = val;
+      var reference = escapeStr(val);
       visit(node.elts[0], options, function (err, val) {
-        var response = val;
+        var response = escapeStr(val);
         if (response) {
           MathCore.evaluateVerbose({
             method: "equivSymbolic",
@@ -476,25 +485,15 @@ var renderer = function() {
     });
   }
 
-  function escapeXML(xml) {
-    return String(xml)
-      .replace(/&(?!\w+;)/g, "&amp;")
-      .replace(/\n/g, " ")
-      .replace(/\\/g, "\\\\")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
-  }
-
   function render(node, resume) {
     if (!node.response) {
       resume("ERROR Invalid input: " + JSON.stringify(node));
     } else {
       tex2SVG(node.response, function (err, val) {
-        node.responseSVG = escapeXML(val);
+        node.responseSVG = escapeStr(val);
         if (node.value) {
           tex2SVG(node.value, function (err, val) {
-            node.valueSVG = escapeXML(val);
+            node.valueSVG = escapeStr(val);
             resume(null, node);
           });
         } else {
