@@ -144,9 +144,9 @@ var transformer = function() {
 
   function equivSyntax(node, options, resume) {
     visit(node.elts[1], options, function (err, val) {
-      var reference = escapeStr(val);
+      var reference = val;
       visit(node.elts[0], options, function (err, val) {
-        var response = escapeStr(val);
+        var response = val;
         if (response) {
           MathCore.evaluateVerbose({
             method: "equivSyntax",
@@ -179,15 +179,17 @@ var transformer = function() {
 
   function equivLiteral(node, options, resume) {
     visit(node.elts[1], options, function (err, val) {
-      var reference = escapeStr(val);
+      var reference = val;
       visit(node.elts[0], options, function (err, val) {
-        var response = escapeStr(val);
+        var response = val;
         if (response) {
           MathCore.evaluateVerbose({
             method: "equivLiteral",
             options: options,
             value: reference,
           }, response, function (err, val) {
+            response = escapeStr(response);
+            reference = escapeStr(reference);
             resume(null, {
               score: val.result ? 1 : -1,
               response: response,
@@ -214,15 +216,17 @@ var transformer = function() {
 
   function equivSymbolic(node, options, resume) {
     visit(node.elts[1], options, function (err, val) {
-      var reference = escapeStr(val);
+      var reference = val;
       visit(node.elts[0], options, function (err, val) {
-        var response = escapeStr(val);
+        var response = val;
         if (response) {
           MathCore.evaluateVerbose({
             method: "equivSymbolic",
             options: options,
             value: reference,
           }, response, function (err, val) {
+            response = escapeStr(response);
+            reference = escapeStr(reference);
             resume(null, {
               score: val.result ? 1 : -1,
               response: response,
@@ -249,15 +253,17 @@ var transformer = function() {
 
   function equivValue(node, options, resume) {
     visit(node.elts[1], options, function (err, val) {
-      var reference = escapeStr(val);
+      var reference = val;
       visit(node.elts[0], options, function (err, val) {
-        var response = escapeStr(val);
+        var response = val;
         if (response) {
           MathCore.evaluateVerbose({
             method: "equivValue",
             options: options,
             value: reference,
           }, response, function (err, val) {
+            response = escapeStr(response);
+            reference = escapeStr(reference);
             resume(null, {
               score: val.result ? 1 : -1,
               response: response,
@@ -284,12 +290,13 @@ var transformer = function() {
 
   function isFactorised(node, options, resume) {
     visit(node.elts[0], options, function (err, val) {
-      var response = escapeStr(val);
+      var response = val;
       if (response) {
         MathCore.evaluateVerbose({
           method: "isFactorised",
           options: options,
         }, response, function (err, val) {
+          response = escapeStr(response);
           resume(err, {
             score: val.result ? 1 : -1,
             response: response,
@@ -313,12 +320,13 @@ var transformer = function() {
 
   function isSimplified(node, options, resume) {
     visit(node.elts[0], options, function (err, val) {
-      var response = escapeStr(val);
+      var response = val;
       if (response) {
         MathCore.evaluateVerbose({
           method: "isSimplified",
           options: options,
         }, response, function (err, val) {
+          response = escapeStr(response);
           resume(err, {
             score: val.result ? 1 : -1,
             response: response,
@@ -342,12 +350,13 @@ var transformer = function() {
 
   function isExpanded(node, options, resume) {
     visit(node.elts[0], options, function (err, val) {
-      var response = escapeStr(val);
+      var response = val;
       if (response) {
         MathCore.evaluateVerbose({
           method: "isExpanded",
           options: options,
         }, response, function (err, val) {
+          response = escapeStr(response);
           resume(err, {
             score: val.result ? 1 : -1,
             response: response,
