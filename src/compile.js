@@ -138,8 +138,9 @@ var transformer = function() {
   }
 
   function escapeStr(str) {
-    return String(str)
-      .replace(/\\/g, "\\\\")
+    return str;
+//    return String(str)
+//      .replace(/\\/g, "\\\\")
   }
 
   function equivSyntax(node, options, resume) {
