@@ -7,10 +7,13 @@
 
 "use strict";
 
+// if using Karma use the karma base url
+var setBaseUrl = (window.__karma__) ? "/base/lib" : "../../lib";
+
 var TEST_LIB = true;
 if (TEST_LIB) {
   requirejs.config({
-    baseUrl: "../../lib",
+    baseUrl: setBaseUrl,
     paths: {
       'mathcore': 'mathcore'
     },
@@ -899,6 +902,7 @@ define(["mathcore"], function (MathCore) {
           ["1000mg=1g"],
           ["1cm^3=1cm^3"],
           ["12in=1ft"],
+          ["4yd", "12ft"],
           ["5280ft=1mi"],
           ["1km=1000m"],
           ["1000mm=1m"],

@@ -7,10 +7,15 @@
 
 "use strict";
 
+// if using Karma use the karma base url
+var setBaseUrl = (window.__karma__) ? "/base/lib" : "../../lib";
+var setBaseUrlSrc = (window.__karma__) ? "/base/src" : "../../src";
+
+
 var TEST_LIB = false;
 if (TEST_LIB) {
   requirejs.config({
-    baseUrl: "../../lib",
+    baseUrl: setBaseUrl,
     paths: {
       'mathcore': 'mathcore',
     },
@@ -22,7 +27,7 @@ if (TEST_LIB) {
   });
 } else {
   requirejs.config({
-    baseUrl: "../../src",
+    baseUrl: setBaseUrlSrc,
     paths: {
       'backward': '../lib/model/src/backward',
       'assert': '../lib/model/src/assert',

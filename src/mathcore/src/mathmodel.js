@@ -4388,6 +4388,7 @@
         "ns": "s",
         "in": "ft",
         "ft": "ft",
+        "yd": "ft",
         "mi": "ft",
         "fl": "fl",
         "cup": "fl",

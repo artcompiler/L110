@@ -7,10 +7,13 @@
 
 "use strict";
 
+// if using Karma use the karma base url
+var setBaseUrl = (window.__karma__) ? "/base/lib" : "../../lib";
+
 var TEST_LIB = true;
 if (TEST_LIB) {
   requirejs.config({
-    baseUrl: "../../lib",
+    baseUrl: setBaseUrl,
     paths: {
       'chemcore': 'chemcore'
     },
@@ -318,8 +321,8 @@ define(["chemcore"], function (ChemCore) {
         }
         run([
           ["n(Mg)=\\frac{m(Mg)}{M(Mg)}", "n(Mg)=\\frac{m(Mg)}{M(Mg)}"],
-          ["Mg(s)+2HCl(aq)->MgCl_2(aq)+H2(g)", "Mg(s)+2HCl(aq)->MgCl_2(aq)+H2(g)"], 
-          ["Mg(s)+2HCl(aq) \\rightarrow MgCl_2(aq)+H2(g)", "Mg(s)+2HCl(aq) \\rightarrow MgCl_2(aq)+H2(g)"], 
+          ["Mg(s)+2HCl(aq)->MgCl_2(aq)+H2(g)", "Mg(s)+2HCl(aq)->MgCl_2(aq)+H2(g)"],
+          ["Mg(s)+2HCl(aq) \\rightarrow MgCl_2(aq)+H2(g)", "Mg(s)+2HCl(aq) \\rightarrow MgCl_2(aq)+H2(g)"],
           ["Mg+2HCl \\rightarrow MgCl_2+H_2", "Mg+2HCl \\rightarrow MgCl_2+H_2"],
         ]);
       });

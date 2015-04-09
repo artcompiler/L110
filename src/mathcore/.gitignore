@@ -5,3 +5,4 @@ lib/chemcore.js
 lib/chemcore.min.js
 lib/mathcore.js
 lib/mathcore.min.js
+node_modules

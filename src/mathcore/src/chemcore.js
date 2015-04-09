@@ -52,6 +52,7 @@ var ChemCore = (function () {
     "nL": { type: "unit", value: n, base: "L" },
     "in": { type: "unit", value: 1 / 12, base: "ft" },
     "ft": { type: "unit", value: u, base: "ft" },
+    "yd": { type: "unit", value: 3, base: "ft" },
     "mi": { type: "unit", value: 5280, base: "ft" },
     "fl": { type: "unit", value: 1, base: "fl" },  // fluid ounce
     "cup": { type: "unit", value: 8, base: "fl" },

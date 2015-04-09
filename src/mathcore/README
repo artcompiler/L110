@@ -20,6 +20,16 @@ TESTING
 
 The library must be built before it can be tested.
 
+Testing with Karma
+
+   $ make <target>
+
+Targets:
+
+test | testwatch | algebra | chem | debug | all | math | new | number | spec
+
+Testing with Jasmine (no Karma)
+
    $ cd tests
    $ make all
 

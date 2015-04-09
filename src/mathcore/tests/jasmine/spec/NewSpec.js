@@ -14,6 +14,7 @@
 
 "use strict";
 
+// if using Karma use the karma base url
 var setBaseUrl = (window.__karma__) ? "/base/lib" : "../../lib";
 
 var TEST_LIB = true;
