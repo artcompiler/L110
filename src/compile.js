@@ -155,7 +155,7 @@ var transformer = function() {
             value: reference,
           }, response, function (err, val) {
             resume(null, {
-              score: val.result ? 1 : -1,
+              score: val ? (val.result ? 1 : -1) : 0,
               response: response,
               value: reference,
               json: {
@@ -192,7 +192,7 @@ var transformer = function() {
             response = escapeStr(response);
             reference = escapeStr(reference);
             resume(null, {
-              score: val.result ? 1 : -1,
+              score: val ? (val.result ? 1 : -1) : 0,
               response: response,
               value: reference,
               json: {
@@ -229,7 +229,7 @@ var transformer = function() {
             response = escapeStr(response);
             reference = escapeStr(reference);
             resume(null, {
-              score: val.result ? 1 : -1,
+              score: val ? (val.result ? 1 : -1) : 0,
               response: response,
               value: reference,
               json: {
@@ -266,7 +266,7 @@ var transformer = function() {
             response = escapeStr(response);
             reference = escapeStr(reference);
             resume(null, {
-              score: val.result ? 1 : -1,
+              score: val ? (val.result ? 1 : -1) : 0,
               response: response,
               value: reference,
               json: {
@@ -299,7 +299,7 @@ var transformer = function() {
         }, response, function (err, val) {
           response = escapeStr(response);
           resume(err, {
-            score: val.result ? 1 : -1,
+            score: val ? (val.result ? 1 : -1) : 0,
             response: response,
             json: {
               "validation": {
@@ -329,7 +329,7 @@ var transformer = function() {
         }, response, function (err, val) {
           response = escapeStr(response);
           resume(err, {
-            score: val.result ? 1 : -1,
+            score: val ? (val.result ? 1 : -1) : 0,
             response: response,
             json: {
               "validation": {
@@ -359,7 +359,7 @@ var transformer = function() {
         }, response, function (err, val) {
           response = escapeStr(response);
           resume(err, {
-            score: val.result ? 1 : -1,
+            score: val ? (val.result ? 1 : -1) : 0,
             response: response,
             json: {
               "validation": {
