@@ -150,19 +150,6 @@ var MathCore = (function () {
         break;
       }
       break;
-    case "numberFormat":
-      switch (v) {
-      case void 0: // undefined means use default
-      case "integer":
-      case "decimal":
-      case "real":
-      case "complex":
-        break;
-      default:
-        assert(false, message(3007, [p, v]));
-        break;
-      }
-      break;
     case "decimalPlaces":
       if (v === void 0 || +v >= 0 && +v <= 20) {
         break;
@@ -171,7 +158,6 @@ var MathCore = (function () {
       break;
     case "allowDecimal":
     case "allowInterval":
-    case "requireScientific":
     case "dontExpandPowers":
     case "dontFactorDenominators":
     case "dontFactorTerms":
@@ -199,27 +185,6 @@ var MathCore = (function () {
         break;
       }
       assert(false, message(3007, [p, JSON.stringify(v)]));
-      break;
-    case "class":
-      switch (v) {
-      case "polynomial":
-      case "number":
-      case "mixedFraction":
-      case "fraction":
-      case "binomial":
-      case "matrix":
-      case "equation":
-      case "interval":
-        break;
-      default:
-        assert(false, message(3007, [p, v]));
-        break;
-      }
-      break;
-    case "variables":
-      if (!(v instanceof Array)) {
-        assert(false, message(3007, [p, v]));
-      }
       break;
     default:
       assert(false, message(3006, [p]));

@@ -794,154 +794,11 @@
       });
     }
 
-    // Test for specific syntax
-    function hasSyntax(root, env) {
-      var syntaxClass = option("class");
-      if (!root || !root.args) {
-        assert(false, "Should not get here. Illformed node.");
-        return 0;
-      }
-
-      return visit(root, {
-        name: "hasSyntax",
-        exponential: function (node) {
-          switch (syntaxClass) {
-          case "polynomial":
-            return (function () {
-              var v = node.args.shift();   // Shift the var out of the args leaving only exponents in the node
-              var e = mathValue(node);     // Now get the math value of the exponents
-              if (isInteger(e) && !isNeg(e)) {
-                env.variable = v;
-                env.expo = toNumber(e);
-                return true;
-              }
-              //assert(false, "ERROR: Invalid exponent in hasSyntax.");
-              return false;
-            })();
-          case "number":
-            return false;
-          default:
-            return true;
-          }
-        },
-        multiplicative: function (node) {
-          switch (syntaxClass) {
-          case "polynomial":
-            return every(node.args, function (n) {
-              return hasSyntax(n, env);
-            });
-          case "number":
-            return false;
-          default:
-            return true;
-          }
-        },
-        additive: function (node) {
-          switch (syntaxClass) {
-          case "polynomial":
-            var args = [];
-            var self = this;
-            var okay = every(node.args, function (n) {
-              env.coeff = 1;
-              env.variable = "";
-              env.expo = 0;
-              var okay = hasSyntax(n, env);
-              if (okay) {
-                args = args.concat(newNode("term", [env.coeff, env.variable, env.expo]));
-              }
-              return okay;
-            });
-            env.polynomial = newNode("polynomial", args);
-            return okay;
-          case "number":
-            return false;
-          default:
-            return true;
-          }
-        },
-        numeric: function(node) {
-          var mv, result;
-          switch (syntaxClass) {
-          case "polynomial":
-            env.coeff *= toNumber(mathValue(node));
-            break;
-          case "number":
-          default:
-            break;
-          }
-          var decimalPlaces = option("decimalPlaces");
-          if (decimalPlaces !== undefined) {
-            mv = mathValue(node);
-            assert(mv !== null, "ERROR invalid math value in hasSyntax/numeric");
-            if (mv.scale() > decimalPlaces) {
-              assert(false, message(2014));
-            }
-          }
-          var numberFormat = option("numberFormat");
-          if (numberFormat !== undefined) {
-            if (numberFormat !== node.numberFormat) {
-              assert(false, message(2014));
-            }
-          }
-          var requireThousandsSeparator = option("requireThousandsSeparator");
-          if (requireThousandsSeparator && !node.hasThousandsSeparator) {
-            assert(false, message(2014));
-          }
-          return true;
-        },
-        variable: function(node) {
-          var vars = option("variables");
-          if (vars && vars.indexOf(node.args[0]) < 0) {
-            return false;
-          }
-          env.variable = node;
-          switch (syntaxClass) {
-          case "number":
-            return false;
-          case "polynomial":
-          default:
-            break;
-          }
-          return true;
-        },
-        unary: function(node) {
-          switch (syntaxClass) {
-          case "number":
-          case "polynomial":
-            return false;
-          default:
-            break;
-          }
-          return true;
-        },
-        comma: function(node) {
-          switch (syntaxClass) {
-          case "number":
-          case "polynomial":
-            return false;
-          default:
-            break;
-          }
-          return true;
-        },
-        equals: function(node) {
-          switch (syntaxClass) {
-          case "number":
-          case "polynomial":
-            return false;
-          default:
-            break;
-          }
-          return true;
-        },
-      });
-    }
-
     function normalizeFormatObject(fmt) {
       // Normalize the fmt object to an array of objects
       var list = [];
       switch (fmt.op) {
-      case Model.STR:
+      case Model.VAR:
         list.push({
           code: fmt.args[0],
         });
@@ -976,7 +833,7 @@
         var code = f.code;
         var length = f.length;
         switch (code) {
-        case "integer":
+        case "\\integer":
           if (node.numberFormat === "integer") {
             if (length === undefined || length === node.args[0].length) {
               // If there is no size or if the size matches the value...
@@ -984,7 +841,7 @@
             }
           }
           break;
-        case "decimal":
+        case "\\decimal":
           if (node.numberFormat === "decimal") {
             if (length === undefined ||
                 length === 0 && node.args[0].indexOf(".") === -1 ||
@@ -994,7 +851,7 @@
             }
           }
           break;
-        case "number":
+        case "\\number":
           if (node.numberFormat === "integer" ||
               node.numberFormat === "decimal") {
             if (length === undefined ||
@@ -1005,7 +862,7 @@
             }
           }
           break;
-        case "scientific":
+        case "\\scientific":
           if (node.isScientific) {
             var coeff = node.args[0].args[0];
             if (length === undefined ||
@@ -1016,17 +873,23 @@
             }
           }
           break;
-        case "fraction":
+        case "\\fraction":
+          if (node.isFraction ||
+              node.isMixedFraction) {
+            return true;
+          }
+          break;
+        case "\\nonMixedFraction":
           if (node.isFraction) {
             return true;
           }
           break;
-        case "mixedFraction":
+        case "\\mixedFraction":
           if (node.isMixedFraction) {
             return true;
           }
           break;
-        case "fractionOrDecimal":
+        case "\\fractionOrDecimal":
           if (node.isFraction ||
               node.isMixedFraction ||
               node.numberFormat === "decimal") {
@@ -1047,7 +910,7 @@
       var length = fmtList[0].length; // Possibly undefined.
       var name;
       switch (code) {
-      case "variable":
+      case "\\variable":
         if (length === undefined) {
           // If length is undefined, then accept any variable.
           name = "_";
@@ -1062,13 +925,14 @@
           }
         }
         break;
-      case "integer":
-      case "decimal":
-      case "number":
-      case "scientific":
-      case "fraction":
-      case "mixedFraction":
-      case "fractionOrDecimal":
+      case "\\integer":
+      case "\\decimal":
+      case "\\number":
+      case "\\scientific":
+      case "\\fraction":
+      case "\\mixedFraction":
+      case "\\nonMixedFraction":
+      case "\\fractionOrDecimal":
         name = id;  // Do nothing.
         break;
       default:
@@ -1093,7 +957,7 @@
         name: "normalizeSyntax",
         format: function(node) {
           var fmtList = normalizeFormatObject(node.args[0]);
-          if (fmtList[0].code === "variable") {
+          if (fmtList[0].code === "\\variable") {
             var id;
             if (fmtList[0].length === undefined) {
               id = "_";
@@ -1129,10 +993,6 @@
               checkNumberFormat(ref.args[0], node)) {
             return normalNumber;
           }
-          if (option("requireScientific") && !node.isScientific) {
-            return node;
-          }
-          var allow_integer = options.allow_integer;
           forEach(node.args, function (n, i) {
             n = normalizeSyntax(n, ref.args[i]);
             args.push(n);
@@ -1143,11 +1003,7 @@
           var arg0 = normalizeSyntax(node.args[0], ref.args[0]);
           switch (node.op) {
           case Model.PERCENT:
-            if (option("allowPercent")) {
-              node = normalNumber;  // Percent compares to any number forms
-            } else {
-              node = unaryNode(node.op, [arg0]);  // Percent compares only to other percent forms
-            }
+            node = unaryNode(node.op, [arg0]);  // Percent compares only to other percent forms
             break;
           case Model.SUB:
             // Convert SUBs to ADDs
@@ -4645,7 +4501,6 @@
       case "decimalPlaces":
         opt = 10;
         break;
-      case "numberFormat":
       case "setThousandsSeparator":
       case "setDecimalSeparator":
         opt = undefined;
