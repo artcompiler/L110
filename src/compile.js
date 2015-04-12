@@ -485,8 +485,7 @@ var renderer = function() {
       if (!data.errors) {
         resume(null, data.svg);
       } else {
-        console.log("ERROR " + data.errors);
-        resume("ERROR " + data.errors);
+        resume(null, "");
       }
     });
   }

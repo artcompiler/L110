@@ -46,9 +46,9 @@ exports.viewer = (function () {
     updateObj(JSON.stringify(obj.json, null, 2));
     var svg = obj.svg;
     function getSize(svg) {
-      svg = svg.slice(svg.indexOf("width=") + 7);
+      svg = svg.slice(svg.indexOf("width=") + 7 + 5);
       var width = svg.slice(0, svg.indexOf("ex")) * 8;  // ex=8px
-      svg = svg.slice(svg.indexOf("height=") + 8);
+      svg = svg.slice(svg.indexOf("height=") + 8 + 5);
       var height = svg.slice(0, svg.indexOf("ex")) * 8 + 5;
       if (isNaN(width) || isNaN(height)) {
         width = 640;
