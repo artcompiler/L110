@@ -17,6 +17,8 @@ exports.globalLexicon = {
     "isFactorised" : { "tk": 0x01, "name": "IS-FACTORISED", "cls": "function", "length": 1 , "arity": 1 },
     "isSimplified" : { "tk": 0x01, "name": "IS-SIMPLIFIED", "cls": "function", "length": 1 , "arity": 1 },
     "isExpanded" : { "tk": 0x01, "name": "IS-EXPANDED", "cls": "function", "length": 1 , "arity": 1 },
+    "isUnit" : { "tk": 0x01, "name": "IS-UNIT", "cls": "function", "length": 2 , "arity": 2 },
+    "isTrue" : { "tk": 0x01, "name": "IS-TRUE", "cls": "function", "length": 1 , "arity": 1 },
     "not" : { "tk": 0x01, "name": "NOT", "cls": "function", "length": 1 },
     "inverseResult" : { "tk": 0x01, "name": "NOT", "cls": "function", "length": 1 },
     "allowDecimal" : { "tk": 0x01, "name": "ALLOW-DECIMAL", "cls": "function", "length": 1 },

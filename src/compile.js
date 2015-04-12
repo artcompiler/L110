@@ -22,9 +22,11 @@ var transformer = function() {
     "EQUIV-LITERAL": equivLiteral,
     "EQUIV-SYMBOLIC": equivSymbolic,
     "EQUIV-VALUE": equivValue,
-    "IS-FACTORISED": isFactorised,
     "IS-SIMPLIFIED": isSimplified,
     "IS-EXPANDED": isExpanded,
+    "IS-FACTORISED": isFactorised,
+    "IS-UNIT": isUnit,
+    "IS-TRUE": isTrue,
     "INVERSE-RESULT": inverseResult,
     "DECIMAL-PLACES": decimalPlaces,
     "ALLOW-DECIMAL": allowDecimal,
@@ -376,6 +378,73 @@ var transformer = function() {
           });
         });
       }
+    });
+  }
+
+  function isTrue(node, options, resume) {
+    visit(node.elts[0], options, function (err, val) {
+      var response = val;
+      if (response) {
+        MathCore.evaluateVerbose({
+          method: "isTrue",
+          options: options,
+        }, response, function (err, val) {
+          response = escapeStr(response);
+          resume(err, {
+            score: val ? (val.result ? 1 : -1) : 0,
+            response: response,
+            json: {
+              "validation": {
+                "scoring_type": "exactMatch",
+                "valid_response": {
+                  "score": 1,
+                  "value": [{
+                    "method": "isTrue",
+                    "options": options,
+                  }]
+                }
+              }
+            }
+          });
+        });
+      }
+    });
+  }
+
+  function isUnit(node, options, resume) {
+    visit(node.elts[1], options, function (err, val) {
+      var reference = val;
+      visit(node.elts[0], options, function (err, val) {
+        var response = val;
+        if (response) {
+          MathCore.evaluateVerbose({
+            method: "isUnit",
+            options: options,
+            value: reference,
+          }, response, function (err, val) {
+            response = escapeStr(response);
+            reference = escapeStr(reference);
+            resume(null, {
+              score: val ? (val.result ? 1 : -1) : 0,
+              response: response,
+              value: reference,
+              json: {
+                "validation": {
+                  "scoring_type": "exactMatch",
+                  "valid_response": {
+                    "score": 1,
+                    "value": [{
+                      "method": "isUnit",
+                      "value": reference,
+                      "options": options,
+                    }]
+                  }
+                }
+              }
+            });
+          });
+        }
+      });
     });
   }
 
