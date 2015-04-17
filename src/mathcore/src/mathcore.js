@@ -167,6 +167,7 @@ var MathCore = (function () {
     case "ignoreText":
     case "ignoreTrailingZeros":
     case "allowThousandsSeparator":
+    case "compareSides":
       if (typeof v === "undefined" || typeof v === "boolean") {
         break;
       }

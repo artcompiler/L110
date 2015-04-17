@@ -1214,7 +1214,7 @@
             vals = vals.concat(normalize(n));
           });
           var node = newNode(node.op, vals);
-          return node;
+          return sort(node);
         },
         equals: function(node) {
           assert(node.args.length === 2, message(2006));
@@ -1442,42 +1442,29 @@
           var d0, d1;
           var n0, n1;
           var v0, v1;
-          for (var i = 0; i < node.args.length - 1; i++) {
-            n0 = node.args[i];
-            n1 = node.args[i + 1];
-            if ((d0 = degree(node.args[i], true)) < (d1 = degree(node.args[i + 1], true))) {
-              // Swap adjacent elements
-              node.args[i] = n1;
-              node.args[i + 1] = n0;
-              node.op =
-                node.op === Model.GT ? Model.LT :
-                node.op === Model.GE ? Model.LE :
-                node.op === Model.LT ? Model.GT :
-                node.op === Model.LE ? Model.GE : node.op;
-            } else if (d0 === d1) {
-              v0 = variables(n0);
-              v1 = variables(n1);
-              if (v0.length !== v1.length  && v0.length < v1.length ||
-                  v0.length > 0 && v0[0] < v1[0]) {
+          if (node.op === Model.EQL) {
+            for (var i = 0; i < node.args.length - 1; i++) {
+              n0 = node.args[i];
+              n1 = node.args[i + 1];
+              if ((d0 = degree(node.args[i], true)) < (d1 = degree(node.args[i + 1], true))) {
                 // Swap adjacent elements
-                var t = node.args[i];
                 node.args[i] = n1;
                 node.args[i + 1] = n0;
-                node.op =
-                  node.op === Model.GT ? Model.LT :
-                  node.op === Model.GE ? Model.LE :
-                  node.op === Model.LT ? Model.GT :
-                  node.op === Model.LE ? Model.GE : node.op;
-              } else if (!isZero(n1) && isLessThan(mathValue(n0), mathValue(n1))) {
-                // Unless the RHS is zero, swap adjacent elements
-                var t = node.args[i];
-                node.args[i] = n1;
-                node.args[i + 1] = n0;
-                node.op =
-                  node.op === Model.GT ? Model.LT :
-                  node.op === Model.GE ? Model.LE :
-                  node.op === Model.LT ? Model.GT :
-                  node.op === Model.LE ? Model.GE : node.op;
+              } else if (d0 === d1) {
+                v0 = variables(n0);
+                v1 = variables(n1);
+                if (v0.length !== v1.length  && v0.length < v1.length ||
+                    v0.length > 0 && v0[0] < v1[0]) {
+                  // Swap adjacent elements
+                  var t = node.args[i];
+                  node.args[i] = n1;
+                  node.args[i + 1] = n0;
+                } else if (!isZero(n1) && isLessThan(mathValue(n0), mathValue(n1))) {
+                  // Unless the RHS is zero, swap adjacent elements
+                  var t = node.args[i];
+                  node.args[i] = n1;
+                  node.args[i + 1] = n0;
+                }
               }
             }
           }
@@ -4085,7 +4072,7 @@
     return [n1new, n2new];
   }
 
-  Model.fn.equivValue = function (n1, n2, op) {
+  Model.fn.equivValue = function equivValue(n1, n2, op) {
     var options = Model.options = Model.options ? Model.options : {};
     var scale = options.decimalPlaces != undefined ? +(options.decimalPlaces) : 10;
     var env = Model.env;
@@ -4128,15 +4115,31 @@
       n2b = simplify(expand(normalize(n2)));
       var v2 = mathValue(n2b, env);
     }
+    // If we have two lists, then compare their elements
+    if (n1b.op === Model.COMMA && n2b.op === Model.COMMA ||
+        n1b.op === Model.LIST && n2b.op === Model.LIST) {
+      assert(n1t === undefined && n2t === undefined, message(2007));
+      // Check that the corresponding elements of each list are equal.
+      var result = every(n1b.args, function (a, i) {
+        return equivValue(n1b.args[i], n2b.args[i]);
+      });
+      // Check that the brackets of the list match
+      if (result && n1b.lbrk === n2b.lbrk || n1b.rbrk === n2b.rbrk) {
+        result = true;
+      } else {
+        result = false;
+      }
+      return inverseResult ? !result : result;
+    }
     var vp1 = variablePart(n1b);
     var vp2 = variablePart(n2b);
-    if (vp1 && vp2 && this.intern(vp1) === this.intern(vp2)) {
+    if (vp1 && vp2 && Ast.intern(vp1) === Ast.intern(vp2)) {
       // The variable part is the same, so factor out of the comparison.
       n1b = coeff(n1b);
       n2b = coeff(n2b);
     }
-    var nid1 = this.intern(n1b);
-    var nid2 = this.intern(n2b);
+    var nid1 = Ast.intern(n1b);
+    var nid2 = Ast.intern(n2b);
     if (nid1 === nid2 && n1t === undefined && n2t === undefined &&
         (op === undefined || isEqualsComparison(op))) {
         result = true;
@@ -4149,22 +4152,6 @@
     assert(v2 !== null || isComparison(n2b.op), message(2005));
     assert(n2b.op !== Model.PM || v2t !== null, message(2005));
     Assert.clearLocation();
-    // If we have two arrays, then compare their elements
-    if (v1 instanceof Array && v2 instanceof Array) {
-      assert(n1t === undefined && n2t === undefined, message(2007));
-      // Check that the brackets of the list match
-      if (n1b.lbrk !== n2b.lbrk || n1b.rbrk !== n2b.rbrk) {
-        return false;
-      }
-      // Check that the corresponding elements of each list are equal.
-      return every(v1, function (a, i) {
-        var b = v2[i].multiply(baseUnitConversion(n1b.args[i], n2b.args[i]));
-        a = a.setScale(scale, BigDecimal.ROUND_HALF_UP);
-        b = b.setScale(scale, BigDecimal.ROUND_HALF_UP);
-        var result = a.compareTo(b) === 0;
-        return inverseResult ? !result : result;
-      });
-    }
     // Not lists so check values and units. At this point the values reflect
     // the relative magnitudes of the units.
     if (v1 !== null && v2 !== null) {
@@ -4373,12 +4360,29 @@
   // mathematically equivalent if they are literally equal after simplification
   // and normalization.
   Model.fn.equivSymbolic = function (n1, n2, resume) {
-    n1 = normalize(scale(simplify(expand(normalize(n1)))));
-    n2 = normalize(scale(simplify(expand(normalize(n2)))));
-    var nid1 = Ast.intern(n1);
-    var nid2 = Ast.intern(n2);
+    if (option("compareSides") && isComparison(n1.op) && n1.op === n2.op) {
+      var n1l = n1.args[0];
+      var n1r = n1.args[1];
+      var n2l = n2.args[0];
+      var n2r = n2.args[1];
+      n1l = normalize(scale(simplify(expand(normalize(n1l)))));
+      n2l = normalize(scale(simplify(expand(normalize(n2l)))));
+      var nid1l = Ast.intern(n1l);
+      var nid2l = Ast.intern(n2l);
+      n1r = normalize(scale(simplify(expand(normalize(n1r)))));
+      n2r = normalize(scale(simplify(expand(normalize(n2r)))));
+      var nid1r = Ast.intern(n1r);
+      var nid2r = Ast.intern(n2r);
+      var result = nid1l === nid2l && nid1r === nid2r;
+    } else {
+      n1 = normalize(scale(simplify(expand(normalize(n1)))));
+      n2 = normalize(scale(simplify(expand(normalize(n2)))));
+      var nid1 = Ast.intern(n1);
+      var nid2 = Ast.intern(n2);
+      var result = nid1 === nid2;
+    }
     var inverseResult = option("inverseResult");
-    if (nid1 === nid2) {
+    if (result) {
       return inverseResult ? false : true;
     }
     return inverseResult ? true : false;

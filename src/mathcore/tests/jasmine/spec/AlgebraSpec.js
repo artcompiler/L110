@@ -207,6 +207,8 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["1/2=1/2", "2/4=2/4"],
+          ["x/2=x/2", "2x/4=2x/4"],
           ["(2x+y)(x+3z)", "2x^2+xy+6xz+3yz"],
           ["(1+x)^{4}", "(1+x)^{4}"],
           ["(1+x)^{4}", "(1+x)(1+x)(1+x)(1+x)"],
@@ -1156,6 +1158,57 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["3 \\gt x \\ge 2", "2 \\le x \\lt 3"],
+          ["3 \\gt x \\ge 1", "1 \\le x \\lt 3"],
+          ["3 \\ge x \\ge -1", "-1 \\le x \\le 3"],
+        ]);
+      });
+      describe("equivValue", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivValue",
+                value: v[0]
+              }, v[1])).toBe(true);
+            });
+          });
+        }
+        run([
+          ["3 \\gt 2 \\ge 1", "1 \\le 2 \\lt 3"],
+          ["3 \\ge 2 \\ge -1", "-1 \\le 2 \\le 3"],
+        ]);
+      });
+      describe("equivLiteral", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivLiteral",
+                value: v[0]
+              }, v[1])).toBe(true);
+            });
+          });
+        }
+        run([
+          ["-1 \\le x \\le 3", "-1 \\le x \\le 3"],
+        ]);
+      });
+      describe("equivSymbolic", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivSymbolic",
+                value: v[0]
+              }, v[1])).toBe(true);
+            });
+          });
+        }
+        run([
+          ["1+2=3=4-1=5-2", "3=3=3=3"],
+          ["1<2<3<4<5", "5>4>3>2>1"],
+          ["1<x<2<y<3", "3>y>2>x>1"],
           ["20>2+d", "2+d<20"],
           ["20>2+d", "d+2<20"],
           ["3.06\\div3=1.02", "3.06\\div3=1.02"],
@@ -1332,6 +1385,44 @@ define(["mathcore"], function (MathCore) {
             ["x(x+\\frac{3}{12})", "x^2+\\frac{x}{4}"],
             ["x(x+\\frac{3}{12})", "x^2+\\frac{1}{4}x"],
             ["x(x+\\frac{3}{12})", "x^2+\\frac{x}{4}"]
+        ]);
+      });
+      describe("equivSymbolic compareSides=true", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivSymbolic",
+                options: {
+                  compareSides: true
+                },
+                value: v[0]
+              }, v[1])).toBe(true);
+            });
+          });
+        }
+        run([
+          ["1/2=1/2", "2/4=2/4"],
+          ["x>y", "\\frac{2x}{2}>y"],
+        ]);
+      });
+      describe("NOT equivSymbolic compareSides=true", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivSymbolic",
+                options: {
+                  compareSides: true
+                },
+                value: v[0]
+              }, v[1])).toBe(false);
+            });
+          });
+        }
+        run([
+          ["1/2=1/2", "1=1"],
+          ["x>y", "2x>y"],
         ]);
       });
     });

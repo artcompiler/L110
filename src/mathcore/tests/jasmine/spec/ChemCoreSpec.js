@@ -126,6 +126,9 @@ define(["chemcore"], function (ChemCore) {
           });
         }
         run([
+          ["3Zn^{2+}(aq)+2(PO_4)^{3-}(aq)\\to  Zn_3(PO_4)_2(s)",
+           "3Zn^{2+}(aq)+2(PO_4)^{3-}(aq)\\to  Zn_3(PO_4)_2(s)"],
+          ["Cu^{2+}(aq)+2OH^-(aq)\\to Cu(OH)_2(s)", "Cu^{2+}(aq)+2OH^-(aq)\\to Cu(OH)_2(s)"],
           ["M(C):M(H)", "12.011g:1.008g"],
           ["M(C):M(H_2)", "12.011g:1.008g*2"],
         ]);
@@ -209,6 +212,10 @@ define(["chemcore"], function (ChemCore) {
           });
         }
         run([
+          ["Cu^{2+}(aq)+2OH^-(aq)\\to Cu(OH)_2(s)", "Cu^{2+}(aq)+2OH^-(aq)\\to Cu(OH)_2(s)"],
+          ["M_r^-", "M_r^-"],
+          ["K_a=\\frac{\\left[M_r^-\\right]\\left[H_3O^+\\right]}{\\left[HM_r\\right]}",
+           "K_a=\\frac{\\left[M_r^-\\right]\\left[H_3O^+\\right]}{\\left[HM_r\\right]}"],
           ["Mg^2+(aq)+S^{2-}(aq)\\longrightarrow MgS(s)", "Mg^2+(aq)+S^{2-}(aq)\\longrightarrow MgS(s)"],
           ["Cr_2O_7^{2-}(aq)+14H^+(aq)+6^{e-}\\longrightarrow 2Cr^{3+}(aq)+7H_2O(l)", "Cr_2O_7^{2-}(aq)+14H^+(aq)+6^{e-}\\longrightarrow 2Cr^{3+}(aq)+7H_2O(l)"],
           ["Cr_2O_7^{2-}(aq)+14H^+(aq)+6^{e-}\\ \\longrightarrow\\ 2Cr^{3+}(aq)+7H_2O(l)", "Cr_2O_7^{2-}(aq)+14H^+(aq)+6^{e-}\\ \\longrightarrow\\ 2Cr^{3+}(aq)+7H_2O(l)"],

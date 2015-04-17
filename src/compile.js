@@ -30,6 +30,7 @@ var transformer = function() {
     "INVERSE-RESULT": inverseResult,
     "DECIMAL-PLACES": decimalPlaces,
     "ALLOW-DECIMAL": allowDecimal,
+    "COMPARE-SIDES": compareSides,
     "SET-DECIMAL-SEPARATOR": setDecimalSeparator,
     "SET-THOUSANDS-SEPARATOR": setThousandsSeparator,
     "FIELD": field,
@@ -457,6 +458,13 @@ var transformer = function() {
 
   function allowDecimal(node, options, resume) {
     option(options, "allowDecimal", true);
+    visit(node.elts[0], options, function (err, val) {
+      resume(err, val);
+    });
+  }
+
+  function compareSides(node, options, resume) {
+    option(options, "compareSides", true);
     visit(node.elts[0], options, function (err, val) {
       resume(err, val);
     });
