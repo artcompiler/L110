@@ -154,7 +154,7 @@ exports.viewer = (function () {
     document.getElementById('graff-view').replaceChild(old, myCanvas);
     return '<html><img class="thumbnail" src="' + dataURL + '"/></html>';
 */
-    return '<html>' + mySVG.replace(/\\/g, "\\\\") + '</html>';
+    return '<html>' + mySVG + '</html>';
   }
   return {
     update: update,
