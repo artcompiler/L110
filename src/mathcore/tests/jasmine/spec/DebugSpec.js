@@ -115,23 +115,38 @@ var forEach = function forEach(array, fun) {
 define(["mathcore"], function (MathCore) {
   describe("Math Core", function() {
     describe("Debug", function() {
-      describe("equivSymbolic compareSides=true", function() {
+      describe("equivSymbolic", function() {
         function run(tests) {
           forEach(tests, function (v, i) {
             it(v[0] + " | " + v[1], function() {
               expect(MathCore.evaluate({
                 method: "equivSymbolic",
-                options: {
-                  compareSides: true
-                },
-                value: v[0]
+                value: v[0],
               }, v[1])).toBe(true);
             });
           });
         }
         run([
-          ["1/2=1/2", "2/4=2/4"],
-          ["x>y", "\\frac{2x}{2}>y"],
+          ["\\sqrt[2]{9}", "3"],
+          ["\\sqrt[3]{8}", "2"],
+          ["\\sqrt[4]{16}", "2"],
+          ["\\sqrt[4]{x^4}", "x"],
+          ["\\sqrt[4]{x^8}", "x^2"],
+        ]);
+      });
+      describe("equivLiteral", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivLiteral",
+                value: v[0],
+              }, v[1])).toBe(true);
+            });
+          });
+        }
+        run([
+          ["\\sqrt[2]{9}", "\\sqrt[2]{9}"],
         ]);
       });
     });

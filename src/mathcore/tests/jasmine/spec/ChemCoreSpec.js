@@ -126,6 +126,7 @@ define(["chemcore"], function (ChemCore) {
           });
         }
         run([
+          ["A_{x_1}", "A_{x_1}"],
           ["3Zn^{2+}(aq)+2(PO_4)^{3-}(aq)\\to  Zn_3(PO_4)_2(s)",
            "3Zn^{2+}(aq)+2(PO_4)^{3-}(aq)\\to  Zn_3(PO_4)_2(s)"],
           ["Cu^{2+}(aq)+2OH^-(aq)\\to Cu(OH)_2(s)", "Cu^{2+}(aq)+2OH^-(aq)\\to Cu(OH)_2(s)"],
@@ -212,6 +213,7 @@ define(["chemcore"], function (ChemCore) {
           });
         }
         run([
+          ["x^{4+}", "x^{4+}"],
           ["Cu^{2+}(aq)+2OH^-(aq)\\to Cu(OH)_2(s)", "Cu^{2+}(aq)+2OH^-(aq)\\to Cu(OH)_2(s)"],
           ["M_r^-", "M_r^-"],
           ["K_a=\\frac{\\left[M_r^-\\right]\\left[H_3O^+\\right]}{\\left[HM_r\\right]}",
