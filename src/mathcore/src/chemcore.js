@@ -66,10 +66,10 @@ var ChemCore = (function () {
     "cwt": { type: "unit", value: 112, base: "lb" },
     "t": { type: "unit", value: 2240, base: "lb" },
     "$": { type: "unit", value: u, base: "$" },
+    "mol": { type: "unit", value: u, base: "mol" },
     "\\radian": u,
     "\\degree": Math.PI / 180,
     "\\pi": Math.PI,
-    "mol": u,
     "aq": u, // only so it will be recognized as a single identifier
     "Ac": {"name": "Actinium", "num": "89", "mass": "227"},
     "Al": {"name": "Aluminum", "num": "13", "mass": "26.9815385"},

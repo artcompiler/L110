@@ -201,6 +201,28 @@ define(["chemcore"], function (ChemCore) {
       });
     });
     describe("Expressions", function() {
+      describe("equivLiteral ignoreOrder=true", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(ChemCore.evaluate({
+                method: "equivLiteral",
+                options: {
+                  ignoreOrder: true,
+                },
+                value: v[0]
+              }, v[1])).toBe(true);
+            });
+          });
+        }
+        run([
+          ["C^{2}+H\\ \\rightarrow\\ HC^2", "C^2+H\\ \\rightarrow\\ HC^2"],
+          ["HC^2\\ \\rightarrow\\ HC^2", "HC^2\\ \\rightarrow\\ HC^2"], 
+          ["HC^{2}\\ \\rightarrow\\ HC^{2}", "C^{2}H\\ \\rightarrow\\ HC^{2}"], 
+          ["H+C^2\\ \\rightarrow\\ HC^2", "C^{2}+H\\ \\rightarrow\\ HC^2"], 
+          ["H+C^2\\ \\rightarrow\\ HC^2", "C^2+H\\ \\rightarrow\\ HC^2"], 
+        ]);
+      });
       describe("equivLiteral", function() {
         function run(tests) {
           forEach(tests, function (v, i) {
@@ -213,6 +235,9 @@ define(["chemcore"], function (ChemCore) {
           });
         }
         run([
+          ["x_1^{4+}", "x_1^{4+}"],
+          ["x\\atomic{1}{4+}", "x_1^{4+}"],
+          ["x\\polyatomic{4+}{1}", "x_1^{4+}"],
           ["x^{4+}", "x^{4+}"],
           ["Cu^{2+}(aq)+2OH^-(aq)\\to Cu(OH)_2(s)", "Cu^{2+}(aq)+2OH^-(aq)\\to Cu(OH)_2(s)"],
           ["M_r^-", "M_r^-"],
@@ -252,6 +277,23 @@ define(["chemcore"], function (ChemCore) {
           });
         };
         run([
+          ["mol", "1.08\\ mol"],
+        ]);
+      });
+      describe("NOT isUnit", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(ChemCore.evaluate({
+                method: "isUnit",
+                value: v[0]
+              }, v[1])).toBe(false);
+            });
+          });
+        };
+        run([
+          ["mol", "1.08"],
+          ["mol", "1.08cm"],
         ]);
       });
     });

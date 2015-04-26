@@ -114,6 +114,7 @@ var forEach = function forEach(array, fun) {
 };
 define(["mathcore"], function (MathCore) {
   describe("Math Core", function() {
+<<<<<<< HEAD
     describe("Debug", function() {
       describe("equivSymbolic", function() {
         function run(tests) {
@@ -150,5 +151,7 @@ define(["mathcore"], function (MathCore) {
         ]);
       });
     });
+=======
+>>>>>>> bb9be5286602e24c00905214cc74f3db338faf73
   });
 });

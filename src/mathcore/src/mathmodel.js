@@ -514,95 +514,6 @@
       });
     }
 
-    // Compute the coefficient of an expression. The result of 'coeff' and
-    // 'variablePart' are complements. Their product are equivSymbolic with
-    // the original expression.
-    function coeff(root) {
-      var env = Model.env;
-      if (!root || !root.args) {
-        assert(false, "Should not get here. Illformed node.");
-        return nodeZero;
-      }
-      return visit(root, {
-        name: "coeff",
-        exponential: function (node) {
-          var base = mathValue(node.args[0], true);
-          var expo = mathValue(node.args[1], true);
-          if (base !== null && expo !== 0 && expo !== null) {
-            return node;
-          } else {
-            return nodeOne;
-          }
-        },
-        multiplicative: function (node) {
-          var args = node.args;
-          var val = bigOne;
-          var ff = [];
-          forEach(args, function (n) {
-            var d = degree(n);
-            var mv = mathValue(n, true);
-            if (mv !== null) {
-              if (isOne(mv)) {
-                // got variable or one, skip it
-              } else if (isZero(mv)) {
-                ff.push(nodeZero);
-              } else {
-                ff.push(n);
-              }
-            } // otherwise skip it
-          });
-          if (ff.length === 0) {
-            return nodeOne;
-          } else if (ff.length === 1) {
-            return ff[0];
-          }
-          return multiplyNode(ff);
-        },
-        additive: function (node) {
-          var mv = mathValue(node, true);
-          if (mv !== null) {
-            node = numberNode(mv);
-          } else {
-            node = nodeOne;
-          }
-          return node;
-        },
-        unary: function(node) {
-          // If it's a constant, it's a coefficient. Otherwise, it's not.
-          switch (node.op) {
-          case Model.M:
-            return null;
-            break;
-          default:
-            var mv = mathValue(node.args[0], true);
-            if (mv !== null) {
-              mv = mathValue(node, env);
-              if (mv !== null) {
-                node = numberNode(mv);
-              } else {
-                node = null;
-              }
-            } else {
-              node = nodeOne;
-            }
-            return node;
-          }
-        },
-        numeric: function(node) {
-          return node;
-        },
-        variable: function(node) {
-          return nodeOne;
-        },
-        comma: function(node) {
-          return null;
-        },
-        equals: function(node) {
-          return null;
-        },
-      });
-    }
-
     // Compute the unique variables of an expression.
     function variables(root) {
       if (!root || !root.args) {
@@ -1314,7 +1225,7 @@
                     node.args[i] = n1;
                     node.args[i + 1] = n0;
                   }
-                } else if (isLessThan(coeff(n0), coeff(n1))) {
+                } else if (isLessThan(constantPart(n0), constantPart(n1))) {
                   node.args[i] = n1;
                   node.args[i + 1] = n0;
                 }
@@ -1324,7 +1235,7 @@
                     node.args[i] = n1;
                     node.args[i + 1] = n0;
                   }
-                } else if (isLessThan(coeff(n0), coeff(n1))) {
+                } else if (isLessThan(constantPart(n0), constantPart(n1))) {
                   node.args[i] = n1;
                   node.args[i + 1] = n0;
                 }
@@ -1382,7 +1293,7 @@
                   node.args[i] = n1;
                   node.args[i + 1] = n0;
                 }
-              } else if (isLessThan(coeff(n0), coeff(n1))) {
+              } else if (isLessThan(constantPart(n0), constantPart(n1))) {
                 // Keep last
                 node.args[i] = n1;
                 node.args[i + 1] = n0;
@@ -1559,10 +1470,10 @@
       switch (node.op) {
       case Model.ADD:
         tt = terms(node);
-        c = coeff(tt[0]);
+        c = constantPart(tt[0]);
         break;
       default:
-        c = coeff(node);
+        c = constantPart(node);
         break;
       }
       return c;
@@ -2117,8 +2028,8 @@
           function fold(lnode, rnode) {
             var ldegr = degree(lnode);
             var rdegr = degree(rnode);
-            var lcoeff = coeff(lnode);
-            var rcoeff = coeff(rnode);
+            var lcoeff = constantPart(lnode);
+            var rcoeff = constantPart(rnode);
             if (isZero(lcoeff)) {
               return rnode;
             }
@@ -2127,8 +2038,6 @@
             }
             if (ldegr === rdegr) {
               // Have two terms of the same degree
-              //var lcoeff = coeff(lnode);  // BigD
-              //var rcoeff = coeff(rnode);
               var lvpart = variablePart(lnode);
               var rvpart = variablePart(rnode);
               // combine terms with like factors
@@ -2218,10 +2127,10 @@
             var rvars = variables(rnode);
             var lvpart = variablePart(lnode);
             var rvpart = variablePart(rnode);
-            var lcoeff = coeff(lnode);   // BigD
-            var rcoeff = coeff(rnode);
-            var lcoeffmv = mathValue(lcoeff);
-            var rcoeffmv = mathValue(rcoeff);
+            var lcoeff = constantPart(lnode);
+            var rcoeff = constantPart(rnode);
+            var lcoeffmv = mathValue(lcoeff, true);
+            var rcoeffmv = mathValue(rcoeff, true);
             if (ldegr === 0 && isZero(lcoeffmv) ||
                 rdegr === 0 && isZero(rcoeffmv)) {
               return nodeZero;
@@ -2566,6 +2475,12 @@
                 } else {
                   if (ff.length === 0) assert(false);
                   return [multiplyNode(ff), base];
+                }
+              } else {
+                var b = pow(bmv, emv);
+                if (b !== null) {
+                  // We have an integer or decimal and allowDecimal=true
+                  return numberNode(b);
                 }
               }
             } else if (op === Model.LOG) {
@@ -3285,7 +3200,7 @@
                   }
                 } else if (!dontExpandPowers && expo.op === Model.MUL) {
                   // x^(2y) -> x^y*x^y
-                  var c = coeff(expo);
+                  var c = constantPart(expo);
                   var cmv = mathValue(c);
                   var vp = variablePart(expo);
                   if (vp !== null) {
@@ -3541,6 +3456,14 @@
       return visit(root, {
         name: "scale",
         exponential: function (node) {
+          var mv;
+          if ((mv = mathValue(node, true))) {
+            // See if brute force yields valid value.
+            var n = numberNode(mv, true);
+            if (option("allowDecimal") || isInteger(n)) {
+              return n;
+            }
+          }
           var args = [];
           forEach(node.args, function (n) {
             args.push(scale(n));
@@ -3548,6 +3471,14 @@
           return newNode(node.op, args);
         },
         multiplicative: function (node) {
+          var mv;
+          if ((mv = mathValue(node, true))) {
+            // See if brute force yields valid value.
+            var n = numberNode(mv, true);
+            if (option("allowDecimal") || isInteger(n)) {
+              return n;
+            }
+          }
           var args = [];
           forEach(node.args, function (n) {
             args.push(scale(n));
@@ -3555,6 +3486,14 @@
           return newNode(node.op, args);
         },
         additive: function (node) {
+          var mv;
+          if ((mv = mathValue(node, true))) {
+            // See if brute force yields valid value.
+            var n = numberNode(mv, true);
+            if (option("allowDecimal") || isInteger(n)) {
+              return n;
+            }
+          }
           var args = [];
           forEach(node.args, function (n) {
             args.push(scale(n));
@@ -3562,6 +3501,14 @@
           return newNode(node.op, args);
         },
         unary: function(node) {
+          var mv;
+          if ((mv = mathValue(node, true))) {
+            // See if brute force yields valid value.
+            var n = numberNode(mv, true);
+            if (option("allowDecimal") || isInteger(n)) {
+              return n;
+            }
+          }
           return unaryNode(node.op, [scale(node.args[0])]);
         },
         numeric: function(node) {
@@ -3768,7 +3715,7 @@
             i--;
           }
         }
-        cc[d] = cc[d] + toNumber(mathValue(coeff(v)));
+        cc[d] = cc[d] + toNumber(mathValue(constantPart(v)));
       });
       if (notPolynomial || variables(node).length > 1) {
         return null;
@@ -3858,7 +3805,6 @@
     this.normalizeLiteral = normalizeLiteral;
     this.normalizeSyntax = normalizeSyntax;
     this.degree = degree;
-    this.coeff = coeff;
     this.constantPart = constantPart;
     this.variables = variables;
     this.variablePart = variablePart;
@@ -3877,10 +3823,6 @@
   var visitor = new Visitor();
   function degree(node, notAbsolute) {
     return visitor.degree(node, notAbsolute);
-  }
-
-  function coeff(node, name) {
-    return visitor.coeff(node, name);
   }
 
   function constantPart(node) {
@@ -4135,8 +4077,8 @@
     var vp2 = variablePart(n2b);
     if (vp1 && vp2 && Ast.intern(vp1) === Ast.intern(vp2)) {
       // The variable part is the same, so factor out of the comparison.
-      n1b = coeff(n1b);
-      n2b = coeff(n2b);
+      n1b = constantPart(n1b);
+      n2b = constantPart(n2b);
     }
     var nid1 = Ast.intern(n1b);
     var nid2 = Ast.intern(n2b);
@@ -4483,9 +4425,12 @@
     if (!(u2 instanceof Array)) {
       u2 = [u2];
     }
-    var result = every(u2, function (v) {
-      return indexOf(u1, v) >= 0;
-    });
+    var result = false;
+    if (u2.length) {
+      result = every(u2, function (v) {
+        return indexOf(u1, v) >= 0;
+      });
+    }
     return inverseResult ? !result : result;
   }
 
