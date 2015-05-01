@@ -691,6 +691,7 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["\\log_216", "4"],
           ["\\log_2(16)", "4"],
           ["\\log_2(1/2)", "-1"],
         ]);
@@ -710,13 +711,13 @@ define(["mathcore"], function (MathCore) {
           ["\\log_e 10", "\\log_e 10"],
           ["\\log 10", "\\log_e 10"],
           ["\\log 10", "\\log 10"],
-          ["\\log_10 10", "\\lg 10"],
+          ["\\log_{10} 10", "\\lg 10"],
           ["\\lg x", "\\lg x"],
           ["\\ln \\theta", "\\ln \\theta"],
           ["\\log_e 10", "\\log_e 10"],
           ["\\log 10", "\\log_e 10"],
           ["\\log 10", "\\log 10"],
-          ["\\log_10 10", "\\lg 10"],
+          ["\\log_{10} 10", "\\lg 10"],
         ]);
       });
       describe("NOT equivLiteral", function() {
@@ -763,7 +764,7 @@ define(["mathcore"], function (MathCore) {
           ["\\ln(10*20)", "\\ln(10)+\\ln(20)"],
           ["\\ln(xy)", "\\ln(x)+\\ln(y)"],
           ["10^(x+y)", "10^x*10^y"],
-          ["\\log_10(x)", "\\frac{\\log_e(x)}{\\log_e(10)}"],
+          ["\\log_{10}(x)", "\\frac{\\log_e(x)}{\\log_e(10)}"],
           ["5x \\div (5x)", "1"],
         ]);
       });

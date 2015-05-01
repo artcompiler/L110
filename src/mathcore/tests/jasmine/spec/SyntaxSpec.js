@@ -285,7 +285,7 @@ define(["mathcore"], function (MathCore) {
           [["\\format{\\variable{0}}\\format{\\variable{1}}"], "xy"],
           [["\\format{\\scientific}"], "1.0\\times10^2"],
           [["\\format{\\scientific{1}}"], "1.0\\times10^2"],
-          [["\\format{\\scientific{4}}"], "1.0123\\times10^10"],
+          [["\\format{\\scientific{4}}"], "1.0123\\times10^{10}"],
           [["\\format{\\number}"], "1"],
           [["\\format{\\number}"], "221.23"],
           [["\\format{\\number{0}}"], "1"],

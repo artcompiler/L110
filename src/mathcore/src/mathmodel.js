@@ -4025,9 +4025,23 @@
     var v2t = bigZero;
     var args = [];
     if (isComparison(n1.op) && isComparison(n2.op)) {
-      var v1 = Model.create(n1.args[0]).equivValue(n1.args[1], n1.op);
-      var v2 = Model.create(n2.args[0]).equivValue(n2.args[1], n2.op);
-      var result = v1 === v2;
+      var n1l = n1.args[0];
+      var n1r = n1.args[1];
+      var n2l = n2.args[0];
+      var n2r = n2.args[1];
+      if (option("compareSides")) {
+        // 10=10 20/2=5*2
+        if (n1.op !== n2.op) {
+          return false;
+        }
+        var v1 = equivValue(n1l, n2l);
+        var v2 = equivValue(n1r, n2r);
+        var result = v1 && v2;
+      } else {
+        var v1 = Model.create(n1l).equivValue(n1r, n1.op);
+        var v2 = Model.create(n2l).equivValue(n2r, n2.op);
+        var result = v1 === v2;
+      }
       return inverseResult ? !result : result;
     }
     if (n1.op === Model.PM && n1.args.length > 1) {
@@ -4360,36 +4374,59 @@
     return inverseResult ? !result : result;
   }
 
-  Model.fn.isExpanded = function (n1) {
-    var dontExpandPowers = option("dontExpandPowers", true);
-    n1 = normalize(n1);
-    var nd1 = n1;
-    var nd2 = normalize(expand(normalize(n1)));
-    var nid1 = Ast.intern(nd1);
-    var nid2 = Ast.intern(nd2);
-    option("dontExpandPowers", dontExpandPowers);
-    var inverseResult = option("inverseResult");
-    if (nid1 === nid2 && !hasLikeFactors(n1)) {
-      // hasLikeFactors: x*x != x^2
-      return inverseResult ? false : true;
-    }
-    return inverseResult ? true : false;
-  }
-
-  Model.fn.isSimplified = function (node, resume) {
+  Model.fn.isExpanded = function isExpanded(node) {
+    var n1, n2, nid1, nid2, result;
     var dontExpandPowers = option("dontExpandPowers", true);
     var dontFactorDenominators = option("dontFactorDenominators", true);
     var dontFactorTerms = option("dontFactorTerms", true);
     var inverseResult = option("inverseResult");
-    var n1 = normalize(node);
-    var n2 = normalize(simplify(expand(normalize(node))));
-    var nid1 = Ast.intern(n1);
-    var nid2 = Ast.intern(n2);
+    if (node.op === Model.COMMA) {
+      result = every(node.args, function (n) {
+        return isExpanded(n);
+      });
+    } else if (isComparison(node.op)) {
+      result = isExpanded(node.args[0]) && isExpanded(node.args[1]);
+    } else {
+      n1 = normalize(node);
+      n2 = normalize(expand(normalize(node)));
+      nid1 = Ast.intern(n1);
+      nid2 = Ast.intern(n2);
+      option("dontExpandPowers", dontExpandPowers);
+      var inverseResult = option("inverseResult");
+      if (nid1 === nid2 && !hasLikeFactors(n1)) {
+        // hasLikeFactors: x*x != x^2
+        result = true;
+      } else {
+        result = false;
+      }
+    }
+    return inverseResult ? !result : result;
+  }
+
+  Model.fn.isSimplified = function (node, resume) {
+    var n1, n2, nid1, nid2, result;
+    var dontExpandPowers = option("dontExpandPowers", true);
+    var dontFactorDenominators = option("dontFactorDenominators", true);
+    var dontFactorTerms = option("dontFactorTerms", true);
+    var inverseResult = option("inverseResult");
+    if (node.op === Model.COMMA) {
+      result = every(node.args, function (n) {
+        return isSimplified(n);
+      });
+    } else if (isComparison(node.op)) {
+      result = isSimplified(node.args[0]) && isSimplified(node.args[1]);
+    } else {
+      n1 = normalize(node);
+      n2 = normalize(simplify(expand(normalize(node))));
+      nid1 = Ast.intern(n1);
+      nid2 = Ast.intern(n2);
+      result = nid1 === nid2;
+    }
     option("dontExpandPowers", dontExpandPowers);
     option("dontFactorDenominators", dontFactorDenominators);
     option("dontFactorTerms", dontFactorTerms);
-    if(nid1 === nid2) {
-      return inverseResult ? false : true
+    if (result) {
+      return inverseResult ? false : true;
     }
     return inverseResult ? true : false
 /*

@@ -236,7 +236,7 @@ define(["mathcore"], function (MathCore) {
           ["a^(1/2)a^(1/3)", "a^(5/6)"],
           ["x^4/x^4", "x^0"],
           ["5^3/5^7", "1/625"],
-          ["(x^3/y^2)^4", "x^12/y^8"],
+          ["(x^3/y^2)^4", "x^{12}/y^8"],
           ["\\frac{a^2b^6}{a^5b}", "b^5/a^3"],
           ["x^4/x^7", "x^-3"],
           ["3x^2y^3*4xy^2", "12x^3y^5"],
@@ -613,6 +613,10 @@ define(["mathcore"], function (MathCore) {
           });
         };
         run([
+          ["x=y=z=10"],
+          ["219+3x=10"],
+          ["x>x^2"],
+          ["3>2>1>0"],
           ["219+3x"],
           ["219+3c"],
           ["3x+219"],
@@ -644,6 +648,7 @@ define(["mathcore"], function (MathCore) {
           });
         };
         run([
+          ["x*x>10"],
           ["10x(1+x)"],
           ["(x+2)^2"],
           ["(x+2)^-2"],
@@ -1009,6 +1014,13 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["x=y=z=10"],
+          ["219+3x=10"],
+          ["x>x^2"],
+          ["3>2>1>0"],
+          ["219+3c"],
+          ["3x+219"],
+          ["3c+219"],
           ["xy^2-3x+2y"],
           ["x+y^2"],
           ["x+y-1"],
@@ -1030,6 +1042,7 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["x+x=2x"],
           ["x^4+x^4"],
           ["x^3+2x^2+4x^2+13x+10"],
           ["(x^3-2)(x^2-1)"],
@@ -1392,6 +1405,45 @@ define(["mathcore"], function (MathCore) {
             ["x(x+\\frac{3}{12})", "x^2+\\frac{x}{4}"],
             ["x(x+\\frac{3}{12})", "x^2+\\frac{1}{4}x"],
             ["x(x+\\frac{3}{12})", "x^2+\\frac{x}{4}"]
+        ]);
+      });
+      describe("equivValue compareSides=true", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivValue",
+                options: {
+                  compareSides: true
+                },
+                value: v[0]
+              }, v[1])).toBe(true);
+            });
+          });
+        }
+        run([
+          ["1/2=1/2", "2/4=2/4"],
+          ["10=10", "20/2=5*2"],
+          ["20>10", "10*2>10"],
+        ]);
+      });
+      describe("NOT equivValue compareSides=true", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivValue",
+                options: {
+                  compareSides: true
+                },
+                value: v[0]
+              }, v[1])).toBe(false);
+            });
+          });
+        }
+        run([
+          ["20>10", "10*2>=10"],
+          ["1/2=1/2", "2=2"],
         ]);
       });
       describe("equivSymbolic compareSides=true", function() {
