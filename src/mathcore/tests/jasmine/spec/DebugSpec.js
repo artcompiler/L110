@@ -112,7 +112,7 @@ var forEach = function forEach(array, fun) {
     }
   }
 };
-define(["mathcore"], function (MathCore) {
+define(["mathcore"], function (ChemCore) {
   describe("Math Core", function() {
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -160,3 +160,4 @@ define(["mathcore"], function (MathCore) {
 >>>>>>> d42bb4d6896051365617e37e31c8669121425687
   });
 });
+

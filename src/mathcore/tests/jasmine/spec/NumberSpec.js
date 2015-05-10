@@ -943,23 +943,6 @@ define(["mathcore"], function (MathCore) {
         run([
           ["\\frac{1}{2}\\div3=16"],
           ["16=12"],
-          ["x < 0.5x + 0.5x"],
-        ]);
-      });
-      describe("isTrue evaluateVerbose with error", function() {
-        function run(tests) {
-          forEach(tests, function (v, i) {
-            it(v[0], function() {
-              var result = MathCore.evaluateVerbose({
-                method: "isTrue",
-              }, v[0]);
-              expect(result.result).not.toBe(true);
-              expect(result.location).toEqual('user');
-            });
-          });
-        }
-        run([
-          ["x>1"],
         ]);
       });
       describe("isUnit", function() {

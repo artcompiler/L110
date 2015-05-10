@@ -108,6 +108,36 @@ var forEach = function forEach(array, fun) {
 define(["mathcore"], function (MathCore) {
   describe("Math Core", function() {
     describe("Algebra : Quadratic", function() {
+      describe("isTrue", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0], function() {
+              expect(MathCore.evaluate({
+                method: "isTrue",
+              }, v[0])).toBe(true);
+            });
+          });
+        }
+        run([
+          ["3x+y^2=3x+y^2"],
+        ]);
+      });
+      describe("NOT isTrue", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0], function() {
+              expect(MathCore.evaluate({
+                method: "isTrue",
+              }, v[0])).toBe(false);
+            });
+          });
+        }
+        run([
+          ["3x+y^2=4x+y^2"],
+          ["x>1"],
+          ["x < 0.5x + 0.5x"],
+        ]);
+      });
       describe("equivLiteral", function() {
         function run(tests) {
           forEach(tests, function (v, i) {
@@ -207,6 +237,15 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["2h=5", "3*2h=3*5"],
+          ["2h=5", "2hm=5m"],
+          ["2h=5", "2hm/s^2=5m/s^2"],
+          ["2h=5", "$2h=$5"],
+          ["2h=5", "h=\\frac{5}{2}"],
+          ["2h=5", "h=\\frac{$5}{$2}"],
+          ["2h=5", "h=$5 \\div $2"],
+          ["2h=5", "h=$5\\div($2)"],
+          ["13.5h=20.25", "h=\\frac{20.25}{13.5}"],
           ["\\sqrt[2]{9}", "3"],
           ["\\sqrt[3]{8}", "2"],
           ["\\sqrt[4]{16}", "2"],
@@ -419,25 +458,6 @@ define(["mathcore"], function (MathCore) {
         run([
           ["\\frac{1}{9}\\div\\frac{1}{18}=\\frac{18}{9}","\\frac{1}{9}\\div\\frac{1}{18}=2"],
           ["y=\\frac{1}{2}x+1", "y=0.5x+1"],
-        ]);
-      });
-      describe("NOT equivSymbolic allowDecimal=true decimalPlace=20", function() {
-        function run(tests) {
-          forEach(tests, function (v, i) {
-            it(v[0] + " | " + v[1], function() {
-              expect(MathCore.evaluate({
-                method: "equivSymbolic",
-                options: {
-                  allowDecimal: true,
-                  decimalPlaces: 20,
-                },
-                value: v[0]
-              }, v[1])).toBe(false);
-            });
-          });
-        }
-        run([
-          ["\\frac{1}{9}\\div\\frac{1}{18}=\\frac{18}{9}","\\frac{1}{9}\\div\\frac{1}{18}=2"],
         ]);
       });
       describe("equivSymbolic", function() {

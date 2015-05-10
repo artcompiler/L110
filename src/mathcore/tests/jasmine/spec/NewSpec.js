@@ -22,11 +22,15 @@ if (TEST_LIB) {
   requirejs.config({
     baseUrl: setBaseUrl,
     paths: {
-      'mathcore': 'mathcore'
+      'mathcore': 'mathcore',
+      'chemcore': 'chemcore'
     },
     shim: {
       'mathcore': {
         exports: 'MathCore'
+      },
+      'chemcore': {
+        exports: 'ChemCore'
       }
     }
   });
@@ -41,7 +45,8 @@ if (TEST_LIB) {
       'model': '../lib/model/src/model',
       'bigdecimal': '../lib/BigDecimal',
       'mathmodel': 'mathmodel',
-      'mathcore': 'mathcore'
+      'mathcore': 'mathcore',
+      'chemcore': 'chemcore'
     },
     shim: {
       'backward': {
@@ -71,6 +76,10 @@ if (TEST_LIB) {
       'mathcore': {
         deps: ['mathmodel'],
         exports: 'MathCore'
+      },
+      'chemcore': {
+        deps: ['mathmodel'],
+        exports: 'ChemCore'
       }
     }
   });
@@ -112,11 +121,31 @@ var forEach = function forEach(array, fun) {
   }
 };
 
-define(["mathcore"], function (MathCore) {
+define(["chemcore"], function (ChemCore) {
   describe("MathCore", function() {
     describe("New", function() {
       // PUT NEW TESTS HERE.
       // COPY THE INNER TEST DRIVER FROM ONE OF THE PRODUCTION TESTS
+      describe("equivLiteral", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(ChemCore.evaluate({
+                method: "equivLiteral",
+                value: v[0]
+              }, v[1])).toBe(true);
+            });
+          });
+        }
+
+        run([
+         ["_1^2H", "_1^2H"],
+         ["_1^-H", "_1^-H"],
+         ["_1^+H", "_1^+H"],
+         ["_1^{2-}H", "_1^{2-}H"],
+         ["_1^{2+}H", "_1^{2+}H"],
+        ]);
+      });
     });
   });
 });

@@ -34,7 +34,8 @@
   var nodeMinusOne = numberNode("-1");
   var nodeZero = numberNode("0");
   var nodeInfinity = numberNode("Infinity");
-  var nodeOneHalf = fractionNode(numberNode("1"), numberNode("2"));
+  var nodeMinusInfinity = numberNode("-Infinity");
+  var nodeOneHalf = binaryNode(Model.POW, [numberNode("2"), nodeMinusOne]);
   var nodeImaginary = binaryNode(Model.POW, [nodeMinusOne, nodeOneHalf]);
   var nodeE = variableNode("e");
 
@@ -76,21 +77,57 @@
     return newNode(op, aa);
   }
 
+  function abs(n) {
+    if (n === null) {
+      return null;
+    } else if (n instanceof BigDecimal) {  // assume d is too
+      if (n === null) {
+        return null;
+      }
+      n = toNumber(n);
+    } else if (n.op) {
+      n = mathValue(n, true);
+      if (n === null) {
+        return null;
+      }
+    } else {
+      if (isNaN(n)) {
+        return null;
+      }
+    }
+    return toDecimal(Math.abs(n));
+  }
+
   function numberNode(val, doScale, roundOnly) {
     // doScale - scale n if true
     // roundOnly - only scale if rounding
+    var mv, node, minusOne;
     if (doScale) {
-      var n = toDecimal(val.toString());
       var scale = option("decimalPlaces")
-      if (n !== null && (!roundOnly || n.scale() > scale)) {
-        n = n.setScale(scale, BigDecimal.ROUND_HALF_UP);
-      } else {
-        n = val;
+      mv = toDecimal(val);
+      if (isNeg(mv) && !isMinusOne(mv)) {
+        minusOne = bigMinusOne.setScale(scale, BigDecimal.ROUND_HALF_UP);
+        mv = abs(mv);
+      }
+      if (mv !== null && (!roundOnly || mv.scale() > scale)) {
+        mv = mv.setScale(scale, BigDecimal.ROUND_HALF_UP);
       }
     } else {
-      n = val;
+      mv = toDecimal(val);
+      if (isNeg(mv) && !isMinusOne(mv)) {
+        minusOne = bigMinusOne;
+        mv = abs(mv);
+      }
     }
-    return newNode(Model.NUM, [n.toString()]);
+    if (minusOne) {
+      node = multiplyNode([newNode(Model.NUM, [String(minusOne)]), newNode(Model.NUM, [String(mv)])]);
+    } else if (mv) {
+      node = newNode(Model.NUM, [String(mv)]);
+    } else {
+      // Infinity and friends
+      node = newNode(Model.NUM, [val]);
+    }
+    return node;
   }
 
   function multiplyNode(args, flatten) {
@@ -115,8 +152,39 @@
     return newNode(Model.VAR, [name]);
   }
 
+  function negate(n) {
+    if (typeof n === "number") {
+      return -n;
+    } else if (n.op === Model.MUL) {
+      n.args.unshift(nodeMinusOne);
+      return n;
+    } else if (n.op === Model.NUM) {
+      if (n.args[0] === "Infinity") {
+        return nodeMinusInfinity;
+      } else if (n.args[0] === "-Infinity") {
+        return nodeInfinity;
+      }
+    }
+    return multiplyNode([nodeMinusOne, n]);
+  }
+
+  function isNeg(n) {
+    if (n === null) {
+      return false;
+    }
+    if (n.op === Model.NUM) {
+      n = mathValue(n, true);
+    }
+    if (n === null) {
+      return false;  // What about -Infinity?
+    }
+    return n.compareTo(bigZero) < 0;
+  }
+
   function isInfinity(n) {
-    if (n.op === Model.NUM && n.args[0] === "Infinity") {
+    if (n.op === Model.NUM &&
+        (n.args[0] === "Infinity" ||
+         n.args[0] === "-Infinity")) {
       return true;
     }
     return false;
@@ -278,6 +346,8 @@
       case Model.INT:
       case Model.PROD:
       case Model.ION:
+      case Model.POW:
+      case Model.SUBSCRIPT:
         node = visit.unary(node, resume);
         break;
       case Model.COMMA:
@@ -310,7 +380,6 @@
         assert(false, "Should not get here. Unhandled node operator " + node.op);
         break;
       }
-      Assert.checkCounter();
       return node;
     }
 
@@ -603,7 +672,7 @@
       return visit(root, {
         name: "variablePart",
         exponential: function (node) {
-          if (degree(node) !== 0) {
+          if (variables(node.args[0]).length > 0 || variables(node.args[1]).length > 0) {
             return node;
           }
           return null;
@@ -627,10 +696,10 @@
         },
         additive: function (node) {
           // (x + 2)(x - 1)
-          if (mathValue(node, true) !== null) {
-            return null;
+          if (variables(node).length > 0) {
+            return node;
           }
-          return node;
+          return null;
         },
         unary: function(node) {
           var vp = variablePart(node.args[0]);
@@ -919,12 +988,7 @@
           case Model.SUB:
             // Convert SUBs to ADDs
             // Avoid nested MULs
-            if (arg0.op === Model.MUL) {
-              arg0.args.push(nodeMinusOne);
-              node = arg0;
-            } else {
-              node = multiplyNode([arg0, nodeMinusOne]);
-            }
+            node = negate(arg0);
             break;
           default:
             node = unaryNode(node.op, [arg0]);
@@ -980,12 +1044,16 @@
         return 0;
       }
       var nid = Ast.intern(root);
+      if (root.normalizeNid === nid) {
+        return root;
+      }
       var node = Model.create(visit(root, {
         name: "normalize",
         numeric: function (node) {
-          var arg0 = +node.args[0];
-          if (arg0 < 0 && arg0 !== -1) {
-            node = multiplyNode([nodeMinusOne, numberNode(Math.abs(arg0.toString()))]);
+          if (option("allowDecimal") && isDecimal(node)) {
+            node = decimalToFraction(node);
+          } else if (isNeg(node)) {
+            node = numberNode(node.args[0]);  // Normalize negatives
           }
           return node;
         },
@@ -1174,6 +1242,7 @@
         nid = Ast.intern(node);
         node = normalize(node);
       }
+      node.normalizeNid = nid;
       return node;
     }
 
@@ -1183,6 +1252,9 @@
         return 0;
       }
       var nid = Ast.intern(root);
+      if (root.sortNid === nid) {
+        return root;
+      }
       var node = visit(root, {
         name: "sort",
         numeric: function (node) {
@@ -1235,7 +1307,7 @@
                     node.args[i] = n1;
                     node.args[i + 1] = n0;
                   }
-                } else if (isLessThan(constantPart(n0), constantPart(n1))) {
+                } else if (isLessThan(abs(constantPart(n0)), abs(constantPart(n1)))) {
                   node.args[i] = n1;
                   node.args[i + 1] = n0;
                 }
@@ -1353,29 +1425,42 @@
           var d0, d1;
           var n0, n1;
           var v0, v1;
-          if (node.op === Model.EQL) {
-            for (var i = 0; i < node.args.length - 1; i++) {
-              n0 = node.args[i];
-              n1 = node.args[i + 1];
-              if ((d0 = degree(node.args[i], true)) < (d1 = degree(node.args[i + 1], true))) {
+          for (var i = 0; i < node.args.length - 1; i++) {
+            n0 = node.args[i];
+            n1 = node.args[i + 1];
+            if ((d0 = degree(node.args[i], true)) < (d1 = degree(node.args[i + 1], true))) {
+              // Swap adjacent elements
+              node.args[i] = n1;
+              node.args[i + 1] = n0;
+              node.op =
+                node.op === Model.GT ? Model.LT :
+                node.op === Model.GE ? Model.LE :
+                node.op === Model.LT ? Model.GT :
+                node.op === Model.LE ? Model.GE : node.op;
+            } else if (d0 === d1) {
+              v0 = variables(n0);
+              v1 = variables(n1);
+              if (v0.length !== v1.length  && v0.length < v1.length ||
+                  v0.length > 0 && v0[0] < v1[0]) {
                 // Swap adjacent elements
+                var t = node.args[i];
                 node.args[i] = n1;
                 node.args[i + 1] = n0;
-              } else if (d0 === d1) {
-                v0 = variables(n0);
-                v1 = variables(n1);
-                if (v0.length !== v1.length  && v0.length < v1.length ||
-                    v0.length > 0 && v0[0] < v1[0]) {
-                  // Swap adjacent elements
-                  var t = node.args[i];
-                  node.args[i] = n1;
-                  node.args[i + 1] = n0;
-                } else if (!isZero(n1) && isLessThan(mathValue(n0), mathValue(n1))) {
-                  // Unless the RHS is zero, swap adjacent elements
-                  var t = node.args[i];
-                  node.args[i] = n1;
-                  node.args[i + 1] = n0;
-                }
+                node.op =
+                  node.op === Model.GT ? Model.LT :
+                  node.op === Model.GE ? Model.LE :
+                  node.op === Model.LT ? Model.GT :
+                  node.op === Model.LE ? Model.GE : node.op;
+              } else if (!isZero(n1) && isLessThan(mathValue(n0), mathValue(n1))) {
+                // Unless the RHS is zero, swap adjacent elements
+                var t = node.args[i];
+                node.args[i] = n1;
+                node.args[i + 1] = n0;
+                node.op =
+                  node.op === Model.GT ? Model.LT :
+                  node.op === Model.GE ? Model.LE :
+                  node.op === Model.LT ? Model.GT :
+                  node.op === Model.LE ? Model.GE : node.op;
               }
             }
           }
@@ -1387,6 +1472,7 @@
         nid = Ast.intern(node);
         node = sort(node);
       }
+      node.sortNid = nid;
       return node;
     }
 
@@ -1396,6 +1482,9 @@
         return 0;
       }
       var nid = Ast.intern(root);
+      if (root.normalizeLiteralNid === nid) {
+        return root;
+      }
       var node = visit(root, {
         name: "normalizeLiteral",
         numeric: function (node) {
@@ -1462,6 +1551,83 @@
         nid = Ast.intern(node);
         node = normalizeLiteral(node);
       }
+      node.normalizeLiteralNid = nid;
+      return node;
+    }
+
+    function normalizeExpanded(root) {
+      if (!root || !root.args) {
+        assert(false, "Should not get here. Illformed node.");
+        return 0;
+      }
+      var nid = Ast.intern(root);
+      if (root.normalizeExpandedNid === nid) {
+        return root;
+      }
+      var node = visit(root, {
+        name: "normalizeExpanded",
+        numeric: function (node) {
+          return node;
+        },
+        additive: function (node) {
+          var args = [];
+          forEach(node.args, function (n) {
+            args.push(normalizeExpanded(n));
+          });
+          node.args = args;
+          return groupLikes(node);
+        },
+        multiplicative: function (node) {
+          var equivLiteralDivAndFrac = false;
+          var args = [];
+          forEach(node.args, function (n) {
+            args.push(normalizeExpanded(n));
+          });
+          node.args = args;
+          return groupLikes(node);
+        },
+        unary: function(node) {
+          var args = [];
+          forEach(node.args, function (n) {
+            args.push(normalizeExpanded(n));
+          });
+          node.args = args;
+          return node;
+        },
+        exponential: function (node) {
+          var args = [];
+          forEach(node.args, function (n) {
+            args.push(normalizeExpanded(n));
+          });
+          node.args = args;
+          return node;
+        },
+        variable: function(node) {
+          return node;
+        },
+        comma: function(node) {
+          var args = [];
+          forEach(node.args, function (n) {
+            args.push(normalizeExpanded(n));
+          });
+          node.args = args;
+          return node;
+        },
+        equals: function(node) {
+          var args = [];
+          forEach(node.args, function (n) {
+            args.push(normalizeExpanded(n));
+          });
+          node.args = args;
+          return node;
+        },
+      });
+      // If the node has changed, normalizeExpanded again
+      while (nid !== Ast.intern(node)) {
+        nid = Ast.intern(node);
+        node = normalizeExpanded(node);
+      }
+      node.normalizeExpandedNid = nid;
       return node;
     }
 
@@ -1525,6 +1691,19 @@
       return false;
     }
 
+    function decimalToFraction(node) {
+      assert(node.op === Model.NUM);
+      var str = node.args[0];
+      if (str.charAt(0) === "0") {
+        str = str.slice(1);  // Trim off leading zero.
+      }
+      var pos = str.indexOf(".");
+      var decimalPlaces = str.length - pos - 1;
+      var numer = numberNode(str.slice(0, pos) + str.slice(pos+1));
+      var denom = binaryNode(Model.POW, [numberNode("10"), negate(numberNode(decimalPlaces))]);
+      return multiplyNode([numer, denom]);
+    }
+
     function isLessThan(n1, n2) {
       if (n1 && n1.op !== undefined) {
         n1 = mathValue(n1, true);
@@ -1582,7 +1761,7 @@
 
     function sqrtNode(node) {
       return binaryNode(Model.POW, [
-        n, numberNode("2"), nodeMinusOne
+        node, nodeOneHalf
       ]);
     }
 
@@ -1608,26 +1787,11 @@
           return null;
         }
         n = toNumber(n);
-      } else {
-        if (isNaN(n)) {
-          return null;
-        }
+      }
+      if (isNaN(n)) {
+        return null;
       }
       return toDecimal(Math.sqrt(n)).setScale(option("decimalPlaces"), BigDecimal.ROUND_HALF_UP);
-    }
-
-    function abs(n) {
-      if (n instanceof BigDecimal) {  // assume d is too
-        if (n === null) {
-          return null;
-        }
-        n = toNumber(n);
-      } else {
-        if (isNaN(n)) {
-          return null;
-        }
-      }
-      return toDecimal(Math.abs(n));
     }
 
     function trig(n, op) {
@@ -1684,13 +1848,16 @@
       return binaryNode(node.op, args);
     }
 
+    // Group like factors and terms into nodes that will simplify nicely.
+    // We don't use the visitor mechanism because this is not recursive.
     function groupLikes(node) {
       var hash = {};
       var vp, keyid;
       if (node.op !== Model.MUL && node.op !== Model.ADD) {
-        // Don't group.
+        // We only care about factors and terms.
         return node;
       }
+      node = flattenNestedNodes(node);
       forEach(node.args, function (n, i) {
         var key;
         if (node.op === Model.MUL) {
@@ -1701,17 +1868,24 @@
           key = variablePart(n);
         }
         if (!key) {
+          var mv;
           // No variable key, so get a constant based key
-          if (mathValue(n, true) !== null) {
+          if ((mv = mathValue(n, true)) !== null) {
             // Group nodes that have computable math values.
             if (n.op === Model.POW) {
-              if (exponent(n) < 0) {
-                key = "denom";
+              mv = abs(mathValue(n.args[0], true));
+              if (mv !== null) {
+                key = "number"; //numberNode(mv);
               } else {
-                key = "numer";
+                key = "none";
               }
             } else {
-              key = "none";
+              mv = abs(mv);
+              if (mv !== null) {
+                key = "number"; //numberNode(mv);
+              } else {
+                key = "none";
+              }
             }
           } else {
             key = n;
@@ -1726,64 +1900,118 @@
         list.push(n);
       });
       var args = [];
-      var noneKey = Ast.intern(variableNode("none"));
-      var denomKey = Ast.intern(variableNode("denom"));
-      var numerKey = Ast.intern(variableNode("numer"));
+      var numberArgs = [];
       forEach(keys(hash), function (k) {
-        var aa = hash[k];
-        assert(aa);
+        // Group elements that hashed together. Keep a set of singleton numbers
+        // to group together later.
+        var exprs = hash[k];
+        assert(exprs);
         var cp = [];
-        forEach(aa, function (n) {
-          cp.push(constantPart(n));
+        var vp = [];
+        // Separate the constant part from the variable part.
+        forEach(exprs, function (n) {
+          var c = constantPart(n);
+          if (c) {
+            cp.push(c);
+          }
         });
-        var vp = variablePart(aa[0]);
+        forEach(exprs, function (n) {
+          var c = variablePart(n);
+          if (c) {
+            vp.push(c);
+          }
+        });
         if (cp.indexOf(null) >= 0) {
           // We've got some strange equation, so just return it as is.
           return node;
         }
         if (node.op === Model.ADD) {
-          if (cp.length > 1) {
-            var c = simplify(binaryNode(node.op, cp), {dontGroup: true});
+          var nd;
+          if (cp.length > 0) {
+            // Combine all the constants.
+            nd = binaryNode(node.op, cp);
+            var mv = mathValue(nd);
+            var tempArgs = [];
+            if (mv !== null) {
+              nd = numberNode(mv);
+            } else {
+              nd = simplify(nd, {dontGroup: true});
+            }
           } else {
-            var c = cp[0];
+            nd = nodeOne;
           }
-          if (vp) {
-            if (isOne(c)) {
-              args.push(vp);
-            } else if (isZero(c)) {
+          if (vp.length > 0) {
+            var v = vp[0];  // each element is the same
+            if (isZero(nd)) {
+              args.push(nodeZero);
+            } else if (isOne(nd)) {
+              args.push(v);
+            } else {
+              args.push(simplify(binaryNode(Model.MUL, [nd, v])));
+            }
+          } else if (nd) {
+            if (nd.op === Model.NUM) {
+              // At this point any node that has a math value will be a number node.
+              numberArgs.push(nd);
+            } else {
+              args.push(nd);
+            }
+          }
+        } else if (node.op === Model.MUL) {
+          var nd;
+          if (cp.length > 0) {
+            // Combine all the constants.
+            nd = binaryNode(node.op, cp);
+            var mv = mathValue(nd);
+            var tempArgs = [];
+            if (mv !== null) {
+              if (isOne(mv)) {
+              } else {
+                numberArgs.push(numberNode(mv.toString()));
+              }
+              nd = null;  // Factor out coefficient
+            } else {
+              nd = simplify(nd, {dontGroup: true});
+            }
+          } else {
+            nd = null;
+          }
+          if (vp.length > 0) {
+            if (nd === null || isOne(nd)) {
+              args.push(simplify(binaryNode(Model.MUL, vp), {dontGroup: true}));
+            } else if (isZero(nd)) {
               args.push(nodeZero);
             } else {
-              args.push(binaryNode(Model.MUL, [c, vp]));
+              args.push(simplify(binaryNode(Model.MUL, [nd].concat(vp)), {dontGroup: true}));
             }
-          } else if (c) {
-            args.push(c);
-          } else {
-            args.push(vp);
-          }
-        } else if (node.op === Model.MUL && cp.length > 1 &&
-                   (+k === noneKey || +k === numerKey || +k === denomKey)) {
-          // 3*4 -> 12
-          var nd = binaryNode(node.op, cp);
-          var mv = mathValue(nd);
-          if (mv === null) {
-            args.push(nd);
-          } else {
-            args.push(numberNode(mv.toString()));
+          } else if (nd) {
+            if (mathValue(nd, true)) {
+              numberArgs.push(nd);
+            } else {
+              args.push(nd);
+            }
           }
         } else {
-          if (aa.length > 1) {
-            args.push(binaryNode(node.op, aa));
-          } else {
-            args.push(aa[0]);
-          }
+          args.push(binaryNode(node.op, exprs));
         }
       });
-      if (args.length > 1) {
-          node = binaryNode(node.op, args);
-      } else {
-        assert(args.length !== 0);
-        node = args[0];
+      if (numberArgs.length > 0) {
+        var nd = binaryNode(node.op, numberArgs);
+        var mv = mathValue(nd);
+        if (mv === null) {
+          args.push(nd);
+        } else {
+          args.push(numberNode(mv));
+        }
       }
+      if (args.length === 0) {
+        node = nodeOne;
+      } else if (args.length === 1) {
+        node = args[0];
+      } else {
+        node = binaryNode(node.op, args);
+      }
+      node = sort(node);
       return node;
     }
 
@@ -1795,7 +2023,7 @@
       }
       var hash = {};
       var vp, vpnid, list;
-      var result = !every(node.args, function (n, i) {
+      var result = !every(node.args, function (n) {
         // (x+3)(x+3) (xy^2)
         vpnid = Ast.intern(n);
         list = hash[vpnid] ? hash[vpnid] : (hash[vpnid] = []);
@@ -1806,16 +2034,57 @@
       return result;
     }
 
+    function squareRoot(node) {
+      var e = 2;  // The root size
+      var args;
+      if (node.op === Model.NUM) {
+        args = factors(node, {}, false, true);
+      } else if (node.op === Model.MUL) {
+        args = node.args;
+      } else {
+        // FIXME handle other cases (e.g. Polynomials)
+        return sqrtNode(node);
+      }
+      var hash = {};
+      var vp, vpnid, list;
+      forEach(args, function (n) {
+        // (x+3)(x+3) (xy^2)
+        vpnid = Ast.intern(n);
+        list = hash[vpnid] ? hash[vpnid] : (hash[vpnid] = []);
+        list.push(n);
+      });
+      var inList = [], outList = [];
+      forEach(keys(hash), function (k) {
+        list = hash[k];
+        if (list.length >= e) {
+          while (list.length >= e) {
+            outList.push(list[0]);
+            list = list.slice(e);
+          }
+          inList = inList.concat(list);
+        } else {
+          inList = inList.concat(list);
+        }
+      });
+      if (inList.length > 0) {
+        outList = outList.concat(sqrtNode(multiplyNode(inList)));
+      }
+      return multiplyNode(outList);
+    }
+
     function simplify(root, env, resume) {
       if (!root || !root.args) {
         assert(false, "Should not get here. Illformed node.");
         return 0;
       }
       var nid = Ast.intern(root);
+      if (root.simplifyNid === nid) {
+        return root;
+      }
+      Assert.checkCounter();
       var node = Model.create(visit(root, {
         name: "simplify",
         numeric: function (node) {
-          assert(typeof node.args[0] === "string");
           return node;
         },
         additive: function (node) {
@@ -1825,7 +2094,6 @@
             return node;
           }
           if (!env || !env.dontGroup) {
-            node = flattenNestedNodes(node);
             node = groupLikes(node);
           }
           if (!isAdditive(node)) {
@@ -1881,6 +2149,7 @@
                 forEach(n0, function (n1) {
                   var d, n;
                   // 2/x+3/y -> (2y+3x)/(xy)
+                  // .5x+.2y -> (2x+5y)/10  [allowDecimal=true]
                   d = denom(n1, []);
                   n = numer(n1, d[0], denoms);
                   n2 = n2.concat(n);
@@ -1902,6 +2171,7 @@
             var n0, nn = [];
             forEach(ff, function (n) {
               if (n.op !== Model.POW || !isNeg(mathValue(n.args[1], true))) {
+                // Is a numerator
                 nn.push(n);
               }
             });
@@ -2052,18 +2322,17 @@
                 }
                 return multiplyNode([c, lvpart]);
               } else if (lnode.op === Model.LOG && rnode.op === Model.LOG &&
-                        (Ast.intern(lnode.args[0]) === Ast.intern(rnode.args[0]))) {
+                         (Ast.intern(lnode.args[0]) === Ast.intern(rnode.args[0]))) {
                 return simplify(newNode(Model.LOG, [lnode.args[0], multiplyNode([lnode.args[1], rnode.args[1]])]));
               } else if (ldegr === 0 && rdegr === 0) {
                 // Have two constants
                 var mv1 = mathValue(lnode, true);
                 var mv2 = mathValue(rnode, true);
-                if (isInteger(mv1) && isInteger(mv2) ||
-                    mv1 !== null && mv2 !== null) {
-                   return numberNode(mv1.add(mv2));
+                if (isInteger(mv1) && isInteger(mv2)) {
+                  return numberNode(mv1.add(mv2));
                 } else if (Ast.intern(lnode) === Ast.intern(rnode)) {
                   return multiplyNode([numberNode("2"), lnode]);
-                } else if (!option("dontFactorTerms") && commonFactors(lnode, rnode).length > 0) {
+                } else if ((!env || !env.dontGroup) && !option("dontFactorTerms") && commonFactors(lnode, rnode).length > 0) {
                   return [factorTerms(lnode, rnode)];
                 } else {
                   return [lnode, rnode];
@@ -2089,7 +2358,6 @@
         multiplicative: function (node) {
           assert(node.op === Model.MUL, "simplify() multiplicative node not normalized: " + JSON.stringify(node));
           if (!env || !env.dontGroup) {
-            node = flattenNestedNodes(node);
             node = groupLikes(node);
           }
           if (!isMultiplicative(node)) {
@@ -2108,16 +2376,10 @@
             n0 = n0.concat(fold(n0.pop(), n1));
           });
           if (n0.length < 2) {
-            // If we have a solitary node and its exponent is negative then give
-            // it a numerator
-            if (exponent(n0[0]) < 0) {
-              node = n0[0];
-            } else {
-              node = n0[0];
-            }
+            node = n0[0];
           } else {
-            if (n0.length === 0) assert(false);
-            node = sort(multiplyNode(n0));
+            assert(n0.length);
+            node = sort(flattenNestedNodes(multiplyNode(n0)));
           }
           return node;
           function fold(lnode, rnode) {
@@ -2138,24 +2400,20 @@
               return rnode;
             } else if (rdegr === 0 && isOne(rcoeffmv)) {
               return lnode;
+            } else  if (isInfinity(lnode)) {
+              if (isNeg(rnode)) {
+                return negate(lnode);
+              } else {
+                return lnode;
+              }
+            } else if (isInfinity(rnode)) {
+              if (isNeg(lnode)) {
+                return negate(rnode);
+              } else {
+                return rnode;
+              }
             } else if (ldegr === 0 && rdegr === 0) {
-//              assert(lnode.op !== Model.MUL && rnode.op !== Model.MUL,
-//                     "Internal error: multiplicative expressions not flattened");
-              if (lcoeffmv === null || rcoeffmv === null) {
-                if (isInfinity(lnode)) {
-                  if (isNeg(rnode)) {
-                    return multiplyNode([nodeMinusOne, lnode]);
-                  } else {
-                    return lnode;
-                  }
-                } else if (isInfinity(rnode)) {
-                  if (isNeg(lnode)) {
-                    return multiplyNode([nodeMinusOne, rnode]);
-                  } else {
-                    return rnode;
-                  }
-                }
-              } else if (isOne(rcoeffmv) && isOne(lcoeffmv)) {
+              if (isOne(rcoeffmv) && isOne(lcoeffmv)) {
                 // Have two constants that have the math value of one.
                 return nodeOne;
               }
@@ -2167,10 +2425,16 @@
                   Math.abs(lexpo) === 1 && Math.abs(rexpo) === 1) {
                 if (lexpo === rexpo) {
                   // 2^3*3^3, combine bases
-                  var b = lbase.multiply(rbase);
-                  node = numberNode(b);
-                  if (lexpo === -1) {
-                    node = binaryNode(Model.POW, [node, nodeMinusOne]);
+                  if (isMinusOne(lbase) || isMinusOne(rbase)) {
+                    node = [lnode, rnode];
+                  } else {
+                    node = multiplyNode([numberNode(lbase), numberNode(rbase)]);
+                    if ((mv = mathValue(node))) {
+                      node = numberNode(mv);
+                    }
+                    if (lexpo === -1) {
+                      node = binaryNode(Model.POW, [node, nodeMinusOne]);
+                    }
                   }
                 } else {
                   // We've got a fraction to simplify
@@ -2179,14 +2443,6 @@
                     node = nodeZero;
                   } else if ((mv = mathValue(multiplyNode([lnode, rnode])))) {
                     node = numberNode(mv);
-//                  if (option("allowDecimal") ||
-//                     isDecimal(lbase) ||
-//                     isDecimal(rbase)) {
-//                    // Allow converstion to decimal if 'allowDecimal=true' or
-//                    // if either operand is decimal.
-//                    var n = lexpo === 1 ? lbase : rbase;
-//                    var d = lexpo === 1 ? rbase : lbase;
-//                    node = numberNode(divide(n, d));
                   } else {
                     var lbaseN = toNumber(lbase);
                     var rbaseN = toNumber(rbase);
@@ -2238,39 +2494,13 @@
                   // Found square of square roots, so simplify
                   node = lbase;
                 } else {
-                  var args = [];
-                  if (lbase.op === Model.MUL) {
-                    // Flatten nested multiplication.
-                    args = args.concat(lbase.args);
-                  } else {
-                    args.push(lbase);
-                  }
-                  if (rbase.op === Model.MUL) {
-                    // Flatten nested multiplication.
-                    args = args.concat(rbase.args);
-                  } else {
-                    args.push(rbase);
-                  }
-                  node = binaryNode(Model.POW, [multiplyNode(args), lnode.args[1]]);
-                }
-              } else {
-                // Resort to numerical computation
-                var lval = pow(lbase, toDecimal(lexpo));
-                var rval = pow(rbase, toDecimal(rexpo));
-                if (rval !== null && lval !== null) {
-                  var val = lval.multiply(rval);
-                  if (isInteger(val) || option("allowDecimal") ||
-                      !isInteger(lval) || !isInteger(rval)) {
-                    node = numberNode(lval.multiply(rval));
-                  } else {
-                    node = [lnode, rnode];
-                  }
-                } else {
                   node = [lnode, rnode];
                 }
+              } else {
+                node = [lnode, rnode];
               }
-            // one or both nodes contain var
             } else if (lvpart && rvpart && Ast.intern(lvpart) === Ast.intern(rvpart)) {
+              // one or both nodes contain var
               var lnode = multiplyNode([lcoeff, rcoeff]);
               if (lvpart.op === Model.POW) {
                 // FIXME if lvpart (and therefore rvpart) base is additive and
@@ -2416,7 +2646,7 @@
           if (n0.length === 1) {
             var n = n0[0];
             if (n.op !== Model.NUM || isInteger(n) ||
-                n.args[0] === "Infinity" || option("allowDecimal")) {
+                n.args[0] === "Infinity") {
               // If the result is not a number or is a whole number, then return it
               node = n;
             } // Otherwise return the orginal expression.
@@ -2448,6 +2678,9 @@
               } else if (isOne(emv)) {
                 // x^1
                 return [base];
+              } else if (Ast.intern(expo) === Ast.intern(nodeOneHalf)) {
+                // \sqrt{x}
+                return squareRoot(base);
               } else if (!option("dontExpandPowers") && base.op === Model.MUL) {
                 // Expand factors
                 var args = [];
@@ -2489,7 +2722,7 @@
                   node = numberNode(logBase(bmv, emv));
                 } else if (base.op === Model.VAR && base.args[0] === "e") {
                   var mv = toDecimal(Math.log(toNumber(emv)));
-                  if (option("allowDecimal") || isInteger(mv)) {
+                  if (isInteger(mv)) {
                     node = numberNode(mv.toString());
                   } else {
                     node = binaryNode(Model.LOG, [base, expo]);
@@ -2516,7 +2749,6 @@
           return newNode(node.op, args);
         },
         equals: function(node) {
-          // FIXME look for common factors on each side
           var args = [];
           forEach(node.args, function (n) {
             args = args.concat(simplify(n));
@@ -2535,8 +2767,9 @@
               var mv = mathValue(n, true);
               if (foundZero ||
                   mv !== null && !isZero(mv) && ff.length > 1 ||
+                  (n.op === Model.VAR || n.op === Model.POW) && units(n).length === 1 ||  // $, cm, s^2
                   n.op === Model.POW && isNeg(mathValue(n.args[1]))) {
-                // Ignore constant factors, unless they are alone.
+                // Ignore constant factors including units, unless they are alone.
               } else if (isZero(mv)) {
                 // Result is zero.
                 args0 = [nodeZero];
@@ -2554,10 +2787,8 @@
             }
             // If equality and LHS leading coefficient is negative, then multiply by -1
             var c;
-            if (node.op === Model.EQL && !isOne((c = leadingCoeff(args[0])))) {
-              if (isMinusOne(c)) {
-                args[0] = expand(multiplyNode([nodeMinusOne, args[0]]));
-              }
+            if (node.op === Model.EQL && isNeg((c = leadingCoeff(args[0])))) {
+              args[0] = expand(multiplyNode([nodeMinusOne, args[0]]));
             }
           }
           return newNode(node.op, args);
@@ -2566,8 +2797,9 @@
       // If the node has changed, simplify again
       while (nid !== Ast.intern(node)) {
         nid = Ast.intern(node);
-        node = simplify(node);
+        node = simplify(node, env);
       }
+      node.simplifyNid = nid;
       return node;
     }
 
@@ -2597,7 +2829,6 @@
         allowDecimal = env;
         env = {};
       }
-      allowDecimal = allowDecimal || option("allowDecimal");
       if (!root) {
         return null;
       }
@@ -2616,32 +2847,37 @@
           }
           // Simplify each side.
           var val = bigZero;
+          var allowDecimalOverride = true;
           forEach(node.args, function (n) {
-            var mv = mathValue(n, env, allowDecimal);
+            allowDecimalOverride = allowDecimalOverride && n.op === Model.NUM && isDecimal(n);
+            var mv = mathValue(n, env, true);
             if (mv && val) {
               val = val.add(mv);
             } else {
               val = null;   // bd === null is NaN
             }
           });
-          return val;
+          if (allowDecimalOverride || allowDecimal || isInteger(val)) {
+            return val;
+          } else {
+            return null;
+          }
         },
         multiplicative: function (node) {
           // Allow decimal if the option 'allowDecimal' is set to true or
           // if at least one of the operands is a decimal.
           var val = bigOne;
+          var allowDecimalOverride = true;
           forEach(node.args, function (n) {
-            var mv = mathValue(n, env, allowDecimal);
-            if (isDecimal(mv)) {
-              allowDecimal = true;
-            }
+            allowDecimalOverride = allowDecimalOverride && n.op === Model.NUM && isDecimal(n);
+            var mv = mathValue(n, env, true);
             if (val !== null && mv != null) {
               val = val.multiply(mv);
             } else {
               val = null;
             }
           });
-          if (allowDecimal || isInteger(val)) {
+          if (allowDecimalOverride || allowDecimal || isInteger(val)) {
             return val;
           }
           return null;
@@ -2687,7 +2923,10 @@
           case Model.ARCSIN:
           case Model.ARCCOS:
           case Model.ARCTAN:
-            return trig(mathValue(node.args[0], env, allowDecimal), node.op);
+            if (allowDecimal) {
+              return trig(mathValue(node.args[0], env, allowDecimal), node.op);
+            }
+            return null;
           default:
             return mathValue(node.args[0], env, allowDecimal);
           }
@@ -2697,17 +2936,30 @@
           // if at least one of the operands is a decimal.
           var args = node.args.slice(0).reverse();
           var val = mathValue(args.shift(), env, allowDecimal);
-          forEach(args, function (n) {
-            var mv = mathValue(n, env, allowDecimal);
-            if (isDecimal(mv)) {
-              allowDecimal = true;
+          var op = node.op;
+          if (op === Model.POW) {
+            forEach(args, function (n) {
+              var mv = mathValue(n, env, true);
+              if (val !== null && mv != null) {
+                val = pow(mv, val);
+              } else {
+                val = null;
+              }
+            });
+          } else if (op === Model.LOG) {
+            assert(args.length === 1);
+            var mv;
+            var emv = val;
+            var base = args[0];
+            var bmv = mathValue(base, true);
+            if (emv !== null) {
+              if (bmv !== null) {
+                val = logBase(bmv, emv);
+              } else if (base.op === Model.VAR && base.args[0] === "e") {
+                val = toDecimal(Math.log(toNumber(emv)));
+              }
             }
-            if (val !== null && mv != null) {
-              val = pow(mv, val);
-            } else {
-              val = null;
-            }
-          });
+          }
           if (allowDecimal || isInteger(val)) {
             return val;
           }
@@ -2729,11 +2981,7 @@
           return null;
         },
         comma: function(node) {
-          var args = [];
-          forEach(node.args, function (n) {
-            args = args.concat(mathValue(n, env, allowDecimal));
-          });
-          return args;
+          return null;
         },
         equals: function(node) {
           return null;
@@ -2979,9 +3227,13 @@
         return 0;
       }
       var nid = Ast.intern(root);
+      if (root.expandNid === nid) {
+        return root;
+      }
       var node = Model.create(visit(root, {
         name: "expand",
         numeric: function (node) {
+          assert(typeof node.args[0] === "string");
           return node;
         },
         additive: function (node) {
@@ -3005,8 +3257,6 @@
             // Don't flatten matrix nodes.
             return node;
           }
-          node = flattenNestedNodes(node);
-          node = groupLikes(node);
           return node;
           function unfold(lnode, rnode) {
             if (lnode.op === Model.MATRIX || rnode.op === Model.MATRIX) {
@@ -3033,8 +3283,6 @@
             // Don't flatten matrix nodes.
             return node;
           }
-          node = flattenNestedNodes(node);
-          node = groupLikes(node);
           return node;
           function unfold(lnode, rnode) {
             // FIXME if the bases are additive and the expo are the same power,
@@ -3279,6 +3527,7 @@
         nid = Ast.intern(node);
         node = expand(node);
       }
+      node.expandNid = nid;
       return node;
     }
 
@@ -3453,16 +3702,15 @@
         assert(false, "Should not get here. Illformed node.");
         return 0;
       }
-      return visit(root, {
+      var node = Model.create(visit(root, {
         name: "scale",
         exponential: function (node) {
-          var mv;
-          if ((mv = mathValue(node, true))) {
-            // See if brute force yields valid value.
-            var n = numberNode(mv, true);
-            if (option("allowDecimal") || isInteger(n)) {
-              return n;
-            }
+          var mv, nd;
+          var allowDecimal = option("allowDecimal");
+          if ((mv = mathValue(node, true)) &&
+              (nd = numberNode(mv, true)) &&
+              (allowDecimal || isInteger(nd))) {
+            return nd;
           }
           var args = [];
           forEach(node.args, function (n) {
@@ -3471,43 +3719,57 @@
           return newNode(node.op, args);
         },
         multiplicative: function (node) {
-          var mv;
-          if ((mv = mathValue(node, true))) {
-            // See if brute force yields valid value.
-            var n = numberNode(mv, true);
-            if (option("allowDecimal") || isInteger(n)) {
-              return n;
-            }
+          var mv, nd;
+          var allowDecimal = option("allowDecimal");
+          if ((mv = mathValue(node, true)) &&
+              (nd = numberNode(mv, true)) &&
+              (allowDecimal || isInteger(nd))) {
+            return nd;
           }
           var args = [];
+          var mv2 = bigOne;
           forEach(node.args, function (n) {
-            args.push(scale(n));
+            allowDecimal = allowDecimal || n.op === Model.NUM && isDecimal(n);
           });
-          return newNode(node.op, args);
+          forEach(node.args, function (n) {
+            if ((mv = mathValue(multiplyNode([numberNode(mv2), n]), allowDecimal))) {
+              mv2 = mv;
+            } else {
+              args.push(scale(n));
+            }
+          });
+          if (!isOne(mv2)) {
+            args.unshift(numberNode(mv2, true));
+          }
+          return multiplyNode(args);
         },
         additive: function (node) {
           var mv;
-          if ((mv = mathValue(node, true))) {
-            // See if brute force yields valid value.
-            var n = numberNode(mv, true);
-            if (option("allowDecimal") || isInteger(n)) {
-              return n;
-            }
+          var allowDecimal = option("allowDecimal");
+          forEach(node.args, function (n) {
+            allowDecimal = allowDecimal || n.op === Model.NUM && isDecimal(n);
+          });
+          if (allowDecimal && (mv = mathValue(node, true))) {
+            return numberNode(mv, true);
           }
           var args = [];
+          var mv2 = bigZero;
           forEach(node.args, function (n) {
-            args.push(scale(n));
+            if ((mv = mathValue(binaryNode(Model.ADD, [numberNode(mv2), n]), allowDecimal))) {
+              mv2 = mv;
+            } else {
+              args.push(scale(n));
+            }
           });
-          return newNode(node.op, args);
+          if (!isZero(mv2)) {
+            args.unshift(numberNode(mv2, true));
+          }
+          return binaryNode(Model.ADD, args);
         },
         unary: function(node) {
           var mv;
-          if ((mv = mathValue(node, true))) {
-            // See if brute force yields valid value.
-            var n = numberNode(mv, true);
-            if (option("allowDecimal") || isInteger(n)) {
-              return n;
-            }
+          if (option("allowDecimal") && (mv = mathValue(node, true))) {
+            return numberNode(mv, true);
           }
           return unaryNode(node.op, [scale(node.args[0])]);
         },
@@ -3531,7 +3793,8 @@
           });
           return newNode(node.op, args);
         },
-      });
+      }), root.location);
+      return node;
     }
 
     // Returns true if 'root' has no factors with coefficients in the integers.
@@ -3670,7 +3933,7 @@
       var possibleRoots = [];
       forEach(f0, function (n) {
         var n0 = numberNode(n);
-        var n1 = numberNode("-" + n);
+        var n1 = negate(numberNode(n));
         forEach(f1, function (d) {
           var d = numberNode(d);
           possibleRoots.push(fractionNode(n0, d));
@@ -3733,9 +3996,9 @@
         opt === "integer" && ((x0 === (x0 | 0)) && (x1 === (x1 | 0))) ||
         opt === "real" && (b * b - 4 * a * c) >= 0 ||
         opt === "complex"; // Redundant, but okay.
-      if (hasSolution) {
-        return true; //[new BigDecimal(x0.toString()), new BigDecimal(x1.toString())];
-      }
+        if (hasSolution) {
+          return true; //[new BigDecimal(x0.toString()), new BigDecimal(x1.toString())];
+        }
       return false;
     }
     function primeFactors(n) {  // n : Number
@@ -3802,6 +4065,7 @@
 
     // Visitor exports
     this.normalize = normalize;
+    this.normalizeExpanded = normalizeExpanded;
     this.normalizeLiteral = normalizeLiteral;
     this.normalizeSyntax = normalizeSyntax;
     this.degree = degree;
@@ -3877,12 +4141,22 @@
     return result;
   }
 
-  function mathValue(node, env) {
+  function normalizeExpanded(node) {
     var prevLocation = Assert.location;
     if (node.location) {
       Assert.setLocation(node.location);
     }
-    var result = visitor.mathValue(node, env);
+    var result = visitor.normalizeExpanded(node);
+    Assert.setLocation(prevLocation);
+    return result;
+  }
+
+  function mathValue(node, env, allowDecimal) {
+    var prevLocation = Assert.location;
+    if (node.location) {
+      Assert.setLocation(node.location);
+    }
+    var result = visitor.mathValue(node, env, allowDecimal);
     Assert.setLocation(prevLocation);
     return result;
   }
@@ -4056,20 +4330,20 @@
     if (n1.op === Model.PM && n1.args.length > 1) {
       n1b = simplify(expand(normalize(n1.args[0])));
       n1t = simplify(expand(normalize(n1.args[1])));
-      var v1 = mathValue(n1b, env);
-      var v1t = mathValue(n1t, env);
+      var v1 = mathValue(n1b, env, true);
+      var v1t = mathValue(n1t, env, true);
     } else {
       n1b = simplify(expand(normalize(n1)));
-      var v1 = mathValue(n1b, env);
+      var v1 = mathValue(n1b, env, true);
     }
     if (n2.op === Model.PM && n2.args.length > 1) {
       n2b = simplify(expand(normalize(n2.args[0])));
       n2t = simplify(expand(normalize(n2.args[1])));
-      var v2 = mathValue(n2b, env);
-      var v2t = mathValue(n2t, env);
+      var v2 = mathValue(n2b, env, true);
+      var v2t = mathValue(n2t, env, true);
     } else {
       n2b = simplify(expand(normalize(n2)));
-      var v2 = mathValue(n2b, env);
+      var v2 = mathValue(n2b, env, true);
     }
     // If we have two lists, then compare their elements
     if (n1b.op === Model.COMMA && n2b.op === Model.COMMA ||
@@ -4093,16 +4367,36 @@
       // The variable part is the same, so factor out of the comparison.
       n1b = constantPart(n1b);
       n2b = constantPart(n2b);
+      if (n1b === undefined && n2b === undefined) {
+        // No constant part, but variable parts match so we have a match.
+        result = true;
+        return inverseResult ? !result : result;
+      }
     }
     var nid1 = Ast.intern(n1b);
     var nid2 = Ast.intern(n2b);
     if (nid1 === nid2 && n1t === undefined && n2t === undefined &&
         (op === undefined || isEqualsComparison(op))) {
-        result = true;
-        return inverseResult ? !result : result;
+      result = true;
+      return inverseResult ? !result : result;
     }
-    var v1 = mathValue(n1b, env);
-    var v2 = mathValue(n2b, env);
+    // If we have two arrays, then compare their elements
+    if (n1b.op === Model.LIST && n2b.op === Model.LIST) {
+      assert(n1t === undefined && n2t === undefined, message(2007));
+      // Check that the brackets of the list match
+      if (n1b.lbrk !== n2b.lbrk || n1b.rbrk !== n2b.rbrk) {
+        return false;
+      }
+      // Check that the corresponding elements of each list are equal.
+      var l1 = n1b.args;
+      var l2 = n2b.args;
+      return every(l1, function (a, i) {
+        var result = equivValue(a, l2[i]);
+        return inverseResult ? !result : result;
+      });
+    }
+    var v1 = mathValue(n1b, env, true);
+    var v2 = mathValue(n2b, env, true);
     assert(v1 !== null || isComparison(n1b.op), message(2005));
     assert(n1b.op !== Model.PM || v1t !== null, message(2005));
     assert(v2 !== null || isComparison(n2b.op), message(2005));
@@ -4112,7 +4406,7 @@
     // the relative magnitudes of the units.
     if (v1 !== null && v2 !== null) {
       assert(baseUnit(n1b) === undefined && baseUnit(n2b) === undefined ||
-           baseUnit(n1b) !== undefined && baseUnit(n2b) !== undefined,
+             baseUnit(n1b) !== undefined && baseUnit(n2b) !== undefined,
              message(2009));
 
       // lb : g, ft : m
@@ -4306,7 +4600,7 @@
         }
         return inverseResult ? false : true;
       } else if (n1.lbrk === n2.lbrk && n1.rbrk === n2.rbrk) {
-          return inverseResult ? false : true;
+        return inverseResult ? false : true;
       }
     }
     return inverseResult ? true : false;
@@ -4321,18 +4615,18 @@
       var n1r = n1.args[1];
       var n2l = n2.args[0];
       var n2r = n2.args[1];
-      n1l = normalize(scale(simplify(expand(normalize(n1l)))));
-      n2l = normalize(scale(simplify(expand(normalize(n2l)))));
+      n1l = scale(normalize(simplify(expand(normalize(n1l)))));
+      n2l = scale(normalize(simplify(expand(normalize(n2l)))));
       var nid1l = Ast.intern(n1l);
       var nid2l = Ast.intern(n2l);
-      n1r = normalize(scale(simplify(expand(normalize(n1r)))));
-      n2r = normalize(scale(simplify(expand(normalize(n2r)))));
+      n1r = scale(normalize(simplify(expand(normalize(n1r)))));
+      n2r = scale(normalize(simplify(expand(normalize(n2r)))));
       var nid1r = Ast.intern(n1r);
       var nid2r = Ast.intern(n2r);
       var result = nid1l === nid2l && nid1r === nid2r;
     } else {
-      n1 = normalize(scale(simplify(expand(normalize(n1)))));
-      n2 = normalize(scale(simplify(expand(normalize(n2)))));
+      n1 = scale(normalize(simplify(expand(normalize(n1)))));
+      n2 = scale(normalize(simplify(expand(normalize(n2)))));
       var nid1 = Ast.intern(n1);
       var nid2 = Ast.intern(n2);
       var result = nid1 === nid2;
@@ -4365,7 +4659,12 @@
     }
     var result;
     if (isComparison(n1.op)) {
-      result = Model.create(n1.args[0]).equivValue(n1.args[1], n1.op);
+      try {
+        result = Model.create(n1.args[0]).equivValue(n1.args[1], n1.op);
+      } catch (e) {
+        // Handle any semantic exceptions raised by equivValue.
+        result = false;
+      }
     } else {
       result = !isZero(mathValue(n1));
     }
@@ -4388,7 +4687,7 @@
       result = isExpanded(node.args[0]) && isExpanded(node.args[1]);
     } else {
       n1 = normalize(node);
-      n2 = normalize(expand(normalize(node)));
+      n2 = normalizeExpanded(normalize(expand(normalize(node))));
       nid1 = Ast.intern(n1);
       nid2 = Ast.intern(n2);
       option("dontExpandPowers", dontExpandPowers);
@@ -4507,15 +4806,6 @@
 
     trace("\nMath Model self testing");
     (function () {
-      simplify("1+2");
-      simplify("2+4");
-      function simplify(str) {
-        var node = Model.create(str);
-        var val = SymPy.simplify(node, resume);
-      }
-      function resume(err, val) {
-        console.log("SymPy.simplify() val=" + val);
-      }
     })();
   }
 })();

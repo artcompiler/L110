@@ -126,6 +126,13 @@ define(["chemcore"], function (ChemCore) {
           });
         }
         run([
+          ["Fe_2{}^-", "Fe_2{}^-"],
+          ["Fe_2{}^-", "Fe_2^-"],
+          ["_1^2H", "_1^2H"],
+          ["_1^-H", "_1^-H"],
+          ["_1^+H", "_1^+H"],
+          ["_1^{2-}H", "_1^{2-}H"],
+          ["_1^{2+}H", "_1^{2+}H"],
           ["A_{x_1}", "A_{x_1}"],
           ["3Zn^{2+}(aq)+2(PO_4)^{3-}(aq)\\to  Zn_3(PO_4)_2(s)",
            "3Zn^{2+}(aq)+2(PO_4)^{3-}(aq)\\to  Zn_3(PO_4)_2(s)"],
@@ -165,6 +172,7 @@ define(["chemcore"], function (ChemCore) {
           });
         }
         run([
+          ["1\\pm0.1\\ mol", "1.08\\ mol"],
           ["1000000{\\mu}m", "1m"],
           ["1000000{\\mu}g", "1g"],
           ["1000000{\\mu}s", "1s"],
@@ -216,6 +224,8 @@ define(["chemcore"], function (ChemCore) {
           });
         }
         run([
+          ["Fe_2{}^-", "Fe_2{}^-"],
+          ["Fe_2{}^-", "Fe_2^-"],
           ["C^{2}+H\\ \\rightarrow\\ HC^2", "C^2+H\\ \\rightarrow\\ HC^2"],
           ["HC^2\\ \\rightarrow\\ HC^2", "HC^2\\ \\rightarrow\\ HC^2"], 
           ["HC^{2}\\ \\rightarrow\\ HC^{2}", "C^{2}H\\ \\rightarrow\\ HC^{2}"], 
@@ -235,6 +245,13 @@ define(["chemcore"], function (ChemCore) {
           });
         }
         run([
+          ["Fe_2{}^-", "Fe_2{}^-"],
+          ["Fe_2{}^-", "Fe_2^-"],
+          ["_1^2H", "_1^2H"],
+          ["_1^-H", "_1^-H"],
+          ["_1^+H", "_1^+H"],
+          ["_1^{2-}H", "_1^{2-}H"],
+          ["_1^{2+}H", "_1^{2+}H"],
           ["x_1^{4+}", "x_1^{4+}"],
           ["x\\atomic{1}{4+}", "x_1^{4+}"],
           ["x\\polyatomic{4+}{1}", "x_1^{4+}"],
