@@ -192,7 +192,6 @@
   }
 
   function isNeg(n) {
-    console.log("isNeg() n=" + JSON.stringify(n));
     if (n === null) {
       return false;
     }
@@ -1791,17 +1790,6 @@
         return false;
       }
       return n1.compareTo(n2) < 0;
-    }
-
-    function isNeg(n) {
-      if (n === null) {
-        return false;
-      }
-      var bd;
-      if (n.op === Model.NUM) {
-        n = mathValue(n, true);
-      }
-      return n.compareTo(bigZero) < 0;
     }
 
     function isPos(bd) {
