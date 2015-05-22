@@ -192,6 +192,7 @@
   }
 
   function isNeg(n) {
+    console.log("isNeg() n=" + JSON.stringify(n));
     if (n === null) {
       return false;
     }
