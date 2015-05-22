@@ -112,52 +112,9 @@ var forEach = function forEach(array, fun) {
     }
   }
 };
-define(["mathcore"], function (ChemCore) {
+define(["mathcore"], function (MathCore) {
   describe("Math Core", function() {
-<<<<<<< HEAD
-<<<<<<< HEAD
-    describe("Debug", function() {
-      describe("equivSymbolic", function() {
-        function run(tests) {
-          forEach(tests, function (v, i) {
-            it(v[0] + " | " + v[1], function() {
-              expect(MathCore.evaluate({
-                method: "equivSymbolic",
-                value: v[0],
-              }, v[1])).toBe(true);
-            });
-          });
-        }
-        run([
-          ["\\sqrt[2]{9}", "3"],
-          ["\\sqrt[3]{8}", "2"],
-          ["\\sqrt[4]{16}", "2"],
-          ["\\sqrt[4]{x^4}", "x"],
-          ["\\sqrt[4]{x^8}", "x^2"],
-        ]);
-      });
-      describe("equivLiteral", function() {
-        function run(tests) {
-          forEach(tests, function (v, i) {
-            it(v[0] + " | " + v[1], function() {
-              expect(MathCore.evaluate({
-                method: "equivLiteral",
-                value: v[0],
-              }, v[1])).toBe(true);
-            });
-          });
-        }
-        run([
-          ["\\sqrt[2]{9}", "\\sqrt[2]{9}"],
-        ]);
-      });
-    });
-=======
->>>>>>> bb9be5286602e24c00905214cc74f3db338faf73
-=======
     describe("Debug", function() {
     });
->>>>>>> d42bb4d6896051365617e37e31c8669121425687
   });
 });
-

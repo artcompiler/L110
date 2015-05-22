@@ -237,6 +237,9 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["y-b=\\frac{h-a}{b-k}(x-a)", "y-b=\\frac{h-a}{b-k}(x-a)"],
+          ["\\frac{x^2+90x+400}{40x\\left(x+10\\right)}", "\\frac{x^2+90x+400}{40x\\left(x+10\\right)}"],
+          ["11=4+.10(x)", "x=70"],
           ["2h=5", "3*2h=3*5"],
           ["2h=5", "2hm=5m"],
           ["2h=5", "2hm/s^2=5m/s^2"],
@@ -588,6 +591,7 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["-4-4i"],
           ["2x-2"],
           ["x^2"],
           ["x^2-3x+2"],
@@ -633,10 +637,12 @@ define(["mathcore"], function (MathCore) {
           });
         };
         run([
+          ["y=x+3"],
+          ["x=1/2"],
           ["x=y=z=10"],
-          ["219+3x=10"],
+          ["3x=-10"],
           ["x>x^2"],
-          ["3>2>1>0"],
+          ["3>x>1>y"],
           ["219+3x"],
           ["219+3c"],
           ["3x+219"],
@@ -668,6 +674,11 @@ define(["mathcore"], function (MathCore) {
           });
         };
         run([
+          ["\\frac{y}{5}=x^2+x+2"],
+          ["y/5=x"],
+          ["y/5+2=x"],
+          ["y\\div5=x"],
+          ["7-10/x=2+15/x"],
           ["x*x>10"],
           ["10x(1+x)"],
           ["(x+2)^2"],
@@ -1244,7 +1255,6 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
-          ["1+2=3=4-1<5", "3=3=3<5"],
           ["1+2=3=4-1=5-2", "3=3=3=3"],
           ["1<2<3<4<5", "5>4>3>2>1"],
           ["1<x<2<y<3", "3>y>2>x>1"],
@@ -1307,32 +1317,6 @@ define(["mathcore"], function (MathCore) {
             });
           });
         }
-        run([
-        ]);
-      });
-      describe("isSimplified", function() {
-        function run(tests) {
-          forEach(tests, function (v, i) {
-            it(v[0], function() {
-              expect(MathCore.evaluate({
-                method: "isSimplified"
-              }, v[0])).toBe(true);
-            });
-          });
-        };
-        run([
-        ]);
-      });
-      describe("NOT isSimplified", function() {
-        function run(tests) {
-          forEach(tests, function (v, i) {
-            it(v[0], function() {
-              expect(MathCore.evaluate({
-                method: "isSimplified"
-              }, v[0])).toBe(false);
-            });
-          });
-        };
         run([
         ]);
       });

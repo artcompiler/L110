@@ -67,8 +67,11 @@ var MathCore = (function () {
     "t": { type: "unit", value: 2240, base: "lb" },
     "$": { type: "unit", value: u, base: "$" },
     "i": { type: "unit", value: null, base: "i" },
-    "\\radian": u,
-    "\\degree": Math.PI / 180,
+    "min": { type: "unit", value: 60, base: "s" },
+    "hr": { type: "unit", value: 3600, base: "s" },
+    "day": { type: "unit", value: 24*3600, base: "s" },
+    "\\radian": { type: "unit", value: u, base: "radian" },
+    "\\degree": { type: "unit", value: Math.PI / 180, base: "radian" },
     "\\pi": Math.PI,
     "R": { name: "reals" },   // special math symbol for real space
     "matrix": {},

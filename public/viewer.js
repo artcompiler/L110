@@ -6,11 +6,9 @@ exports.viewer = (function () {
   function reset() {
   }
   var height;
-
   function updateObj(obj) {
     objCodeMirror.setValue(obj);
   }
-
   function update(obj, src, pool) {
     reset();
     exports.src = src;
@@ -122,7 +120,7 @@ exports.viewer = (function () {
     data.push(text);
     height = 28;
     $("#graff-view")
-    .html('<svg style="background-color:" ' + fill +
+      .html('<svg style="background-color:" ' + fill +
             'xmlns="http://www.w3.org/2000/svg" width="640" height="' +
             height +
             '"><g>' + checkSrc + text + svg + '</g></svg>');

@@ -300,6 +300,17 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["1.\\overline{88}", "1.\\overline{88}"],
+          ["1.\\overline{88}", "1.\\overline{8}"],
+          ["0.\\overline{3}", "1/3"],
+          [".\\overline{3}", "1/3"],
+          ["1.\\overline{12}", "1.\\overline{121212}"],
+          ["0.\\overline{12}", "4/33"],
+          ["1.3\\overline{12}", "1.3\\overline{121212}"],
+          ["0.3\\overline{12}", "103/330"],
+          ["(1)(1/2)", "1/2"],
+          ["(1)1/2", "1/2"],
+          ["1(1/2)", "1/2"],
           ["\\sqrt[3]{8}", "2"],
           ["\\sqrt[3]{27}", "3"],
           ["\\sqrt[3]{64}", "4"],
@@ -317,6 +328,7 @@ define(["mathcore"], function (MathCore) {
           ["|-10|", "10"],
           ["\\left|-10\\right|", "10"],
           ["3.06\\div3=1.02", "3.06\\div3=1.02"],
+          ["2.5", "\\frac{5}{2}"],
         ]);
       });
       describe("NOT equivSymbolic", function() {
@@ -341,7 +353,6 @@ define(["mathcore"], function (MathCore) {
           ["3.06\\div3=5", "3.06\\div3=1.02"],
           ["3.06\\div3=1.9", "3.06\\div3=1.02"],
           ["2\\div1=2", "2\\div1=5"],
-          ["2.5", "\\frac{5}{2}"],
         ]);
       });
       describe("NOT equivSymbolic allowDecimal=true", function() {
@@ -458,6 +469,19 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["1.\\overline{88}", "1.\\overline{88}"],
+          ["1.\\overline{88}", "1.\\overline{8}"],
+          ["0.\\overline{3}", "1/3"],
+          [".\\overline{3}", "1/3"],
+          ["1.\\overline{12}", "1.\\overline{121212}"],
+          ["0.\\overline{12}", "4/33"],
+          ["1.3\\overline{12}", "1.3\\overline{121212}"],
+          ["0.3\\overline{12}", "103/330"],
+          ["10s", "10s"],
+          ["1000ms", "1s"],
+          ["1hr", "60min"],
+          ["1min", "60s"],
+          ["1day", "60*60*24s"],
           ["\\sqrt[3]{8}", "2"],
           ["\\sqrt[3]{27}", "3"],
           ["\\sqrt[3]{64}", "4"],

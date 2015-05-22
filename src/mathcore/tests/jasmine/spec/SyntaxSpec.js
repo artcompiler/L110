@@ -334,6 +334,7 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["\\format{\\number{3}}", "123"],
           [["\\format{\\nonMixedFraction}"], "1.23\\frac{1}{2}"],
           [["\\format{\\nonMixedFraction}"], "1 1/2"],
           [["\\format{\\nonMixedFraction}"], "1\\frac{1}{2}"],

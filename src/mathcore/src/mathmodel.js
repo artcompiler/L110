@@ -98,12 +98,35 @@
     return toDecimal(Math.abs(n));
   }
 
-  function numberNode(val, doScale, roundOnly) {
+  function getRepetition(str) {
+    // 123123123123
+    var len = str.length;
+    // 12
+    var primes = primeFactors(len);
+    // 2, 3, 4, 6
+    var brk = some(primes, function (size) {
+      for (var i = 0; i < len; i += size) {
+        if (last !== next) {
+          return 0;
+        }
+      }
+      return size;
+    });
+    if (brk) {
+      return str.substring(0, brk);
+    }
+    return str;
+  }
+
+  function numberNode(val, doScale, roundOnly, isRepeating) {
     // doScale - scale n if true
     // roundOnly - only scale if rounding
     var mv, node, minusOne;
     if (doScale) {
-      var scale = option("decimalPlaces")
+      var scale = option("decimalPlaces");
+      if (isRepeating) {
+         // FIXME expand repeating decimal past size of scale
+      }
       mv = toDecimal(val);
       if (isNeg(mv) && !isMinusOne(mv)) {
         minusOne = bigMinusOne.setScale(scale, BigDecimal.ROUND_HALF_UP);
@@ -172,7 +195,7 @@
     if (n === null) {
       return false;
     }
-    if (n.op === Model.NUM) {
+    if (n.op) {
       n = mathValue(n, true);
     }
     if (n === null) {
@@ -349,6 +372,8 @@
       case Model.POW:
       case Model.SUBSCRIPT:
         node = visit.unary(node, resume);
+      case Model.OVERLINE:
+        node = visit.unary(node);
         break;
       case Model.COMMA:
       case Model.MATRIX:
@@ -548,11 +573,11 @@
         },
         additive: function (node) {
           var vars = variables(node);
-          if (vars.length === 0) {
-            return node;
-          } else {
+          if (vars.length !== 0) {
+            // If we have vars, because this is additive the constant part is one.
             node = nodeOne;
           }
+          return node;
         },
         unary: function(node) {
           var vars = variables(node.args[0], env);
@@ -834,9 +859,10 @@
         case "\\number":
           if (node.numberFormat === "integer" ||
               node.numberFormat === "decimal") {
+            var brk = node.args[0].indexOf(".");
             if (length === undefined ||
-                length === 0 && node.args[0].indexOf(".") === -1 ||
-                length === node.args[0].substring(node.args[0].indexOf(".") + 1).length) {
+                length === 0 && brk === -1 ||
+                brk >= 0 && length === node.args[0].substring(brk + 1).length) {
               // If there is no size or if the size matches the value...
               return true;
             }
@@ -1050,9 +1076,10 @@
       var node = Model.create(visit(root, {
         name: "normalize",
         numeric: function (node) {
-          if (option("allowDecimal") && isDecimal(node)) {
+          if (isDecimal(node)) {
             node = decimalToFraction(node);
           } else if (isNeg(node)) {
+            // FIXME what's this doing?
             node = numberNode(node.args[0]);  // Normalize negatives
           }
           return node;
@@ -1166,6 +1193,8 @@
             node = numberNode(Math.PI);
           } else if (node.args[0] === "e") {
             node = numberNode(Math.E);
+          } else if (node.args[0] === "i") {
+            node = nodeImaginary;
           }
           return node;
         },
@@ -1273,6 +1302,7 @@
           var d0, d1;
           var n0, n1;
           var v0, v1;
+          var cp0, cp1;
           for (var i = 0; i < node.args.length - 1; i++) {
             n0 = node.args[i];
             n1 = node.args[i + 1];
@@ -1307,7 +1337,10 @@
                     node.args[i] = n1;
                     node.args[i + 1] = n0;
                   }
-                } else if (isLessThan(abs(constantPart(n0)), abs(constantPart(n1)))) {
+                } else if (isLessThan((cp0 = abs(constantPart(n0))), (cp1 = abs(constantPart(n1))))) {
+                  node.args[i] = n1;
+                  node.args[i + 1] = n0;
+                } else if (!cp0 && cp1) {
                   node.args[i] = n1;
                   node.args[i + 1] = n0;
                 }
@@ -1417,7 +1450,8 @@
           forEach(node.args, function (n, i) {
             node.args[i] = sort(n);
           });
-          if (node.op === Model.COLON) {
+          if (node.op === Model.COLON ||
+              node.op === Model.RIGHTARROW) {
             // If ratio, then don't sort toplevel terms.
             return node;
           }
@@ -1440,17 +1474,30 @@
             } else if (d0 === d1) {
               v0 = variables(n0);
               v1 = variables(n1);
-              if (v0.length !== v1.length  && v0.length < v1.length ||
-                  v0.length > 0 && v0[0] < v1[0]) {
-                // Swap adjacent elements
-                var t = node.args[i];
-                node.args[i] = n1;
-                node.args[i + 1] = n0;
-                node.op =
-                  node.op === Model.GT ? Model.LT :
-                  node.op === Model.GE ? Model.LE :
-                  node.op === Model.LT ? Model.GT :
-                  node.op === Model.LE ? Model.GE : node.op;
+              if (v0.length !== v1.length) {
+                if(v0.length < v1.length) {
+                  // Swap adjacent elements
+                  var t = node.args[i];
+                  node.args[i] = n1;
+                  node.args[i + 1] = n0;
+                  node.op =
+                    node.op === Model.GT ? Model.LT :
+                    node.op === Model.GE ? Model.LE :
+                    node.op === Model.LT ? Model.GT :
+                    node.op === Model.LE ? Model.GE : node.op;
+                }
+              } else if (v0.length > 0) {
+                if (v0[0] < v1[0]) {
+                  // Swap adjacent elements
+                  var t = node.args[i];
+                  node.args[i] = n1;
+                  node.args[i + 1] = n0;
+                  node.op =
+                    node.op === Model.GT ? Model.LT :
+                    node.op === Model.GE ? Model.LE :
+                    node.op === Model.LT ? Model.GT :
+                    node.op === Model.LE ? Model.GE : node.op;
+                }
               } else if (!isZero(n1) && isLessThan(mathValue(n0), mathValue(n1))) {
                 // Unless the RHS is zero, swap adjacent elements
                 var t = node.args[i];
@@ -1691,8 +1738,35 @@
       return false;
     }
 
+    function isRepeating(node) {
+      assert(node.op === Model.NUM);
+      return node.isRepeating;
+    }
+
+    function repeatingDecimalToFraction(node) {
+      assert(isRepeating(node));
+      var str = node.args[0];
+      if (str.charAt(0) === "0") {
+        str = str.slice(1);  // Trim off leading zero.
+      }
+      var pos = str.indexOf(".");
+      var decimalPlaces = str.length - pos - 1;
+      // 0.3 --> 3/9
+      // 0.12 --> 12/99 --> 4/33
+      // 0.1212 --> 1212/9999 --> 4/33
+      var numer = numberNode(str.slice(0, pos) + str.slice(pos+1));
+      var denom = binaryNode(Model.ADD, [
+        binaryNode(Model.POW, [numberNode("10"), numberNode(decimalPlaces)]),
+        nodeMinusOne
+      ]);
+      return fractionNode(numer, denom);
+    }
+
     function decimalToFraction(node) {
       assert(node.op === Model.NUM);
+      if (isRepeating(node)) {
+        return repeatingDecimalToFraction(node);
+      }
       var str = node.args[0];
       if (str.charAt(0) === "0") {
         str = str.slice(1);  // Trim off leading zero.
@@ -1875,14 +1949,14 @@
             if (n.op === Model.POW) {
               mv = abs(mathValue(n.args[0], true));
               if (mv !== null) {
-                key = "number"; //numberNode(mv);
+                key = "number";
               } else {
                 key = "none";
               }
             } else {
               mv = abs(mv);
               if (mv !== null) {
-                key = "number"; //numberNode(mv);
+                key = "number";
               } else {
                 key = "none";
               }
@@ -2736,9 +2810,6 @@
           }
         },
         variable: function(node) {
-          if (node.args[0] === "i") {
-            node = nodeImaginary;
-          }
           return node;
         },
         comma: function(node) {
@@ -2787,11 +2858,31 @@
             }
             // If equality and LHS leading coefficient is negative, then multiply by -1
             var c;
-            if (node.op === Model.EQL && isNeg((c = leadingCoeff(args[0])))) {
+            if (node.op === Model.EQL && sign(args[0]) < 0) {
               args[0] = expand(multiplyNode([nodeMinusOne, args[0]]));
             }
           }
           return newNode(node.op, args);
+          function sign(node) {
+            var s = 0;
+            var tt = terms(node);
+            forEach(tt, function (n) {
+              var mv = mathValue(n);
+              if (isNeg(leadingCoeff(n))) {
+                s -= 1;
+              } else {
+                s += 1;
+              }
+            });
+            if (s === 0) {
+              if (isNeg((leadingCoeff(tt[0])))) {
+                s = -1;
+              } else {
+                s = 1;
+              }
+            }
+            return s;
+          }
         },
       }), root.location);
       // If the node has changed, simplify again
@@ -2897,7 +2988,7 @@
           case Model.M:
             var args = [];
             // M.args[0] -> ADD.args
-            if (node.args[0].op === Model.ADD) {
+            if (node.args[0].op === Model.MUL) {
               forEach(node.args[0].args, function (n) {
                 assert(n.op === Model.VAR, "Internal error: invalid arguments to the \M tag");
                 var sym = Model.env[n.args[0]];
@@ -4076,6 +4167,7 @@
     this.simplify = simplify;
     this.dummy = dummy;
     this.expand = expand;
+    this.terms = terms;
     this.factors = factors;
     this.isFactorised = isFactorised;
     this.mathValue = mathValue;
@@ -4208,6 +4300,16 @@
       Assert.setLocation(node.location);
     }
     var result = visitor.expand(node, env);
+    Assert.setLocation(prevLocation);
+    return result;
+  }
+
+  function terms(node, env) {
+    var prevLocation = Assert.location;
+    if (node.location) {
+      Assert.setLocation(node.location);
+    }
+    var result = visitor.terms(node, env);
     Assert.setLocation(prevLocation);
     return result;
   }
@@ -4460,58 +4562,18 @@
 
     // Return the base unit (e.g. 'g', 'm', 's') in the given expression.
     function baseUnit(node) {
-      var baseUnits = {
-        "g": "g",
-        "cg": "g",
-        "kg": "g",
-        "mg": "g",
-        "ng": "g",
-        "\\mug": "g",
-        "m": "m",
-        "cm": "m",
-        "km": "m",
-        "mm": "m",
-        "\\mum": "m",
-        "nm": "m",
-        "s": "s",
-        "cs": "s",
-        "ks": "s",
-        "ms": "s",
-        "\\mus": "s",
-        "ns": "s",
-        "in": "ft",
-        "ft": "ft",
-        "yd": "ft",
-        "mi": "ft",
-        "fl": "fl",
-        "cup": "fl",
-        "pt": "fl",
-        "qt": "fl",
-        "gal": "fl",
-        "oz": "lb",
-        "lb": "lb",
-        "st": "lb",
-        "qtr": "lb",
-        "cwt": "lb",
-        "t": "lb",
-        "L": "L",
-        "mL": "L",
-        "\\muL": "L",
-        "nL": "L",
-        "$": "$",
-        "\\radian": "\\radian",
-        "\\degree": "\\radian",
-        "mol": "mol",
-      };
+      var env = Model.env;
       var prevLocation = Assert.location;
       if (node.location) {
         Assert.setLocation(node.location);
       }
-      var uu = units(node, Model.env);
+      var uu = units(node, env);
       Assert.setLocation(prevLocation);
       assert(uu.length < 2, "FIXME need user error message");
-      if (baseUnits[uu[0]]) {
-        return baseUnits[uu[0]];
+      var u;
+      if ((u = env[uu[0]])) {
+        assert(u.type === "unit");
+        return u.base;
       }
       // Node has no valid units, so just return undefined.
       return undefined;
@@ -4702,6 +4764,25 @@
     return inverseResult ? !result : result;
   }
 
+  function hasDenominator(node) {
+    // Node has a denominator.
+    var tt = terms(node);
+    var result = some(tt, function (t) {
+      // Some term of node has a denominator.
+      if (variablePart(t)) {
+        var ff = factors(t);
+        return some(ff, function (f) {
+          // Has factor of some term of node has a denominator.
+          return f.op === Model.POW && isNeg(f.args[1]);
+        });
+      } else {
+        // No variable part then its a coefficient, so don't check.
+        return false;
+      }
+    });
+    return result;
+  }
+
   Model.fn.isSimplified = function (node, resume) {
     var n1, n2, nid1, nid2, result;
     var dontExpandPowers = option("dontExpandPowers", true);
@@ -4713,7 +4794,16 @@
         return isSimplified(n);
       });
     } else if (isComparison(node.op)) {
-      result = isSimplified(node.args[0]) && isSimplified(node.args[1]);
+      var n = normalize(binaryNode(Model.ADD, [node.args[0], node.args[1]]));
+      result = true;
+      if (!isSimplified(n)) {
+        // Check for like terms on both sides
+        result = false;
+      }
+      if (result && (hasDenominator(n))) {
+        // Check for division or fraction.
+        result = false;
+      }
     } else {
       n1 = normalize(node);
       n2 = normalize(simplify(expand(normalize(node))));
