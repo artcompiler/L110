@@ -126,6 +126,7 @@ define(["chemcore"], function (ChemCore) {
           });
         }
         run([
+          ["", ""],
           ["Fe_2{}^-", "Fe_2{}^-"],
           ["Fe_2{}^-", "Fe_2^-"],
           ["_1^2H", "_1^2H"],
@@ -241,6 +242,26 @@ define(["chemcore"], function (ChemCore) {
           ["H+C^2\\ \\rightarrow\\ HC^2", "C^2+H\\ \\rightarrow\\ HC^2"], 
         ]);
       });
+      describe("NOT equivLiteral", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(ChemCore.evaluate({
+                method: "equivLiteral",
+                value: v[0]
+              }, v[1])).toBe(false);
+            });
+          });
+        }
+        run([
+          ["\\overset{2}{H}", "\\overset{2+}{H}"],
+          ["\\overset{2+}{H}", "\\overset{2}{H}"],
+          ["\\underset{2}{H}", "\\underset{2+}{H}"],
+          ["\\underset{2+}{H}", "\\underset{2}{H}"],
+          ["\\overset{3}{H}", "\\overset{2}{H}"],
+          ["\\overset{3}{H}", "\\underset{3}{H}"],
+        ]);
+      });
       describe("equivLiteral", function() {
         function run(tests) {
           forEach(tests, function (v, i) {
@@ -253,6 +274,7 @@ define(["chemcore"], function (ChemCore) {
           });
         }
         run([
+          ["", ""],
           ["Fe_2{}^-", "Fe_2{}^-"],
           ["Fe_2{}^-", "Fe_2^-"],
           ["_1^2H", "_1^2H"],

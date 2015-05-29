@@ -85,7 +85,7 @@ var MathCore = (function () {
   function evaluate(spec, solution, resume) {
     try {
       assert(spec, message(3001, [spec]));
-      assert(solution, message(3002, [solution]));
+      assert(solution != undefined, message(3002, [solution]));
       Assert.setCounter(1000000, message(3005));
       var evaluator = makeEvaluator(spec);
       evaluator.evaluate(solution, function (err, val) {
@@ -211,27 +211,27 @@ var MathCore = (function () {
     Assert.setLocation("spec");
     validateOptions(options);
     Model.pushEnv(env);
-    var valueNode = value ? Model.create(value, "spec") : undefined;
+    var valueNode = value != undefined ? Model.create(value, "spec") : undefined;
     Model.popEnv();
     var evaluate = function evaluate(solution, resume) {
       Ast.clearPool();
       Assert.setLocation("user");
-      assert(solution, message(3002));
+      assert(solution != undefined, message(3002));
       Model.pushEnv(env);
       var solutionNode = Model.create(solution, "user");
       Assert.setLocation("spec");
       var result;
       switch (method) {
       case "equivValue":
-        assert(value, message(3003));
+        assert(value != undefined, message(3003));
         result = valueNode.equivValue(solutionNode);
         break;
       case "equivLiteral":
-        assert(value, message(3003));
+        assert(value != undefined, message(3003));
         result = valueNode.equivLiteral(solutionNode);
         break;
       case "equivSyntax":
-        assert(value, message(3003));
+        assert(value != undefined, message(3003));
         if (!(valueNode instanceof Array)) {
           valueNode = [valueNode];
         }
@@ -240,7 +240,7 @@ var MathCore = (function () {
         });
         break;
       case "equivSymbolic":
-        assert(value, message(3003));
+        assert(value != undefined, message(3003));
         result = valueNode.equivSymbolic(solutionNode);
         break;
       case "isFactorised":

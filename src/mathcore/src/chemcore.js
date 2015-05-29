@@ -190,7 +190,7 @@ var ChemCore = (function () {
   function evaluate(spec, solution) {
     try {
       assert(spec, message(4001, [spec]));
-      assert(solution, message(4002, [solution]));
+      assert(solution != undefined, message(4002, [solution]));
       Assert.setCounter(1000000, message(4005));
       var evaluator = makeEvaluator(spec);
       var result = evaluator.evaluate(solution);
@@ -202,7 +202,7 @@ var ChemCore = (function () {
   }
   function evaluateVerbose(spec, solution) {
     try {
-      assert(spec, message(4001, [spec]));
+      assert(spec != undefined, message(4001, [spec]));
       Assert.setCounter(1000000, message(4005));
       var evaluator = makeEvaluator(spec);
       var result, errorCode = 0, msg = "Normal completion", stack, location;
@@ -293,27 +293,27 @@ var ChemCore = (function () {
     Assert.setLocation("spec");
     validateOptions(options);
     Model.pushEnv(env);
-    var valueNode = value ? Model.create(value, "spec") : undefined;
+    var valueNode = value != undefined ? Model.create(value, "spec") : undefined;
     Model.popEnv();
     var evaluate = function evaluate(solution) {
       Ast.clearPool();
       Model.pushEnv(env);
       Assert.setLocation("user");
-      assert(solution, message(4002));
+      assert(solution != undefined, message(4002));
       var solutionNode = Model.create(solution, "user");
       Assert.setLocation("spec");
       var result;
       switch (method) {
       case "equivValue":
-        assert(value, message(4003));
+        assert(value != undefined, message(4003));
         result = valueNode.equivValue(solutionNode);
         break;
       case "equivLiteral":
-        assert(value, message(4003));
+        assert(value != undefined, message(4003));
         result = valueNode.equivLiteral(solutionNode);
         break;
       case "equivSymbolic":
-        assert(value, message(4003));
+        assert(value != undefined, message(4003));
         result = valueNode.equivSymbolic(solutionNode);
         break;
       case "isUnit":

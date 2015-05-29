@@ -373,6 +373,7 @@
       case Model.SUBSCRIPT:
         node = visit.unary(node, resume);
       case Model.OVERLINE:
+      case Model.NONE:
         node = visit.unary(node);
         break;
       case Model.COMMA:
@@ -4772,7 +4773,7 @@
     return result;
   }
 
-  Model.fn.isSimplified = function (node, resume) {
+  Model.fn.isSimplified = function isSimplified(node, resume) {
     var n1, n2, nid1, nid2, result;
     var dontExpandPowers = option("dontExpandPowers", true);
     var dontFactorDenominators = option("dontFactorDenominators", true);
@@ -4789,8 +4790,11 @@
         // Check for like terms on both sides
         result = false;
       }
-      if (result && (hasDenominator(n))) {
+      if (result && hasDenominator(n)) {
         // Check for division or fraction.
+        result = false;
+      }
+      if (result && !isFactorised(n)) {
         result = false;
       }
     } else {

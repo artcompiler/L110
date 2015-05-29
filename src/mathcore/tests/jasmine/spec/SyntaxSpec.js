@@ -120,6 +120,7 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["", ""],
           ["mg", "mg"],
           ["\\mug", "\\mug"],
           ["\\mus", "\\mus"],

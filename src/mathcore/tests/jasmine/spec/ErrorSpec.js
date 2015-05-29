@@ -147,8 +147,8 @@ define(["mathcore"], function (MathCore) {
             ["equivLiteral", ["\\text{Range: }\\left[-\\infty,0\\right)",
                               "\\text{Range: }\\left(-\\infty,0\\right)"], {}, 1001],
             ["isFactorised", ["==============="], {}, 1006],
-            ["equivLiteral", ["", "10"], {}, 3002],
-            ["equivLiteral", ["10", ""], {}, 3003],
+            ["equivLiteral", [undefined, "10"], {}, 3002],
+            ["equivLiteral", ["10", undefined], {}, 3003],
             ["isFactorised", ["4k^2+9m^2"], {}, 2001],
             ["isFactorised", ["xy+2ab"], {}, 2001],
             ["isFactorised", ["(10x"], {}, 1001],
@@ -175,8 +175,8 @@ define(["mathcore"], function (MathCore) {
           }
           describe("various", function() {
             var tests = [
-              ["equivLiteral", ["", "10"], "user"],
-              ["equivLiteral", ["10", ""], "spec"],
+              ["equivLiteral", [undefined, "10"], "user"],
+              ["equivLiteral", ["10", undefined], "spec"],
               ["isFactorised", ["4k^2+9m^2"], "user"],
               ["isFactorised", ["x^2+xy+3y^2"], "user"],
               ["isFactorised", ["(10x"], "user"],

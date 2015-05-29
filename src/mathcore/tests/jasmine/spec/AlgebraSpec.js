@@ -641,7 +641,6 @@ define(["mathcore"], function (MathCore) {
           ["x=1/2"],
           ["x=y=z=10"],
           ["3x=-10"],
-          ["x>x^2"],
           ["3>x>1>y"],
           ["219+3x"],
           ["219+3c"],
@@ -674,6 +673,8 @@ define(["mathcore"], function (MathCore) {
           });
         };
         run([
+          ["x>x^2"],
+          ["20y=5x^2+5x+10"],
           ["\\frac{y}{5}=x^2+x+2"],
           ["y/5=x"],
           ["y/5+2=x"],

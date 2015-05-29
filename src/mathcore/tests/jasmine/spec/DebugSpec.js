@@ -115,21 +115,6 @@ var forEach = function forEach(array, fun) {
 define(["mathcore"], function (MathCore) {
   describe("Math Core", function() {
     describe("Debug", function() {
-      describe("equivSymbolic", function() {
-        function run(tests) {
-          forEach(tests, function (v, i) {
-            it(v[0] + " | " + v[1], function() {
-              expect(MathCore.evaluate({
-                method: "equivSymbolic",
-                value: v[0]
-              }, v[1])).toBe(true);
-            });
-          });
-        }
-        run([
-          ["y-b=\\frac{h-a}{b-k}(x-a)", "y-b=\\frac{h-a}{b-k}(x-a)"],
-        });
-      });
     });
   });
 });
