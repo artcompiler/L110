@@ -229,26 +229,31 @@ var transformer = function() {
             options: options,
             value: reference,
           }, response, function (err, val) {
+            console.log("equivSymbolic() err=" + err + " val=" + val);
             response = escapeStr(response);
             reference = escapeStr(reference);
-            resume(null, {
-              score: val ? (val.result ? 1 : -1) : 0,
-              response: response,
-              value: reference,
-              json: {
-                "validation": {
-                  "scoring_type": "exactMatch",
-                  "valid_response": {
-                    "score": 1,
-                    "value": [{
-                      "method": "equivSymbolic",
-                      "value": reference,
-                      "options": options,
-                    }]
+            if (err) {
+              resume(err, null);
+            } else {
+              resume(null, {
+                score: val ? (val.result ? 1 : -1) : 0,
+                response: response,
+                value: reference,
+                json: {
+                  "validation": {
+                    "scoring_type": "exactMatch",
+                    "valid_response": {
+                      "score": 1,
+                      "value": [{
+                        "method": "equivSymbolic",
+                        "value": reference,
+                        "options": options,
+                      }]
+                    }
                   }
                 }
-              }
-            });
+              });
+            }
           });
         }
       });
@@ -637,7 +642,6 @@ var renderer = function() {
     }
     return tag
   }
-
 }();
 
 exports.compiler = function () {
@@ -645,9 +649,13 @@ exports.compiler = function () {
   function compile(src, resume) {
     try {
       transformer.transform(src, function (err, val) {
-        renderer.render(val, function (err, val) {
+        if (err) {
           resume(err, val);
-        });
+        } else {
+          renderer.render(val, function (err, val) {
+            resume(err, val);
+          });
+        }
       });
     } catch (x) {
       console.log("ERROR with code");
