@@ -1,25 +1,17 @@
 /* -*- Mode: js; js-indent-level: 2; indent-tabs-mode: nil; tab-width: 2 -*- */
 /* vim: set shiftwidth=2 tabstop=2 autoindent cindent expandtab: */
 /* copyright (c) 2014, Jeff Dyer */
-
-exports.viewer = (function () {
-  function reset() {
-  }
+window.viewer = (function () {
   var height;
   function updateObj(obj) {
     objCodeMirror.setValue(obj);
   }
-  function update(obj, src, pool) {
-    reset();
-    exports.src = src;
-    exports.pool = pool;
-    exports.obj = obj;
-    obj = JSON.parse(obj);
-    if (!obj.json) {
+  function update(el, obj, src, pool) {
+    if (!obj.objectCode) {
       return;
     }
     var fill, fontStyle;
-    var value = obj.json.validation.valid_response.value[0];
+    var value = JSON.parse(obj.objectCode).validation.valid_response.value[0];
     var options = "";
     var method = value.method;
     Object.keys(value.options).sort().forEach(function (v) {
@@ -41,7 +33,6 @@ exports.viewer = (function () {
         break;
       }
     });
-    updateObj(JSON.stringify(obj.json, null, 2));
     var svg = obj.svg;
     function getSize(svg) {
       svg = svg.slice(svg.indexOf("width=") + 7 + 5);
@@ -60,7 +51,7 @@ exports.viewer = (function () {
     var text =
       "<text x='30' y='20'>" +
       "<tspan font-size='14' font-weight='600'>" + method + "</tspan> " +
-      "<tspan font-weight='400' font-style='italic'>" + options  + "</tspan>" +
+      "<tspan font-size='12' font-weight='400' font-style='italic'>" + options  + "</tspan>" +
       "</text> ";
     var svg;
     if (obj.valueSVG) {
@@ -69,17 +60,19 @@ exports.viewer = (function () {
       svg =
         "<image width='" + valueSize.width +
         "' height='" + valueSize.height +
-        "' x='4' y='30' xlink:href='data:image/svg+xml;utf8," + obj.valueSVG +
-        "'/><image width='" + responseSize.width +
+        "' x='4' y='30' xlink:href=\"data:image/svg+xml;utf8," + obj.valueSVG +
+        "\"/><image width='" + responseSize.width +
         "' height='" + responseSize.height +
         "' x='4' y='" + (valueSize.height + 40) +
-        "' xlink:href='data:image/svg+xml;utf8," + obj.responseSVG +
-        "'/>";
+        "' xlink:href=\"data:image/svg+xml;utf8," + obj.responseSVG +
+        "\"/>";
     } else {
       var valueHeight = 0;
       if (obj.value) {
         text += 
-        "<text x='4' y='45'><tspan font-size='12' font-weight='400'>" + obj.value + "</tspan></text>";
+          "<text x='4' y='45'><tspan font-size='12' font-weight='400'>" +
+          obj.value +
+          "</tspan></text>";
         valueHeight = 20;
       }
       var responseSize = getSize(obj.responseSVG);
@@ -119,18 +112,22 @@ exports.viewer = (function () {
     var data = [];
     data.push(text);
     height = 28;
-    $("#graff-view")
-      .html('<svg style="background-color:" ' + fill +
-            'xmlns="http://www.w3.org/2000/svg" width="640" height="' +
-            height +
-            '"><g>' + checkSrc + text + svg + '</g></svg>');
+    $(el)
+      .html('<g>' + checkSrc + text + svg + '</g>');
     var bbox = $("#graff-view svg g")[0].getBBox();
-    $("#graff-view svg").attr("height", (bbox.height + 20) + "px");
-    $("#graff-view svg").attr("width", (bbox.width + 40) + "px");
+    $(el).attr("height", (bbox.height + 20) + "px");
+//    $(el).attr("width", (bbox.width + 40) + "px");
   }
-  function capture() {
+  function unescapeXML(str) {
+    return String(str)
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, "'");
+  }
+  function capture(el) {
     // My SVG file as s string.
-    var mySVG = $("#graff-view").html();
+    var mySVG = $(el).html();
 /*
     // Create a Data URI.
     // Load up our image.
@@ -152,7 +149,7 @@ exports.viewer = (function () {
     document.getElementById('graff-view').replaceChild(old, myCanvas);
     return '<html><img class="thumbnail" src="' + dataURL + '"/></html>';
 */
-    return '<html>' + mySVG + '</html>';
+    return mySVG;
   }
   return {
     update: update,
