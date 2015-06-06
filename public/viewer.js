@@ -7,6 +7,7 @@ window.exports.viewer = (function () {
     objCodeMirror.setValue(obj);
   }
   function update(el, obj, src, pool) {
+    obj = JSON.parse(obj);
     if (!obj.objectCode) {
       return;
     }
