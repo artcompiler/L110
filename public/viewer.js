@@ -11,7 +11,7 @@ window.exports.viewer = (function () {
       return;
     }
     var fill, fontStyle;
-    var value = JSON.parse(obj.objectCode).validation.valid_response.value[0];
+    var value = obj.objectCode.validation.valid_response.value[0];
     var options = "";
     var method = value.method;
     Object.keys(value.options).sort().forEach(function (v) {
