@@ -161,7 +161,7 @@ var transformer = function() {
               score: val ? (val.result ? 1 : -1) : 0,
               response: response,
               value: reference,
-              objectCode: JSON.stringify({
+              objectCode: {
                 "validation": {
                   "scoring_type": "exactMatch",
                   "valid_response": {
@@ -173,7 +173,7 @@ var transformer = function() {
                     }]
                   }
                 }
-              }, null, 2),
+              },
             });
           });
         }
@@ -198,7 +198,7 @@ var transformer = function() {
               score: val ? (val.result ? 1 : -1) : 0,
               response: response,
               value: reference,
-              objectCode: JSON.stringify({
+              objectCode: {
                 "validation": {
                   "scoring_type": "exactMatch",
                   "valid_response": {
@@ -210,7 +210,7 @@ var transformer = function() {
                     }]
                   }
                 }
-              }, null, 2),
+              },
             });
           });
         }
@@ -239,7 +239,7 @@ var transformer = function() {
                 score: val ? (val.result ? 1 : -1) : 0,
                 response: response,
                 value: reference,
-                objectCode: JSON.stringify({
+                objectCode: {
                   "validation": {
                     "scoring_type": "exactMatch",
                     "valid_response": {
@@ -251,7 +251,7 @@ var transformer = function() {
                       }]
                     }
                   }
-                }, null, 2),
+                },
               });
             }
           });
@@ -277,7 +277,7 @@ var transformer = function() {
               score: val ? (val.result ? 1 : -1) : 0,
               response: response,
               value: reference,
-              objectCode: JSON.stringify({
+              objectCode: {
                 "validation": {
                   "scoring_type": "exactMatch",
                   "valid_response": {
@@ -289,7 +289,7 @@ var transformer = function() {
                     }]
                   }
                 }
-              }, null, 2),
+              },
             });
           });
         }
@@ -309,7 +309,7 @@ var transformer = function() {
           resume(err, {
             score: val ? (val.result ? 1 : -1) : 0,
             response: response,
-            objectCode: JSON.stringify({
+            objectCode: {
               "validation": {
                 "scoring_type": "exactMatch",
                 "valid_response": {
@@ -320,7 +320,7 @@ var transformer = function() {
                   }]
                 }
               }
-            }, null, 2),
+            },
           });
         });
       }
@@ -339,7 +339,7 @@ var transformer = function() {
           resume(err, {
             score: val ? (val.result ? 1 : -1) : 0,
             response: response,
-            objectCode: JSON.stringify({
+            objectCode: {
               "validation": {
                 "scoring_type": "exactMatch",
                 "valid_response": {
@@ -350,7 +350,7 @@ var transformer = function() {
                   }]
                 }
               }
-            }, null, 2),
+            },
           });
         });
       }
@@ -369,7 +369,7 @@ var transformer = function() {
           resume(err, {
             score: val ? (val.result ? 1 : -1) : 0,
             response: response,
-            objectCode: JSON.stringify({
+            objectCode: {
               "validation": {
                 "scoring_type": "exactMatch",
                 "valid_response": {
@@ -380,7 +380,7 @@ var transformer = function() {
                   }]
                 }
               }
-            }, null, 2),
+            },
           });
         });
       }
@@ -399,7 +399,7 @@ var transformer = function() {
           resume(err, {
             score: val ? (val.result ? 1 : -1) : 0,
             response: response,
-            objectCode: JSON.stringify({
+            objectCode: {
               "validation": {
                 "scoring_type": "exactMatch",
                 "valid_response": {
@@ -410,7 +410,7 @@ var transformer = function() {
                   }]
                 }
               }
-            }, null, 2),
+            },
           });
         });
       }
@@ -434,7 +434,7 @@ var transformer = function() {
               score: val ? (val.result ? 1 : -1) : 0,
               response: response,
               value: reference,
-              objectCode: JSON.stringify({
+              objectCode: {
                 "validation": {
                   "scoring_type": "exactMatch",
                   "valid_response": {
@@ -446,7 +446,7 @@ var transformer = function() {
                     }]
                   }
                 }
-              }, null, 2),
+              },
             });
           });
         }
