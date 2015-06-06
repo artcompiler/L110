@@ -23,7 +23,8 @@ app.get('/compile', function(req, res) {
     data += chunk;
   });
   req.on('end', function () {
-    var src = JSON.parse(data).src;
+    console.log("/compile data=" + JSON.stringify);
+    var src = data.src;
     var obj = compiler.compile(src, function (err, val) {
       if (err) {
         res.send({
