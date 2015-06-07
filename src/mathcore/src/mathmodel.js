@@ -374,6 +374,7 @@
         node = visit.unary(node, resume);
       case Model.OVERLINE:
       case Model.NONE:
+      case Model.DEGREE:
         node = visit.unary(node);
         break;
       case Model.COMMA:
@@ -491,6 +492,9 @@
             if (d !==  0) {
               return nodeInfinity;
             }
+            return 0;
+          case Model.DEGREE:
+          case Model.NONE:
             return 0;
           default:
             assert(false, "Should not get here. Unhandled case.");
@@ -1013,6 +1017,11 @@
             node = unaryNode(node.op, [arg0]);  // Percent compares only to other percent forms
             break;
           case Model.SUB:
+            if (ref && ref.op === Model.FORMAT &&
+                // Check the original node.
+                checkNumberFormat(ref.args[0], node.args[0])) {
+              return normalNumber;
+            }
             // Convert SUBs to ADDs
             // Avoid nested MULs
             node = negate(arg0);
@@ -1744,6 +1753,30 @@
       return node.isRepeating;
     }
 
+    function findRepeatingPattern(s, p, x) {
+      if (!p) {
+        assert((typeof s === "string") && s.length > 0);
+        p = s.charAt(0);
+        s = s.substring(1);
+        x = "";
+      }
+      if (s.length === 0) {
+        return p;
+      }
+      if (s.indexOf(p) === 0) {
+        // p is a prefix of s, so continue checking
+        x += p;
+        s = s.substring(p.length);
+        return findRepeatingPattern(s, p, x);
+      } else {
+        // p is not a prefix of s, so extend p by skipped digits
+        p += x + s.charAt(0);
+        x = "";
+        s = s.substring(1);
+        return findRepeatingPattern(s, p, x);
+      }
+    }
+
     function repeatingDecimalToFraction(node) {
       assert(isRepeating(node));
       var str = node.args[0];
@@ -1751,11 +1784,13 @@
         str = str.slice(1);  // Trim off leading zero.
       }
       var pos = str.indexOf(".");
-      var decimalPlaces = str.length - pos - 1;
+      var integerPart = str.slice(0, pos);
+      var decimalPart = findRepeatingPattern(str.slice(pos+1));
+      var decimalPlaces = decimalPart.length;
       // 0.3 --> 3/9
       // 0.12 --> 12/99 --> 4/33
       // 0.1212 --> 1212/9999 --> 4/33
-      var numer = numberNode(str.slice(0, pos) + str.slice(pos+1));
+      var numer = numberNode(integerPart + decimalPart);
       var denom = binaryNode(Model.ADD, [
         binaryNode(Model.POW, [numberNode("10"), numberNode(decimalPlaces)]),
         nodeMinusOne
@@ -2459,7 +2494,12 @@
             var rcoeffmv = mathValue(rcoeff, true);
             if (ldegr === 0 && isZero(lcoeffmv) ||
                 rdegr === 0 && isZero(rcoeffmv)) {
-              return nodeZero;
+              if (units(lnode).length || units(rnode).length) {
+                // Don't erase units.
+                return [lnode, rnode];
+              } else {
+                return nodeZero;
+              }
             } else if (ldegr === 0 && isOne(lcoeffmv)) {
               return rnode;
             } else if (rdegr === 0 && isOne(rcoeffmv)) {
@@ -2965,6 +3005,8 @@
         },
         unary: function(node) {
           switch (node.op) {
+          case Model.DEGREE:
+            
           case Model.SUB:
             var val = mathValue(node.args[0], env, allowDecimal);
             return val.multiply(bigMinusOne);
@@ -3513,9 +3555,10 @@
                   var ea = Math.abs(toNumber(emv));
                   if (isZero(emv)) {
                     args.push(nodeOne);
-                  } else if (ea < 5 && (isAdditive(n) || !dontExpandPowers)) {
+                  } else if (ea < 10 && (isAdditive(n) || !dontExpandPowers)) {
                     // Expand if the base is additive, or exponent is an integer and
-                    // dontExpandPowers is false.
+                    // dontExpandPowers is false. We limit the power of the expansion
+                    // to avoid long running computations.
                     var invert = isNeg(emv);
                     for (var i = 0; i < ea; i++) {
                       if (invert) {
@@ -4502,9 +4545,9 @@
              message(2009));
 
       // lb : g, ft : m
-      v2 = v2.multiply(baseUnitConversion(n1b, n2b));
+      v2 = baseUnitConversion(n1b, n2b)(v2);
       if (!isZero(v2t)) {
-        v2t = v2t.multiply(baseUnitConversion(n1b, n2b));
+        v2t = baseUnitConversion(n1b, n2b)(v2t);
       }
       v1 = v1.setScale(scale, BigDecimal.ROUND_HALF_UP);
       v2 = v2.setScale(scale, BigDecimal.ROUND_HALF_UP);
@@ -4572,23 +4615,25 @@
     function baseUnitConversion(u1, u2) {
       var NaN = Math.NaN;
       var baseUnitConversions = {
-        "g/g": 1,
-        "lb/lb": 1,
-        "fl/fl": 1,
-        "m/m": 1,
-        "ft/ft": 1,
-        "s/s": 1,
-        "g/lb": "453.592",
-        "lb/g": "0.00220462",
-        "m/ft": "0.3048",
-        "ft/m": "3.28084",
-        "L/fl": "0.02957353",
-        "fl/L": "33.814022702",
+        "g/lb": function (v) { return v.multiply(toDecimal("453.592")) },
+        "lb/g": function (v) { return v.multiply(toDecimal("0.00220462")) },
+        "m/ft": function (v) { return v.multiply(toDecimal("0.3048")) },
+        "ft/m": function (v) { return v.multiply(toDecimal("3.28084")) },
+        "L/fl": function (v) { return v.multiply(toDecimal("0.02957353")) },
+        "fl/L": function (v) { return v.multiply(toDecimal("33.814022702")) },
+        "\\degree K/\\degree C" : function (v) { return v.add(toDecimal("273.15")) },
+        "\\degree C/\\degree K" : function (v) { return v.subtract(toDecimal("273.15")) },
+        "\\degree C/\\degree F" : function (v) { return v.subtract(toDecimal("32")).multiply(toDecimal("5")).divide(toDecimal("9")) },
+        "\\degree F/\\degree C" : function (v) { return v.multiply(toDecimal("9")).divide(toDecimal("5")).add(toDecimal("32")) },
+        "\\degree K/\\degree F" : function (v) { return v.add(toDecimal("459.67")).multiply(toDecimal("5")).divide(toDecimal("9")) },
+        "\\degree F/\\degree K" : function (v) { return v.multiply(toDecimal("9")).divide(toDecimal("5")).subtract(toDecimal("459.67")) },
       };
       var bu1 = baseUnit(u1);
       var bu2 = baseUnit(u2);
-      var val = (bu1 === bu2 ? 1 : 0) || baseUnitConversions[bu1 + "/" + bu2];
-      return toDecimal(val);
+      var fn = bu1 === bu2
+               ? function (v) { return v }
+               : baseUnitConversions[bu1 + "/" + bu2];
+      return fn;
     }
   }
 

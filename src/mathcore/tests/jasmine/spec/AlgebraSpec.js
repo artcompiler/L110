@@ -237,6 +237,7 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["-4-4i", "(1+i)^5"],
           ["y-b=\\frac{h-a}{b-k}(x-a)", "y-b=\\frac{h-a}{b-k}(x-a)"],
           ["\\frac{x^2+90x+400}{40x\\left(x+10\\right)}", "\\frac{x^2+90x+400}{40x\\left(x+10\\right)}"],
           ["11=4+.10(x)", "x=70"],

@@ -72,6 +72,9 @@ var MathCore = (function () {
     "day": { type: "unit", value: 24*3600, base: "s" },
     "\\radian": { type: "unit", value: u, base: "radian" },
     "\\degree": { type: "unit", value: Math.PI / 180, base: "radian" },
+    "\\degree K": { type: "unit", value: u, base: "\\degree K" },
+    "\\degree C": { type: "unit", value: u, base: "\\degree C" },
+    "\\degree F": { type: "unit", value: u, base: "\\degree F" },
     "\\pi": Math.PI,
     "R": { name: "reals" },   // special math symbol for real space
     "matrix": {},

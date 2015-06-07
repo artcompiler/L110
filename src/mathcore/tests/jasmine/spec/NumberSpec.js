@@ -300,6 +300,10 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["1/7", "0.\\overline{142857}"],
+          ["1/7", "0.\\overline{142857142857}"],
+          ["\\frac{1}{720}", "0.0013\\overline{8}"],
+          ["0.\\overline{3}", "0.\\overline{33333333333333}"],
           ["1.\\overline{88}", "1.\\overline{88}"],
           ["1.\\overline{88}", "1.\\overline{8}"],
           ["0.\\overline{3}", "1/3"],
@@ -455,6 +459,42 @@ define(["mathcore"], function (MathCore) {
           ["0.2", "0.20"],
           ["0.2", "20\\%"],
           ["A_{\\text{r}}\\text{(O)}=\\frac{15.995 \\times1+1 \\times0.04+17.999 \\times0.20}{100}", "A_{\\text{r}}\\text{(O)}=\\frac{15.995 \\times1+1 \\times0.04+17.999 \\times0.20}{100}"],
+        ]);
+      });
+      describe("equivValue", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivValue",
+                value: v[0],
+              }, v[1])).toBe(true);
+            });
+          });
+        }
+        run([
+          ["\\frac{100^\\circ\\text{K}}{10^\\circ\\text{K}}", "10"],
+          ["100^\\circ\\text{K}", "100^\\circ\\text{K}"],
+          ["100^\\circ\\text{C}", "100^\\circ\\text{C}"],
+          ["100^\\circ\\text{F}", "100^\\circ\\text{F}"],
+          ["100^\\circ", "100^\\circ"],
+          ["\\frac{100\\degree\\text{K}}{10\\degree\\text{K}}", "10"],
+          ["100\\degree\\text{K}", "100\\degree\\text{K}"],
+          ["100\\degree\\text{C}", "100\\degree\\text{C}"],
+          ["100\\degree\\text{F}", "100\\degree\\text{F}"],
+          ["100\\degree", "100\\degree"],
+          ["100\\degree\\text{C}", "212\\degree\\text{F}"],
+          ["100\\degree\\text{C}", "373.15\\degree\\text{K}"],
+          ["100\\degree\\text{F}", "37.778\\degree\\text{C}"],
+          ["100\\degree\\text{F}", "310.928\\degree\\text{K}"],
+          ["100\\degree\\text{K}", "-173.15\\degree\\text{C}"],
+          ["100\\degree\\text{K}", "-279.67\\degree\\text{F}"],
+          ["0\\degree\\text{C}", "32\\degree\\text{F}"],
+          ["0\\degree\\text{C}", "273.15\\degree\\text{K}"],
+          ["0\\degree\\text{F}", "-17.8\\degree\\text{C}"],
+          ["0\\degree\\text{F}", "255.372\\degree\\text{K}"],
+          ["0\\degree\\text{K}", "-273.15\\degree\\text{C}"],
+          ["0\\degree\\text{K}", "-459.67\\degree\\text{F}"],
         ]);
       });
       describe("equivValue", function() {

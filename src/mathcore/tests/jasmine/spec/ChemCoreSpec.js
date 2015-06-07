@@ -225,6 +225,8 @@ define(["chemcore"], function (ChemCore) {
           });
         }
         run([
+          ["\\frac{[\\text{Cu}(\\text{NH}_3)_4{}^{2+}]^-}{[\\text{Cu}^{2+}]^-\\times[\\text{NH}_3]^4}",
+           "\\frac{[\\text{Cu}(\\text{NH}_3)_4{}^{2+}]^-}{[\\text{Cu}^{2+}]^-\\times[\\text{NH}_3]^4}"],
           ["CH_2+2O_2 \\rightarrow CO_2+2H_2",
            "CH_2+2O_2 \\rightarrow 2H_2+CO_2"],
           ["CH_2+2O_2 \\longrightarrow CO_2+2H_2O",
