@@ -22,6 +22,7 @@ exports.globalLexicon = {
     "not" : { "tk": 0x01, "name": "NOT", "cls": "function", "length": 1 },
     "inverseResult" : { "tk": 0x01, "name": "NOT", "cls": "function", "length": 1 },
     "allowDecimal" : { "tk": 0x01, "name": "ALLOW-DECIMAL", "cls": "function", "length": 1 },
+    "ignoreOrder" : { "tk": 0x01, "name": "IGNORE-ORDER", "cls": "function", "length": 1 },
     "compareSides" : { "tk": 0x01, "name": "COMPARE-SIDES", "cls": "function", "length": 1 },
     "decimalPlaces" : { "tk": 0x01, "name": "DECIMAL-PLACES", "cls": "function", "length": 2 },
     "field" : { "tk": 0x01, "name": "FIELD", "cls": "function", "length": 2 },

@@ -30,6 +30,7 @@ var transformer = function() {
     "INVERSE-RESULT": inverseResult,
     "DECIMAL-PLACES": decimalPlaces,
     "ALLOW-DECIMAL": allowDecimal,
+    "IGNORE-ORDER": ignoreOrder,
     "COMPARE-SIDES": compareSides,
     "SET-DECIMAL-SEPARATOR": setDecimalSeparator,
     "SET-THOUSANDS-SEPARATOR": setThousandsSeparator,
@@ -146,6 +147,27 @@ var transformer = function() {
 //      .replace(/\\/g, "\\\\")
   }
 
+  function composeValidation(method, options, value) {
+    delete options.dontExpandPowers;
+    delete options.dontFactorDenominators;
+    delete options.dontFactorTerms;
+    delete options.dontConvertDecimalToFraction;
+    delete options.dontSimplifyImaginary;
+    return {
+      "validation": {
+        "scoring_type": "exactMatch",
+        "valid_response": {
+          "score": 1,
+          "value": [{
+            "method": method,
+            "options": options,
+            "value": value,
+          }]
+        }
+      }
+    };
+  }
+
   function equivSyntax(node, options, resume) {
     visit(node.elts[1], options, function (err, val) {
       var reference = val;
@@ -161,19 +183,7 @@ var transformer = function() {
               score: val ? (val.result ? 1 : -1) : 0,
               response: response,
               value: reference,
-              objectCode: {
-                "validation": {
-                  "scoring_type": "exactMatch",
-                  "valid_response": {
-                    "score": 1,
-                    "value": [{
-                      "method": "equivSyntax",
-                      "value": reference,
-                      "options": options,
-                    }]
-                  }
-                }
-              },
+              objectCode: composeValidation("equivSyntax", options, reference)
             });
           });
         }
@@ -198,19 +208,7 @@ var transformer = function() {
               score: val ? (val.result ? 1 : -1) : 0,
               response: response,
               value: reference,
-              objectCode: {
-                "validation": {
-                  "scoring_type": "exactMatch",
-                  "valid_response": {
-                    "score": 1,
-                    "value": [{
-                      "method": "equivLiteral",
-                      "value": reference,
-                      "options": options,
-                    }]
-                  }
-                }
-              },
+              objectCode: composeValidation("equivLiteral", options, reference)
             });
           });
         }
@@ -239,19 +237,7 @@ var transformer = function() {
                 score: val ? (val.result ? 1 : -1) : 0,
                 response: response,
                 value: reference,
-                objectCode: {
-                  "validation": {
-                    "scoring_type": "exactMatch",
-                    "valid_response": {
-                      "score": 1,
-                      "value": [{
-                        "method": "equivSymbolic",
-                        "value": reference,
-                        "options": options,
-                      }]
-                    }
-                  }
-                },
+                objectCode: composeValidation("equivLiteral", options, reference)
               });
             }
           });
@@ -277,19 +263,7 @@ var transformer = function() {
               score: val ? (val.result ? 1 : -1) : 0,
               response: response,
               value: reference,
-              objectCode: {
-                "validation": {
-                  "scoring_type": "exactMatch",
-                  "valid_response": {
-                    "score": 1,
-                    "value": [{
-                      "method": "equivValue",
-                      "value": reference,
-                      "options": options,
-                    }]
-                  }
-                }
-              },
+              objectCode: composeValidation("equivValue", options, reference)
             });
           });
         }
@@ -309,18 +283,7 @@ var transformer = function() {
           resume(err, {
             score: val ? (val.result ? 1 : -1) : 0,
             response: response,
-            objectCode: {
-              "validation": {
-                "scoring_type": "exactMatch",
-                "valid_response": {
-                  "score": 1,
-                  "value": [{
-                    "method": "isFactorised",
-                    "options": options,
-                  }]
-                }
-              }
-            },
+            objectCode: composeValidation("isFactorised", options)
           });
         });
       }
@@ -339,18 +302,7 @@ var transformer = function() {
           resume(err, {
             score: val ? (val.result ? 1 : -1) : 0,
             response: response,
-            objectCode: {
-              "validation": {
-                "scoring_type": "exactMatch",
-                "valid_response": {
-                  "score": 1,
-                  "value": [{
-                    "method": "isSimplified",
-                    "options": options,
-                  }]
-                }
-              }
-            },
+            objectCode: composeValidation("isSimplified", options)
           });
         });
       }
@@ -369,18 +321,7 @@ var transformer = function() {
           resume(err, {
             score: val ? (val.result ? 1 : -1) : 0,
             response: response,
-            objectCode: {
-              "validation": {
-                "scoring_type": "exactMatch",
-                "valid_response": {
-                  "score": 1,
-                  "value": [{
-                    "method": "isExpanded",
-                    "options": options,
-                  }]
-                }
-              }
-            },
+            objectCode: composeValidation("isExpanded", options)
           });
         });
       }
@@ -399,18 +340,7 @@ var transformer = function() {
           resume(err, {
             score: val ? (val.result ? 1 : -1) : 0,
             response: response,
-            objectCode: {
-              "validation": {
-                "scoring_type": "exactMatch",
-                "valid_response": {
-                  "score": 1,
-                  "value": [{
-                    "method": "isTrue",
-                    "options": options,
-                  }]
-                }
-              }
-            },
+            objectCode: composeValidation("isTrue", options)
           });
         });
       }
@@ -434,19 +364,7 @@ var transformer = function() {
               score: val ? (val.result ? 1 : -1) : 0,
               response: response,
               value: reference,
-              objectCode: {
-                "validation": {
-                  "scoring_type": "exactMatch",
-                  "valid_response": {
-                    "score": 1,
-                    "value": [{
-                      "method": "isUnit",
-                      "value": reference,
-                      "options": options,
-                    }]
-                  }
-                }
-              },
+              objectCode: composeValidation("isUnit", options)
             });
           });
         }
@@ -463,6 +381,13 @@ var transformer = function() {
 
   function allowDecimal(node, options, resume) {
     option(options, "allowDecimal", true);
+    visit(node.elts[0], options, function (err, val) {
+      resume(err, val);
+    });
+  }
+
+  function ignoreOrder(node, options, resume) {
+    option(options, "ignoreOrder", true);
     visit(node.elts[0], options, function (err, val) {
       resume(err, val);
     });
