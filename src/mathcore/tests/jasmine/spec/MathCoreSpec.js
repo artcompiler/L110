@@ -120,6 +120,8 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["{1, 2, 3, 4} \\backslash {1, 2}", "{1, 2, 3, 4} \\backslash {1, 2}"],
+          ["", ""],
           ["\\left(-2,-16\\right),\\left(-1,-4\\right),\\left(0,0\\right),\\left(1,-4\\right),\\left(2,-16\\right)", "(-2,-16), (-1,-4), (0,0), (1,-4), (2,-16)"]
         ]);
       });

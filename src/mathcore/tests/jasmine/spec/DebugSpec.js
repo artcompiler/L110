@@ -115,25 +115,6 @@ var forEach = function forEach(array, fun) {
 define(["mathcore"], function (MathCore) {
   describe("Math Core", function() {
     describe("Debug", function() {
-      describe("equivSyntax", function() {
-        function run(tests) {
-          forEach(tests, function (v, i) {
-            it(v[0] + " | " + v[1], function() {
-              expect(MathCore.evaluate({
-                method: "equivSyntax",
-                options: {
-                },
-                value: v[0],
-              }, v[1])).toBe(true);
-            });
-          });
-        }
-        run([
-          [["\\format{\\fraction}"], "-\\frac{1}{2}"],
-          [["\\format{\\nonMixedFraction}"], "-\\frac{1}{2}"],
-          [["\\format{\\mixedFraction}"], "-1\\frac{1}{2}"],
-        ]);
-      });
     });
   });
 });

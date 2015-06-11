@@ -592,6 +592,7 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["1+5i+10i^2"],
           ["-4-4i"],
           ["2x-2"],
           ["x^2"],
@@ -638,6 +639,7 @@ define(["mathcore"], function (MathCore) {
           });
         };
         run([
+          ["1+5i+10i^2"],
           ["y=x+3"],
           ["x=1/2"],
           ["x=y=z=10"],
@@ -674,6 +676,7 @@ define(["mathcore"], function (MathCore) {
           });
         };
         run([
+          ["1+5i+3i+10i^2"],
           ["x>x^2"],
           ["20y=5x^2+5x+10"],
           ["\\frac{y}{5}=x^2+x+2"],

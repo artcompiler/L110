@@ -263,6 +263,8 @@ var ChemCore = (function () {
     case "dontExpandPowers":
     case "dontFactorDenominators":
     case "dontFactorTerms":
+    case "dontConvertDecimalToFraction":
+    case "dontSimplifyImaginary":
     case "ignoreOrder":
     case "inverseResult":
     case "ignoreText":

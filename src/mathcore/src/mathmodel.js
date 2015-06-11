@@ -326,6 +326,7 @@
       case Model.ADD:
       case Model.SUB:
       case Model.PM:
+      case Model.BACKSLASH: // set operator
         if (node.args.length === 1) {
           node = visit.unary(node, resume);
         } else {
@@ -1086,7 +1087,7 @@
       var node = Model.create(visit(root, {
         name: "normalize",
         numeric: function (node) {
-          if (isDecimal(node)) {
+          if (!option("dontConvertDecimalToFraction") && isDecimal(node)) {
             node = decimalToFraction(node);
           } else if (isNeg(node)) {
             // FIXME what's this doing?
@@ -1203,7 +1204,7 @@
             node = numberNode(Math.PI);
           } else if (node.args[0] === "e") {
             node = numberNode(Math.E);
-          } else if (node.args[0] === "i") {
+          } else if (node.args[0] === "i" && !option("dontSimplifyImaginary")) {
             node = nodeImaginary;
           }
           return node;
@@ -4775,6 +4776,8 @@
     var dontExpandPowers = option("dontExpandPowers", true);
     var dontFactorDenominators = option("dontFactorDenominators", true);
     var dontFactorTerms = option("dontFactorTerms", true);
+    var dontConvertDecimalToFraction = option("dontConvertDecimalToFraction", true);
+    var dontSimplifyImaginary = option("dontSimplifyImaginary", true);
     var inverseResult = option("inverseResult");
     if (node.op === Model.COMMA) {
       result = every(node.args, function (n) {
@@ -4788,6 +4791,9 @@
       nid1 = Ast.intern(n1);
       nid2 = Ast.intern(n2);
       option("dontExpandPowers", dontExpandPowers);
+      option("dontFactorDenominators", dontFactorDenominators);
+      option("dontFactorTerms", dontFactorTerms);
+      option("dontConvertDecimalToFraction", dontConvertDecimalToFraction);
       var inverseResult = option("inverseResult");
       if (nid1 === nid2 && !hasLikeFactors(n1)) {
         // hasLikeFactors: x*x != x^2
@@ -4823,6 +4829,8 @@
     var dontExpandPowers = option("dontExpandPowers", true);
     var dontFactorDenominators = option("dontFactorDenominators", true);
     var dontFactorTerms = option("dontFactorTerms", true);
+    var dontConvertDecimalToFraction = option("dontConvertDecimalToFraction", true);
+    var dontSimplifyImaginary = option("dontSimplifyImaginary", true);
     var inverseResult = option("inverseResult");
     if (node.op === Model.COMMA) {
       result = every(node.args, function (n) {
@@ -4852,6 +4860,8 @@
     option("dontExpandPowers", dontExpandPowers);
     option("dontFactorDenominators", dontFactorDenominators);
     option("dontFactorTerms", dontFactorTerms);
+    option("dontConvertDecimalToFraction", dontConvertDecimalToFraction);
+    option("dontSimplifyImaginary", dontSimplifyImaginary);
     if (result) {
       return inverseResult ? false : true;
     }
@@ -4916,6 +4926,10 @@
         break;
       case "setThousandsSeparator":
       case "setDecimalSeparator":
+      case "dontExpandPowers":
+      case "dontFactorDenominators":
+      case "dontFactorTerms":
+      case "dontConvertDecimalToFraction":
         opt = undefined;
         break;
       default:

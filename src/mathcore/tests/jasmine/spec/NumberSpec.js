@@ -107,6 +107,66 @@ var forEach = function forEach(array, fun) {
 define(["mathcore"], function (MathCore) {
   describe("Math Core", function() {
     describe("Numbers", function() {
+      describe("isSimplified", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0], function() {
+              expect(MathCore.evaluate({
+                method: "isSimplified"
+              }, v[0])).toBe(true);
+            });
+          });
+        };
+        run([
+          ["0.2"],
+          ["\\frac{1}{2}"],
+        ]);
+      });
+      describe("NOT isSimplified", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0], function() {
+              expect(MathCore.evaluate({
+                method: "isSimplified"
+              }, v[0])).toBe(false);
+            });
+          });
+        };
+        run([
+          ["\\frac{2}{2}"],
+          ["\\frac{2}{4}"],
+        ]);
+      });
+      describe("isExpanded", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0], function() {
+              expect(MathCore.evaluate({
+                method: "isExpanded"
+              }, v[0])).toBe(true);
+            });
+          });
+        };
+        run([
+          ["0.2"],
+          ["\\frac{1}{2}"],
+        ]);
+      });
+      describe("NOT isExpanded", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0], function() {
+              expect(MathCore.evaluate({
+                method: "isExpanded"
+              }, v[0])).toBe(false);
+            });
+          });
+        };
+        run([
+          ["\\frac{2}{2}"],
+          ["\\frac{2}{4}"],
+        ]);
+      });
       describe("equivLiteral", function() {
         function run(tests) {
           forEach(tests, function (v, i) {
