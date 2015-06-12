@@ -237,7 +237,7 @@ var transformer = function() {
                 score: val ? (val.result ? 1 : -1) : 0,
                 response: response,
                 value: reference,
-                objectCode: composeValidation("equivLiteral", options, reference)
+                objectCode: composeValidation("equivSymbolic", options, reference)
               });
             }
           });
