@@ -592,6 +592,7 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["1+5i+10i^2+10i^3+5i^4+i^5"],
           ["1+5i+10i^2"],
           ["-4-4i"],
           ["2x-2"],
@@ -639,6 +640,7 @@ define(["mathcore"], function (MathCore) {
           });
         };
         run([
+          ["1+5i+10i^2+10i^3+5i^4+i^5"],
           ["1+5i+10i^2"],
           ["y=x+3"],
           ["x=1/2"],
