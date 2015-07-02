@@ -360,6 +360,7 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["10", "--10"],
           ["1/7", "0.\\overline{142857}"],
           ["1/7", "0.\\overline{142857142857}"],
           ["\\frac{1}{720}", "0.0013\\overline{8}"],

@@ -73,6 +73,9 @@ var ChemCore = (function () {
     "mol": { type: "unit", value: u, base: "mol" },
     "\\radian": { type: "unit", value: u, base: "radian" },
     "\\degree": { type: "unit", value: Math.PI / 180, base: "radian" },
+    "\\degree K": { type: "unit", value: u, base: "\\degree K" },
+    "\\degree C": { type: "unit", value: u, base: "\\degree C" },
+    "\\degree F": { type: "unit", value: u, base: "\\degree F" },
     "\\pi": Math.PI,
     "aq": u, // only so it will be recognized as a single identifier
     "Ac": {"name": "Actinium", "num": "89", "mass": "227"},

@@ -173,6 +173,7 @@ define(["chemcore"], function (ChemCore) {
           });
         }
         run([
+          ["-173.15\\degree C", "100 \\degree K"],
           ["1\\pm0.1\\ mol", "1.08\\ mol"],
           ["1000000{\\mu}m", "1m"],
           ["1000000{\\mu}g", "1g"],
