@@ -122,6 +122,9 @@ define(["mathcore"], function (MathCore) {
         }
         describe("various", function() {
           var tests = [
+            ["equivLiteral", [">", "<"], {}, 1006],
+            ["equivLiteral", ["\\int_1^2", "\\int_1^2"], {}, 1006],
+            ["equivLiteral", ["\\text", "\\text"], {}, 1009],
             ["equivValue", ["3 \\gt x \\ge 2", "2 \\le x \\lt 3"], {}, 2005],
             ["equivLiteral", [".", "."], {}, 1004],
             ["equivLiteral", ["10", "10..."], {}, 1007],

@@ -27,8 +27,11 @@
   messages[2014] = "Invalid syntax.";
   messages[2015] = "Invalid format name '%1'.";
 
-  var bigOne = new BigDecimal("1");
   var bigZero = new BigDecimal("0");
+  var bigOne = new BigDecimal("1");
+  var bigTwo = new BigDecimal("2");
+  var bigThree = new BigDecimal("3");
+  var bigFour = new BigDecimal("4");
   var bigMinusOne = new BigDecimal("-1");
   var nodeOne = numberNode("1");
   var nodeMinusOne = numberNode("-1");
@@ -2783,6 +2786,17 @@
               } else if (isOne(emv)) {
                 // x^1
                 return [base];
+              } else if (Ast.intern(base) === Ast.intern(nodeImaginary) && emv !== null) {
+                if (emv.remainder(bigFour).compareTo(bigZero) === 0) {
+                  return [nodeOne];
+                } else if (emv.remainder(bigThree).compareTo(bigZero) === 0) {
+                  return [multiplyNode([nodeMinusOne, nodeImaginary])];
+                } else if (emv.remainder(bigTwo).compareTo(bigZero) === 0) {
+                  return [nodeMinusOne];
+                } else if (emv.remainder(bigOne).compareTo(bigZero) === 0) {
+                  return [nodeImaginary];
+                }
+                return [expo, base];
               } else if (Ast.intern(expo) === Ast.intern(nodeOneHalf)) {
                 // \sqrt{x}
                 return squareRoot(base);

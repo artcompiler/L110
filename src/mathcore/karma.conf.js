@@ -41,14 +41,14 @@ module.exports = function(config) {
     // optionally, configure the reporter
     coverageReporter: {
         reporters: [
-            {type : 'lcov', dir : 'reports/coverage/lcov', subdir: '.'},
-            {type : 'html', dir : 'reports/coverage/html', subdir: '.'},
-            {type : 'cobertura', dir : 'reports/coverage/cobertura', subdir: '.'}
+            {type : 'lcov', dir : 'reports/js/coverage/lcov', subdir: '.'},
+            {type : 'html', dir : 'reports/js/coverage/html', subdir: '.'},
+            {type : 'cobertura', dir : 'reports/js/coverage/cobertura', subdir: '.'}
         ]
     },
 
     junitReporter: {
-        outputFile: 'reports/junit/TEST-results.xml',
+        outputFile: 'reports/js/junit/TEST-results.xml',
         suite: 'assess'
     },
 
