@@ -150,6 +150,7 @@ define(["mathcore"], function (MathCore) {
         run([
           ["0.2"],
           ["\\frac{1}{2}"],
+          ["\\frac{2}{4}"],
         ]);
       });
       describe("NOT isExpanded", function() {
@@ -164,7 +165,6 @@ define(["mathcore"], function (MathCore) {
         };
         run([
           ["\\frac{2}{2}"],
-          ["\\frac{2}{4}"],
         ]);
       });
       describe("equivLiteral", function() {

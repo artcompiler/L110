@@ -194,6 +194,7 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["-3x+2", "2-3x"],
           ["10 \\text{foo bar abc}", "\\text{foo bar abc} 10"],
           ["\\left(x+2\\right)^2+\\left(y-7\\right)^2=53", "\\left(x+2\\right)^2+\\left(-7+y\\right)^2=53"],
           ["1+2+3", "3+2+1"],
@@ -237,6 +238,13 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["y<=5x", "5x-y>=0"],
+          ["y<=5x", "0<=5x-y"],
+          ["y<=5x", "5x>=y"],
+          ["y<5x", "0<5x-y"],
+          ["y\\le5x+1", "0\\le5x-y+1"],
+          ["y>x-2", "0>-y+x-2"],
+          ["(\\frac{1}{2})^x", "(0.5)^x"],
           ["-4-4i", "(1+i)^5"],
           ["y-b=\\frac{h-a}{b-k}(x-a)", "y-b=\\frac{h-a}{b-k}(x-a)"],
           ["\\frac{x^2+90x+400}{40x\\left(x+10\\right)}", "\\frac{x^2+90x+400}{40x\\left(x+10\\right)}"],

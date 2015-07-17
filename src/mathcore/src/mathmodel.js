@@ -1465,8 +1465,12 @@
             node.args[i] = sort(n);
           });
           if (node.op === Model.COLON ||
-              node.op === Model.RIGHTARROW) {
-            // If ratio, then don't sort toplevel terms.
+              node.op === Model.RIGHTARROW ||
+              node.op === Model.GT ||
+              node.op === Model.GE ||
+              node.op === Model.LT ||
+              node.op === Model.LE ) {
+            // If already normalized or ratio or chem, then don't sort toplevel terms.
             return node;
           }
           // Sort by descending degree
@@ -1480,11 +1484,6 @@
               // Swap adjacent elements
               node.args[i] = n1;
               node.args[i + 1] = n0;
-              node.op =
-                node.op === Model.GT ? Model.LT :
-                node.op === Model.GE ? Model.LE :
-                node.op === Model.LT ? Model.GT :
-                node.op === Model.LE ? Model.GE : node.op;
             } else if (d0 === d1) {
               v0 = variables(n0);
               v1 = variables(n1);
@@ -1494,11 +1493,6 @@
                   var t = node.args[i];
                   node.args[i] = n1;
                   node.args[i + 1] = n0;
-                  node.op =
-                    node.op === Model.GT ? Model.LT :
-                    node.op === Model.GE ? Model.LE :
-                    node.op === Model.LT ? Model.GT :
-                    node.op === Model.LE ? Model.GE : node.op;
                 }
               } else if (v0.length > 0) {
                 if (v0[0] < v1[0]) {
@@ -1506,22 +1500,12 @@
                   var t = node.args[i];
                   node.args[i] = n1;
                   node.args[i + 1] = n0;
-                  node.op =
-                    node.op === Model.GT ? Model.LT :
-                    node.op === Model.GE ? Model.LE :
-                    node.op === Model.LT ? Model.GT :
-                    node.op === Model.LE ? Model.GE : node.op;
                 }
               } else if (!isZero(n1) && isLessThan(mathValue(n0), mathValue(n1))) {
                 // Unless the RHS is zero, swap adjacent elements
                 var t = node.args[i];
                 node.args[i] = n1;
                 node.args[i + 1] = n0;
-                node.op =
-                  node.op === Model.GT ? Model.LT :
-                  node.op === Model.GE ? Model.LE :
-                  node.op === Model.LT ? Model.GT :
-                  node.op === Model.LE ? Model.GE : node.op;
               }
             }
           }
@@ -1951,6 +1935,50 @@
       return binaryNode(node.op, args);
     }
 
+    // Map like factors to the same key.
+    function factorGroupingKey(root) {
+      if (!root || !root.args) {
+        assert(false, "Should not get here. Illformed node.");
+        return 0;
+      }
+      return visit(root, {
+        name: "factorGroupingKey",
+        exponential: function (node) {
+          return factorGroupingKey(node.args[1]) + Model.POW +  factorGroupingKey(node.args[0]);
+        },
+        multiplicative: function (node) {
+          var key = "";
+          key += variables(node).join("");
+          if (!key) {
+            key = factorGroupingKey(node.args[0]);
+          }
+          return key;
+        },
+        additive: function (node) {
+          var key = "";
+          forEach(node.args, function (n) {
+            key += "+" + factorGroupingKey(n);
+          });
+          return key;
+        },
+        unary: function(node) {
+          return factorGroupingKey(node.args[0]);
+        },
+        numeric: function(node) {
+          return Model.NUM;
+        },
+        variable: function(node) {
+          return node.args[0];
+        },
+        comma: function(node) {
+          return Model.COMMA;
+        },
+        equals: function(node) {
+          return Model.EQL;
+        },
+      });
+    }
+
     // Group like factors and terms into nodes that will simplify nicely.
     // We don't use the visitor mechanism because this is not recursive.
     function groupLikes(node) {
@@ -1965,7 +1993,7 @@
         var key;
         if (node.op === Model.MUL) {
           // If factors, then likes have same variables.
-          key = variables(n).join("");
+          key = factorGroupingKey(n);
         } else if (node.op === Model.ADD) {
           // If terms, likes have the same variable parts.
           key = variablePart(n);
@@ -2252,7 +2280,7 @@
                 forEach(n0, function (n1) {
                   var d, n;
                   // 2/x+3/y -> (2y+3x)/(xy)
-                  // .5x+.2y -> (2x+5y)/10  [allowDecimal=true]
+                  // .5x+.2y -> (2x+5y)/10
                   d = denom(n1, []);
                   n = numer(n1, d[0], denoms);
                   n2 = n2.concat(n);
@@ -2663,14 +2691,14 @@
               return rnode;
             } else if (rdegr === 0 && isOne(rcoeffmv)) {
               return lnode;
-            } else if (ldegr === 0 && (isDecimal(lnode) || option("allowDecimal"))) {
+            } else if (ldegr === 0) {
               var v = mathValue(lnode);
               if (v !== null) {
                 node = [numberNode(v), rnode];
               } else {
                 node = [lnode, rnode];
               }
-            } else if (rdegr === 0 && (isDecimal(rnode) || option("allowDecimal"))) {
+            } else if (rdegr === 0) {
               var v = mathValue(rnode);
               if (v !== null) {
                 node = [numberNode(v), lnode];  // coeffs first
@@ -2831,7 +2859,6 @@
               } else {
                 var b = pow(bmv, emv);
                 if (b !== null) {
-                  // We have an integer or decimal and allowDecimal=true
                   return numberNode(b);
                 }
               }
@@ -2957,8 +2984,7 @@
     }
 
     // Return the math value of an expression, or null if the expression does
-    // not have a math value. A fraction has a math value if it produces an
-    // integer value, or if the 'allowDecimal' option has the value 'true'.
+    // not have a math value.
 
     function mathValue(root, env, allowDecimal) {
       if (allowDecimal === undefined && typeof env === "boolean") {
@@ -2983,9 +3009,7 @@
           }
           // Simplify each side.
           var val = bigZero;
-          var allowDecimalOverride = true;
           forEach(node.args, function (n) {
-            allowDecimalOverride = allowDecimalOverride && n.op === Model.NUM && isDecimal(n);
             var mv = mathValue(n, env, true);
             if (mv && val) {
               val = val.add(mv);
@@ -2993,7 +3017,7 @@
               val = null;   // bd === null is NaN
             }
           });
-          if (allowDecimalOverride || allowDecimal || isInteger(val)) {
+          if (allowDecimal || isInteger(val)) {
             return val;
           } else {
             return null;
@@ -3003,9 +3027,7 @@
           // Allow decimal if the option 'allowDecimal' is set to true or
           // if at least one of the operands is a decimal.
           var val = bigOne;
-          var allowDecimalOverride = true;
           forEach(node.args, function (n) {
-            allowDecimalOverride = allowDecimalOverride && n.op === Model.NUM && isDecimal(n);
             var mv = mathValue(n, env, true);
             if (val !== null && mv != null) {
               val = val.multiply(mv);
@@ -3013,7 +3035,7 @@
               val = null;
             }
           });
-          if (allowDecimalOverride || allowDecimal || isInteger(val)) {
+          if (allowDecimal || isInteger(val)) {
             return val;
           }
           return null;
@@ -3021,7 +3043,6 @@
         unary: function(node) {
           switch (node.op) {
           case Model.DEGREE:
-            
           case Model.SUB:
             var val = mathValue(node.args[0], env, allowDecimal);
             return val.multiply(bigMinusOne);
@@ -3845,10 +3866,8 @@
         name: "scale",
         exponential: function (node) {
           var mv, nd;
-          var allowDecimal = option("allowDecimal");
           if ((mv = mathValue(node, true)) &&
-              (nd = numberNode(mv, true)) &&
-              (allowDecimal || isInteger(nd))) {
+              (nd = numberNode(mv, true))) {
             return nd;
           }
           var args = [];
@@ -3859,19 +3878,14 @@
         },
         multiplicative: function (node) {
           var mv, nd;
-          var allowDecimal = option("allowDecimal");
           if ((mv = mathValue(node, true)) &&
-              (nd = numberNode(mv, true)) &&
-              (allowDecimal || isInteger(nd))) {
+              (nd = numberNode(mv, true))) {
             return nd;
           }
           var args = [];
           var mv2 = bigOne;
           forEach(node.args, function (n) {
-            allowDecimal = allowDecimal || n.op === Model.NUM && isDecimal(n);
-          });
-          forEach(node.args, function (n) {
-            if ((mv = mathValue(multiplyNode([numberNode(mv2), n]), allowDecimal))) {
+            if ((mv = mathValue(multiplyNode([numberNode(mv2), n]), true))) {
               mv2 = mv;
             } else {
               args.push(scale(n));
@@ -3884,17 +3898,13 @@
         },
         additive: function (node) {
           var mv;
-          var allowDecimal = option("allowDecimal");
-          forEach(node.args, function (n) {
-            allowDecimal = allowDecimal || n.op === Model.NUM && isDecimal(n);
-          });
-          if (allowDecimal && (mv = mathValue(node, true))) {
+          if ((mv = mathValue(node, true))) {
             return numberNode(mv, true);
           }
           var args = [];
           var mv2 = bigZero;
           forEach(node.args, function (n) {
-            if ((mv = mathValue(binaryNode(Model.ADD, [numberNode(mv2), n]), allowDecimal))) {
+            if ((mv = mathValue(binaryNode(Model.ADD, [numberNode(mv2), n]), true))) {
               mv2 = mv;
             } else {
               args.push(scale(n));
@@ -3907,7 +3917,7 @@
         },
         unary: function(node) {
           var mv;
-          if (option("allowDecimal") && (mv = mathValue(node, true))) {
+          if ((mv = mathValue(node, true))) {
             return numberNode(mv, true);
           }
           return unaryNode(node.op, [scale(node.args[0])]);
@@ -4222,6 +4232,7 @@
     this.units = units;
     this.scale = scale;
     this.hasLikeFactors = hasLikeFactors;
+    this.factorGroupingKey = factorGroupingKey;
   }
 
   var visitor = new Visitor();
@@ -4362,6 +4373,16 @@
     return result;
   }
 
+  function factorGroupingKey(node, env) {
+    var prevLocation = Assert.location;
+    if (node.location) {
+      Assert.setLocation(node.location);
+    }
+    var result = visitor.factorGroupingKey(node, env);
+    Assert.setLocation(prevLocation);
+    return result;
+  }
+
   function factors(node, env) {
     var prevLocation = Assert.location;
     if (node.location) {
@@ -4444,7 +4465,6 @@
     var env = Model.env;
     var inverseResult = option("inverseResult");
     var result;
-    Model.options.allowDecimal = true;
     var v1t = bigZero;
     var v2t = bigZero;
     var args = [];
