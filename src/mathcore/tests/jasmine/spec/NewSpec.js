@@ -122,24 +122,10 @@ var forEach = function forEach(array, fun) {
 };
 
 define(["chemcore"], function (ChemCore) {
-  describe("MathCore", function() {
+  describe("ChemCore", function() {
     describe("New", function() {
       // PUT NEW TESTS HERE.
       // COPY THE INNER TEST DRIVER FROM ONE OF THE PRODUCTION TESTS
-      describe("equivLiteral", function() {
-        function run(tests) {
-          forEach(tests, function (v, i) {
-            it(v[0] + " | " + v[1], function() {
-              expect(ChemCore.evaluate({
-                method: "equivLiteral",
-                value: v[0]
-              }, v[1])).toBe(true);
-            });
-          });
-        }
-        run([
-        ]);
-      });
     });
   });
 });

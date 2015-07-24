@@ -238,6 +238,9 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["x=y", "Ax=Ay"],
+          ["\\$x=\\$y", "Ax=Ay"],
+          ["\\$x=\\$y", "x=y"],
           ["y<=5x", "5x-y>=0"],
           ["y<=5x", "0<=5x-y"],
           ["y<=5x", "5x>=y"],

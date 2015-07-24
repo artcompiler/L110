@@ -360,6 +360,8 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["V=1/3\pi*2^2*18", "V=24\pi"],
+          ["\\pi+\\pi", "2\\pi"],
           ["i", "i^{1}"],
           ["-1", "i^{2}"],
           ["-i", "i^{3}"],
@@ -578,6 +580,10 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["6.0\\pm0.5mL", "6.0mL"],
+          ["6.0\\pm0.5mL", "6.4mL"],
+          ["6L", "6000mL"],
+          ["6L\\pm{1+2}mL", "6.001L"],
           ["1.\\overline{88}", "1.\\overline{88}"],
           ["1.\\overline{88}", "1.\\overline{8}"],
           ["0.\\overline{3}", "1/3"],

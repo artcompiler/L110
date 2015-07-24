@@ -248,6 +248,11 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["x+y", "x-y"],
+          ["\\format{\\number}+\\format{\\number}", "1-2"],
+          ["\\format{\\number}", "-10"],
+          ["\\format{\\number}", "0.\\overline{3}"],
+          ["\\format{\\decimal}", "0.\\overline{3}"],
           [["\\format{\\nonMixedFraction}"], "1/2"],
           [["\\format{\\nonMixedFraction}"], "\\frac{1}{2}"],
           [["\\format{\\nonMixedFraction}"], "\\frac{1}{2}"],
@@ -332,6 +337,8 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["\\format{\\number{1}}", "0.\\overline{3}"],
+          ["\\format{\\decimal{1}}", "0.\\overline{3}"],
           ["\\format{\\number{3}}", "123"],
           [["\\format{\\nonMixedFraction}"], "1.23\\frac{1}{2}"],
           [["\\format{\\nonMixedFraction}"], "1 1/2"],

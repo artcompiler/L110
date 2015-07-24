@@ -277,6 +277,12 @@ define(["chemcore"], function (ChemCore) {
           });
         }
         run([
+          ['\\xrightarrow[3]{2}', '\\xrightarrow[3]{2}'],
+          ['\\xrightarrow{2}', '\\xrightarrow{2}'],
+          ['\\xrightarrow[3]', '\\xrightarrow[3]'],
+          ['\\text{C}_2\\text{H}_5\\text{OH}\\xrightarrow{Cr_2O_7{}^{2-},\\text{H}^+,\\text{H}^+}CH_3COOH',
+           '\\text{C}_2\\text{H}_5\\text{OH}\\xrightarrow{Cr_2O_7{}^{2-},\\text{H}^+,\\text{H}^+}CH_3COOH'
+          ],
           ["", ""],
           ["Fe_2{}^-", "Fe_2{}^-"],
           ["Fe_2{}^-", "Fe_2^-"],

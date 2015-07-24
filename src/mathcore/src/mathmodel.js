@@ -181,9 +181,8 @@
   function negate(n) {
     if (typeof n === "number") {
       return -n;
-    } else if (n.op === Model.MUL) {
-      n.args.unshift(nodeMinusOne);
-      return n;
+    } else if (n.op === Model.MUL) {      
+      return multiplyNode(n.args.concat(nodeMinusOne));
     } else if (n.op === Model.NUM) {
       if (n.args[0] === "Infinity") {
         return nodeMinusInfinity;
@@ -252,7 +251,12 @@
     } else if (typeof n === "number") {
       return n === -1;
     } else if (n.op !== undefined) {
-      return !bigMinusOne.compareTo(mathValue(n, true));
+      var mv = mathValue(n, true);
+      if (mv) {
+        return !bigMinusOne.compareTo(mathValue(n, true));
+      } else {
+        return false;
+      }
     }
     assert(false, "Internal error: unable to compare with zero.");
   }
@@ -856,6 +860,15 @@
           }
           break;
         case "\\decimal":
+          if (node.numberFormat === "decimal" &&
+              node.isRepeating === true) {
+            if (length === undefined) {
+              return true;
+            } else {
+              // Repeating is infinite.
+              return false;
+            }
+          }
           if (node.numberFormat === "decimal") {
             if (length === undefined ||
                 length === 0 && node.args[0].indexOf(".") === -1 ||
@@ -866,6 +879,15 @@
           }
           break;
         case "\\number":
+          if (node.numberFormat === "decimal" &&
+              node.isRepeating === true) {
+            if (length === undefined) {
+              return true;
+            } else {
+              // Repeating is infinite.
+              return false;
+            }
+          }
           if (node.numberFormat === "integer" ||
               node.numberFormat === "decimal") {
             var brk = node.args[0].indexOf(".");
@@ -1010,7 +1032,9 @@
           }
           forEach(node.args, function (n, i) {
             n = normalizeSyntax(n, ref.args[i]);
-            args.push(n);
+            if (!isMinusOne(n)) {
+              args.push(n);
+            }
           });
           return binaryNode(Model.MUL, args);
         },
@@ -1026,9 +1050,8 @@
                 checkNumberFormat(ref.args[0], node.args[0])) {
               return normalNumber;
             }
-            // Convert SUBs to ADDs
-            // Avoid nested MULs
-            node = negate(arg0);
+            // Strip minus
+            node = arg0;
             break;
           default:
             node = unaryNode(node.op, [arg0]);
@@ -2264,12 +2287,17 @@
           assert(node.args.length > 0);
           return node;
           function commonDenom(node) {
+            // 1/2+2/3
+            // ((1/2)(2*3)+(2/3)(2*3))/6
+            // (3+4)/6
+            // 7/6
             var n0 = node.args;
             if (!isChemCore()) {
               // Make common denominator
               // Get denominators
               var denoms = [];
               forEach(n0, function (n1) {
+                // Add current node's denominator to the list.
                 denoms = denom(n1, denoms);
               });
               if (denoms.length > 1 || (denoms.length === 1 && !isOne(denoms[0]))) {
@@ -2296,8 +2324,13 @@
             return node;
           }
           function numer(n, d, denoms) {
+            // Denominators are in positive power form.
+            // n = node to get numerator of.
+            // d = denominator of current node.
+            // denoms = all common denominators.
+            // n/d/denoms
             var dd = denoms.slice(0); // Copy
-            var ff = factors(n, {}, true, false);
+            var ff = factors(n, {}, true, true);
             var hasNumer = false;
             var n0, nn = [];
             forEach(ff, function (n) {
@@ -2330,14 +2363,14 @@
           }
           function denom(n, denoms) {
             // If the current node has a different denominator as those in denoms,
-            // then add it.
-            var ff = factors(n, {}, true, false);
+            // then add it. Denominators are in positive power form.
+            var ff = factors(n, {}, true, true);
             var hasDenom = false;
             var d0, dd = [];
             forEach(ff, function (n) {
               d0 = n.args[0];
               if (n.op === Model.POW && isNeg(mathValue(n.args[1], true))) {
-                dd.push(d0);
+                dd.push(binaryNode(Model.POW, [d0, simplify(negate(n.args[1]))]));
               }
             });
             if (dd.length === 0) {
@@ -2903,14 +2936,14 @@
               // If its a number, then we're done.
               return newNode(node.op, args);
             }
-            var ff = factors(args[0], {}, true, true);
+            var ff = factors(args[0], {}, true, true, true);
             var args0 = [];
             var foundZero = false;
             forEach(ff, function (n) {
               var mv = mathValue(n, true);
               if (foundZero ||
                   mv !== null && !isZero(mv) && ff.length > 1 ||
-                  (n.op === Model.VAR || n.op === Model.POW) && units(n).length === 1 ||  // $, cm, s^2
+                  (n.op === Model.VAR || n.op === Model.POW) && ff.length > 1 ||  // $, cm, s^2
                   n.op === Model.POW && isNeg(mathValue(n.args[1]))) {
                 // Ignore constant factors including units, unless they are alone.
               } else if (isZero(mv)) {
@@ -3691,7 +3724,7 @@
       return node;
     }
 
-    function factors(root, env, ignorePrimeFactors, preserveNeg) {
+    function factors(root, env, ignorePrimeFactors, preserveNeg, factorAdditive) {
       if (!root || !root.args) {
         assert(false, "Should not get here. Illformed node.");
         return 0;
@@ -3699,7 +3732,7 @@
       return visit(root, {
         name: "factors",
         numeric: function (node) {
-          if (ignorePrimeFactors) {
+          if (ignorePrimeFactors || isInfinity(node)) {
             return [node];
           }
           var ff = [];
@@ -3718,12 +3751,30 @@
           return ff;
         },
         additive: function (node) {
+          if (!factorAdditive) {
+            // Actually, we have a repeating decimal. So no factors here.
+            return [node];
+          }
+          var args = node.args.slice(0);  // make a copy
+          var n0 = [multiplyNode(factors(args.shift(), {}, true, true))];
+          // For each next value, pop last value and look for common factors with the next value.
+          forEach(args, function (n1, i) {
+            n1 = multiplyNode(factors(n1, {}, true, true));
+            var n;
+            if (commonFactors((n = n0.pop()), n1).length > 0) {
+              n0 = n0.concat(factorTerms(n, n1));
+            } else {
+              n0 = n0.concat([n, n1]);
+            }
+          });
+          if (n0.length === 1 && n0[0].op === Model.MUL) {
+            return n0[0].args;
+          }
           return [node];
         },
         multiplicative: function (node) {
           switch (node.op) {
           case Model.MUL:
-            var vars = variables(node);
             var ff = [];
             forEach(node.args, function (n) {
               ff = ff.concat(factors(n, env, ignorePrimeFactors, preserveNeg));
@@ -4533,7 +4584,7 @@
     }
     var vp1 = variablePart(n1b);
     var vp2 = variablePart(n2b);
-    if (vp1 && vp2 && Ast.intern(vp1) === Ast.intern(vp2)) {
+    if (!n1t && !n2t && vp1 && vp2 && Ast.intern(vp1) === Ast.intern(vp2)) {
       // The variable part is the same, so factor out of the comparison.
       n1b = constantPart(n1b);
       n2b = constantPart(n2b);
@@ -4578,7 +4629,6 @@
       assert(baseUnit(n1b) === undefined && baseUnit(n2b) === undefined ||
              baseUnit(n1b) !== undefined && baseUnit(n2b) !== undefined,
              message(2009));
-
       // lb : g, ft : m
       v2 = baseUnitConversion(n1b, n2b)(v2);
       if (!isZero(v2t)) {
