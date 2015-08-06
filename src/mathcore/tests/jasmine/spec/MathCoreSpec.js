@@ -629,6 +629,28 @@ define(["mathcore"], function (MathCore) {
           ["\\arctan(1)", ".78539816339"],
         ]);
       });
+      describe("equivValue", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivValue",
+                value: v[0],
+                options: {
+                  decimalPlaces: 3,
+                },
+              }, v[1])).toBe(true);
+            });
+          });
+        }
+        run([
+          ["\\cos{90^\\circ}", "0"],
+          ["\\cos{0^\\circ}", "1"],
+          ["\\cos{\\pi/2}", "0"],
+          ["980\\times\\cos{\\pi/6}", "848.705"],
+          ["980\\times\\cos{30^\\circ}", "848.705"],
+        ]);
+      });
       describe("equivSymbolic", function() {
         function run(tests) {
           forEach(tests, function (v, i) {
@@ -641,6 +663,9 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["\\underset{\\sim}{\\mathbf{a}}", "\\underset{\\sim}{\\mathbf{a}}"],
+          ["\\underset{\\sim}{\\mathbf{a}}", "\\mathbf{\\underset{\\sim}{a}}"],
+          ["\\mathbf{\\underset{\\sim}{a}}", "\\mathbf{\\underset{\\sim}{a}}"],
           ["5=y+x", "5+\\arcsin(x)=y+x+\\arcsin(x)"],
           ["5=y+x", "5+\\arcsin(x)=y+x+\\sin^{-1}(x)"],
           ["5=x+y", "5+\\sin^{-1}(-1)=x+y+\\arcsin(-1)"],

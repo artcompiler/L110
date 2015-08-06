@@ -112,7 +112,9 @@ var forEach = function forEach(array, fun) {
     }
   }
 };
-define(["chemcore"], function (ChemCore) {
+define(["mathcore"], function (MathCore) {
   describe("Math Core", function() {
+    describe("Debug", function() {
+    });
   });
 });

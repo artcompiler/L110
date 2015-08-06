@@ -58,6 +58,10 @@
     return !!Model.env["Au"];
   }
 
+  function uniqueNode() {
+    return numberNode(new Date().getTime());
+  }
+
   function newNode(op, args) {
     return {
       op: op,
@@ -293,6 +297,34 @@
     return new BigDecimal(str);
   }
 
+  function toRadians(node) {
+    var val = bigOne, uu;
+    if (node.op === Model.MUL) {
+      forEach(node.args, function (n) {
+        if (n.op === Model.VAR) {
+          switch (n.args[0]) {
+          case "\\degree":
+            val = val.multiply(new BigDecimal(""+Math.PI).divide(new BigDecimal("180")));
+            break;
+          case "\\radians":
+            // Do nothing.
+            break;
+          default:
+            val = val.multiply(toRadians(n));
+            break;
+          }
+        } else {
+          val = toRadians(n);
+        }
+      });
+    } else if (node.op === Model.VAR && node.args[0] === "\\pi") {
+      val = mathValue(numberNode(Math.PI), true);
+    } else {
+      val = mathValue(node, true);
+    }
+    return val;
+  }
+
   function logBase(b, v) {
     return new BigDecimal(String(Math.log(toNumber(v)) / Math.log(toNumber(b))));
   }
@@ -381,6 +413,8 @@
       case Model.SUBSCRIPT:
         node = visit.unary(node, resume);
       case Model.OVERLINE:
+      case Model.OVERSET:
+      case Model.UNDERSET:
       case Model.NONE:
       case Model.DEGREE:
         node = visit.unary(node);
@@ -503,9 +537,7 @@
             return 0;
           case Model.DEGREE:
           case Model.NONE:
-            return 0;
           default:
-            assert(false, "Should not get here. Unhandled case.");
             return 0;
           }
         },
@@ -1226,9 +1258,7 @@
           return node;
         },
         variable: function(node) {
-          if (node.args[0] === "\\pi") {
-            node = numberNode(Math.PI);
-          } else if (node.args[0] === "e") {
+          if (node.args[0] === "e") {
             node = numberNode(Math.E);
           } else if (node.args[0] === "i" && !option("dontSimplifyImaginary")) {
             node = nodeImaginary;
@@ -2834,7 +2864,7 @@
               if (isZero(bmv)) {
                 // 0^x
                 if (isNeg(emv)) {
-                  return [numberNode("Infinity")];
+                  return [uniqueNode()];
                 } else {
                   return [nodeZero];
                 }
@@ -3075,7 +3105,6 @@
         },
         unary: function(node) {
           switch (node.op) {
-          case Model.DEGREE:
           case Model.SUB:
             var val = mathValue(node.args[0], env, allowDecimal);
             return val.multiply(bigMinusOne);
@@ -3116,7 +3145,8 @@
           case Model.ARCCOS:
           case Model.ARCTAN:
             if (allowDecimal) {
-              return trig(mathValue(node.args[0], env, allowDecimal), node.op);
+              var val = toRadians(node.args[0]);
+              return trig(val, node.op);
             }
             return null;
           default:
@@ -3221,7 +3251,7 @@
           return uu;
         },
         unary: function(node) {
-          return units(node.args[0], env);
+          return [];
         },
         numeric: function(node) {
           return [];
@@ -3977,6 +4007,9 @@
           return numberNode(node.args[0], true);
         },
         variable: function(node) {
+          if (node.args[0] === "\\pi") {
+            node = numberNode(Math.PI, true);
+          }
           return node;  // nothing to do here
         },
         comma: function(node) {
