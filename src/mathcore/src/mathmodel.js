@@ -58,8 +58,14 @@
     return !!Model.env["Au"];
   }
 
-  function uniqueNode() {
-    return numberNode(new Date().getTime());
+  function undefinedNode() {
+    var node = numberNode(new Date().getTime() + Math.random());
+    node.isUndefined = true;
+    return node;
+  }
+
+  function isUndefined(node) {
+    return node.isUndefined;
   }
 
   function newNode(op, args) {
@@ -433,6 +439,8 @@
       case Model.LE:
       case Model.GT:
       case Model.GE:
+      case Model.NE:
+      case Model.APPROX:
       case Model.COLON:
       case Model.RIGHTARROW:
         node = visit.equals(node, resume);
@@ -1038,6 +1046,12 @@
           return normalNumber;
         },
         numeric: function (node) {
+          if (ref && ref.op === Model.SUB &&
+              ref.args.length === 1 &&
+              ref.args[0].op === Model.FORMAT) {
+            // We have unary minus. Strip minus.
+            ref = ref.args[0];
+          }
           if (ref && ref.op === Model.FORMAT &&
               checkNumberFormat(ref.args[0], node)) {
             return normalNumber;
@@ -1048,6 +1062,7 @@
           var args = [];
           if (ref && ref.op === Model.FORMAT &&
               checkNumberFormat(ref.args[0], node)) {
+            // Found a mixed fraction.
             return normalNumber;
           }
           forEach(node.args, function (n, i) {
@@ -1363,7 +1378,9 @@
             args.push(sort(n));
           });
           node = binaryNode(node.op, args);
-          if (node.op === Model.PM) {
+          if (node.op === Model.PM ||
+              node.op === Model.BACKSLASH) {
+            // Don't sort these kinds of nodes.
             return node;
           }
           var d0, d1;
@@ -1751,7 +1768,10 @@
     }
 
     function isAdditive(node) {
-      return node.op === Model.ADD || node.op === Model.SUB || node.op === Model.PM;
+      return node.op === Model.ADD ||
+        node.op === Model.SUB ||
+        node.op === Model.PM ||
+        node.op === Model.BACKSLASH;
     }
 
     function isMultiplicative(node) {
@@ -2256,6 +2276,31 @@
       return multiplyNode(outList);
     }
 
+    function listNodeIDs(node) {
+      var aa = [];
+      if (node.op === Model.COMMA) {
+        forEach(node.args, function(n) {
+          aa.push(Ast.intern(n));
+        });
+      } else {
+        aa.push(Ast.intern(node));
+      }
+      return aa;
+    }
+
+    function diffSets(n1, n2) {
+      var a1 = listNodeIDs(n1);
+      var a2 = listNodeIDs(n2);
+      var nids = filter(a1, function(i) {
+        return indexOf(a2, i) < 0;
+      });
+      var args = [];
+      forEach(nids, function (nid) {
+        args.push(Ast.node(nid));
+      });
+      return newNode(Model.COMMA, args);
+    }
+
     function simplify(root, env, resume) {
       if (!root || !root.args) {
         assert(false, "Should not get here. Illformed node.");
@@ -2291,6 +2336,9 @@
           });
           node = newNode(node.op, args);
           if (node.op === Model.PM) {
+            return node;
+          } else if (node.op === Model.BACKSLASH) {
+            node = diffSets(node.args[0], node.args[1]);
             return node;
           }
           // Make denominators common
@@ -2577,6 +2625,9 @@
           }
           return node;
           function fold(lnode, rnode) {
+            if (isUndefined(lnode) || isUndefined(rnode)) {
+              return undefinedNode();
+            }
             var ldegr = degree(lnode);
             var rdegr = degree(rnode);
             var lvars = variables(lnode);
@@ -2845,7 +2896,8 @@
           if (n0.length === 1) {
             var n = n0[0];
             if (n.op !== Model.NUM || isInteger(n) ||
-                n.args[0] === "Infinity") {
+               isInfinity(n) ||
+               isUndefined(n)) {
               // If the result is not a number or is a whole number, then return it
               node = n;
             } // Otherwise return the orginal expression.
@@ -2864,7 +2916,7 @@
               if (isZero(bmv)) {
                 // 0^x
                 if (isNeg(emv)) {
-                  return [uniqueNode()];
+                  return [undefinedNode()];
                 } else {
                   return [nodeZero];
                 }
@@ -3064,6 +3116,9 @@
       return visit(root, {
         name: "simplify",
         numeric: function (node) {
+          if (isUndefined(node)) {
+            return null;
+          }
           return toDecimal(node.args[0]);
         },
         additive: function (node) {
@@ -4599,6 +4654,11 @@
       n2b = simplify(expand(normalize(n2)));
       var v2 = mathValue(n2b, env, true);
     }
+    // If either value is undefined, then we have no match.
+    if (isUndefined(n1b) || isUndefined(n2b)) {
+      result = false;
+      return inverseResult ? !result : result;
+    }
     // If we have two lists, then compare their elements
     if (n1b.op === Model.COMMA && n2b.op === Model.COMMA ||
         n1b.op === Model.LIST && n2b.op === Model.LIST) {
@@ -4864,6 +4924,8 @@
       op === Model.LE ||
       op === Model.GT ||
       op === Model.GE ||
+      op === Model.NE ||
+      op === Model.APPROX ||
       op === Model.EQL;
   }
 

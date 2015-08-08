@@ -663,6 +663,11 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["\{1,2,3\}", "\{1,2,3\}"],
+          ["\{1,2,3\}", "\{1,3,2\}"],
+          ["\{1,2,3\}\\backslash\{2\}", "\{1,3\}"],
+          ["\{1,2,3\}\\backslash\{2,3\}", "\{1\}"],
+          ["\{1,2,3\}\\backslash\{1,2,3,4,5,1\}", "\{\}"],
           ["\\underset{\\sim}{\\mathbf{a}}", "\\underset{\\sim}{\\mathbf{a}}"],
           ["\\underset{\\sim}{\\mathbf{a}}", "\\mathbf{\\underset{\\sim}{a}}"],
           ["\\mathbf{\\underset{\\sim}{a}}", "\\mathbf{\\underset{\\sim}{a}}"],

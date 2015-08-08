@@ -207,13 +207,15 @@ define(["mathcore"], function (MathCore) {
                 method: "equivLiteral",
                 value: v[0],
                 options: {
-                  ignoreTrailingZeros: true
+                  ignoreTrailingZeros: true,
+                  allowThousandsSeparator: true,
                 },
               }, v[1])).toBe(true);
             });
           });
         }
         run([
+          ["1,445.1300000", "1445.1300000"],
           ["2.0", "2"],
           [".12", ".120"],
           [".12", "0.120000"],
@@ -418,6 +420,8 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["0/0", "0/0"],
+          ["0/0", "0"],
           ["2/0", "2/0"],
           ["2/0", "1/0"],
           ["0/0", "1/0"],

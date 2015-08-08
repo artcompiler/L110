@@ -120,13 +120,18 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["!=", "!="],
+          ["\\ne", "\\ne"],
+          ["\\approx", "\\approx"],
+          ["10 != 11", "10 != 11"],
+          ["10 \\ne 11", "10 \\ne 11"],
+          ["10 \\approx 11", "10 \\approx 11"],
           ["", ""],
           ["mg", "mg"],
           ["\\mug", "\\mug"],
           ["\\mus", "\\mus"],
           ["\\mum", "\\mum"],
           ["\\muL", "\\muL"],
-          ["{1+2}", "(1+2)"],
           ["[1+2]", "(1+2)"],
           ["\\ \\:\\;\\,\\!\\quad\\qquad xyz", "xyz"],
           ["\\vec{a}", "\\vec{a}"],
@@ -248,8 +253,11 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["x-y", "x+y"],
           ["x+y", "x-y"],
           ["\\format{\\number}+\\format{\\number}", "1-2"],
+          ["\\format{\\number}-\\format{\\number}", "1-2"],
+          ["\\format{\\number}-\\format{\\number}", "1+2"],
           ["\\format{\\number}", "-10"],
           ["\\format{\\number}", "0.\\overline{3}"],
           ["\\format{\\decimal}", "0.\\overline{3}"],
