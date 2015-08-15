@@ -107,6 +107,99 @@ var forEach = function forEach(array, fun) {
 define(["mathcore"], function (MathCore) {
   describe("Math Core", function() {
     describe("Numbers", function() {
+      describe("NOT equivSymbolic", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivSymbolic",
+                value: v[0],
+              }, v[1])).toBe(false);
+            });
+          });
+        }
+        run([
+          ["0", ""]
+        ]);
+      });
+      describe("equivSymbolic", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivSymbolic",
+                value: v[0],
+              }, v[1])).toBe(true);
+            });
+          });
+        }
+        run([
+          ["0", "0"],
+          ["", ""]
+        ]);
+      });
+      describe("NOT equivValue", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivValue",
+                value: v[0],
+              }, v[1])).not.toBe(true);
+            });
+          });
+        }
+        run([
+          ["0", ""]
+        ]);
+      });
+      describe("equivValue", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivValue",
+                value: v[0],
+              }, v[1])).toBe(true);
+            });
+          });
+        }
+        run([
+          ["0", "0"],
+          ["", ""]
+        ]);
+      });
+      describe("NOT equivLiteral", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivLiteral",
+                value: v[0],
+              }, v[1])).toBe(false);
+            });
+          });
+        }
+        run([
+          ["0", ""]
+        ]);
+      });
+      describe("equivLiteral", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivLiteral",
+                value: v[0],
+              }, v[1])).toBe(true);
+            });
+          });
+        }
+        run([
+          ["0", "0"],
+          ["", ""]
+        ]);
+      });
       describe("isSimplified", function() {
         function run(tests) {
           forEach(tests, function (v, i) {
@@ -377,6 +470,8 @@ define(["mathcore"], function (MathCore) {
           ["1/7", "0.\\overline{142857142857}"],
           ["\\frac{1}{720}", "0.0013\\overline{8}"],
           ["0.\\overline{3}", "0.\\overline{33333333333333}"],
+          ['0.\\overline{3}', '0.\\overline{3333333333}'],
+          ['0.\\overline{3}', '0.\\overline{333333333}'],
           ["1.\\overline{88}", "1.\\overline{88}"],
           ["1.\\overline{88}", "1.\\overline{8}"],
           ["0.\\overline{3}", "1/3"],

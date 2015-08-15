@@ -107,6 +107,50 @@ var forEach = function forEach(array, fun) {
 
 define(["mathcore"], function (MathCore) {
   describe("Math Core", function() {
+    describe("standalone operands equivLiteral", function() {
+      function run(tests) {
+        forEach(tests, function (v, i) {
+          it(v[0] + " | " + v[1], function() {
+            expect(MathCore.evaluate({
+              method: "equivLiteral",
+              value: v[0],
+            }, v[1])).toBe(true);
+          });
+        });
+      }
+      run([
+        [">", ">"],
+        ["<", "<"],
+        ["=", "="],
+        ["!=", "!="],
+        ["<=", "<="],
+        [">=", ">="],
+        ["\\ne", "\\ne"],
+        ["\\approx", "\\approx"],
+      ]);
+    });
+    describe("standalone operands equivSymbolic", function() {
+      function run(tests) {
+        forEach(tests, function (v, i) {
+          it(v[0] + " | " + v[1], function() {
+            expect(MathCore.evaluate({
+              method: "equivSymbolic",
+              value: v[0],
+            }, v[1])).toBe(true);
+          });
+        });
+      }
+      run([
+        [">", ">"],
+        ["<", "<"],
+        ["=", "="],
+        ["!=", "!="],
+        ["<=", "<="],
+        [">=", ">="],
+        ["\\ne", "\\ne"],
+        ["\\approx", "\\approx"],
+      ]);
+    });
     describe("Miscellaneous Syntax", function() {
       describe("equivLiteral", function() {
         function run(tests) {
@@ -156,7 +200,7 @@ define(["mathcore"], function (MathCore) {
           ["\\left(A\\right)'", "\\left(A\\right)'"],
           ["\\frac{\\text{increase}}{\\text{original value}}\\times100\\%=\\frac{1386.49}{4188.79}\\times100\\%=33.1\\%", "\\frac{\\text{increase}}{\\text{original value}}\\times100\\%=\\frac{1386.49}{4188.79}\\times100\\%=33.1\\%"],
           ["(1, 3)", "(1, 3)"],
-          ["(-1, 3)", "(-1, 3)"]
+          ["(-1, 3)", "(-1, 3)"],
         ]);
       });
       describe("equivLiteral", function() {
@@ -255,6 +299,7 @@ define(["mathcore"], function (MathCore) {
         run([
           ["x-y", "x+y"],
           ["x+y", "x-y"],
+          [["\\format{\\number{3}}"], "2.333"],
           ["\\format{\\number}+\\format{\\number}", "1-2"],
           ["\\format{\\number}-\\format{\\number}", "1-2"],
           ["\\format{\\number}-\\format{\\number}", "1+2"],
@@ -345,6 +390,11 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          [["\\format{\\number{3}}"], "23"],
+          [["\\format{\\number{3}}"], "233"],
+          [["\\format{\\number{3}}"], "2333"],
+          [["\\format{\\number{3}}"], "2.33"],
+          [["\\format{\\number{3}}"], "2.3333"],
           ["\\format{\\number{1}}", "0.\\overline{3}"],
           ["\\format{\\decimal{1}}", "0.\\overline{3}"],
           ["\\format{\\number{3}}", "123"],

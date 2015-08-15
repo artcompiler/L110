@@ -15,7 +15,7 @@
   messages[2002] = "[unused]"
   messages[2003] = "Factoring non-polynomials is not supported.";
   messages[2004] = "Compound units not supported.";
-  messages[2005] = "Expressions with variables cannot be compared with equivValue.";
+  messages[2005] = "Non-numeric expressions cannot be compared with equivValue.";
   messages[2006] = "More that two equals symbols in equation.";
   messages[2007] = "Tolerances are not supported in lists.";
   messages[2008] = "deprecated";
@@ -2289,6 +2289,14 @@
     }
 
     function diffSets(n1, n2) {
+      if (n1.op === Model.MUL) {
+        assert(n1.args.length === 2);
+        assert(n1.args[1].op === Model.COMMA);
+        // Swap operands to undo sorting.
+        var t = n2;
+        n2 = n1.args[1];
+        n1 = t;
+      }
       var a1 = listNodeIDs(n1);
       var a2 = listNodeIDs(n2);
       var nids = filter(a1, function(i) {
@@ -2337,9 +2345,16 @@
           node = newNode(node.op, args);
           if (node.op === Model.PM) {
             return node;
-          } else if (node.op === Model.BACKSLASH) {
-            node = diffSets(node.args[0], node.args[1]);
-            return node;
+          } else if (node.op === Model.BACKSLASH ||
+                     node.op === Model.ADD &&
+                     node.args.length === 2 &&
+                     node.args[0].op === Model.MUL &&
+                     node.args[0].args.length === 2 &&
+                     node.args[0].args[0].op === Model.NUM &&
+                     node.args[0].args[0].args[0] === "-1" &&
+                     node.args[0].args[1].op === Model.COMMA &&
+                     node.args[1].op === Model.COMMA) {
+            return diffSets(node.args[0], node.args[1]);
           }
           // Make denominators common
           if (!option("dontFactorDenominators")) {
@@ -3204,8 +3219,12 @@
               return trig(val, node.op);
             }
             return null;
-          default:
+          case Model.ADD:
             return mathValue(node.args[0], env, allowDecimal);
+          case Model.DEGREE:
+            return toRadians(node.args[0]);
+          default:
+            return null;
           }
         },
         exponential: function (node) {

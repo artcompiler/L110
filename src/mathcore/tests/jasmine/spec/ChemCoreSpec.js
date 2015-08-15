@@ -257,6 +257,12 @@ define(["chemcore"], function (ChemCore) {
           });
         }
         run([
+          ['\\overset{2+}{H}', '\\overset{2-}{H}'],
+          ['\\overset{2-}{H}', '\\overset{2+}{H}'],
+          ['\\overset{2}{H}', '\\overset{2-}{H}'],
+          ['\\overset{2}{H}', '\\overset{2+}{H}'],
+          ['\\overset{2-}{H}', '\\overset{2}{H}'],
+          ['\\overset{2+}{H}', '\\overset{2}{H}'],
           ["\\overset{2}{H}", "\\overset{2+}{H}"],
           ["\\overset{2+}{H}", "\\overset{2}{H}"],
           ["\\underset{2}{H}", "\\underset{2+}{H}"],
@@ -277,6 +283,9 @@ define(["chemcore"], function (ChemCore) {
           });
         }
         run([
+          ['\\overset{2+}{H}', '\\overset{2+}{H}'],
+          ['\\overset{2-}{H}', '\\overset{2-}{H}'],
+          ['\\overset{2}{H}', '\\overset{2}{H}'],
           ['\\xrightarrow[3]{2}', '\\xrightarrow[3]{2}'],
           ['\\xrightarrow{2}', '\\xrightarrow{2}'],
           ['\\xrightarrow[3]', '\\xrightarrow[3]'],

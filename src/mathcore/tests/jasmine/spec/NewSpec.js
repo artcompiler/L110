@@ -121,11 +121,7 @@ var forEach = function forEach(array, fun) {
   }
 };
 
-define(["chemcore"], function (ChemCore) {
-  describe("ChemCore", function() {
-    describe("New", function() {
-      // PUT NEW TESTS HERE.
-      // COPY THE INNER TEST DRIVER FROM ONE OF THE PRODUCTION TESTS
-    });
+define(["mathcore"], function (MathCore) {
+  describe("MathCore", function() {
   });
 });

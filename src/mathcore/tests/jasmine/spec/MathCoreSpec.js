@@ -107,6 +107,252 @@ var forEach = function forEach(array, fun) {
 
 define(["mathcore"], function (MathCore) {
   describe("Math Core", function() {
+    describe("standalone operands equivLiteral", function() {
+      function run(tests) {
+        forEach(tests, function (v, i) {
+          it(v[0] + " | " + v[1], function() {
+            expect(MathCore.evaluate({
+              method: "equivLiteral",
+              value: v[0],
+            }, v[1])).toBe(true);
+          });
+        });
+      }
+      run([
+        [">", ">"],
+        ["<", "<"],
+        ["=", "="],
+        ["!=", "!="],
+        ["<=", "<="],
+        [">=", ">="],
+        ["\\ne", "\\ne"],
+        ["\\approx", "\\approx"],
+      ]);
+    });
+    describe("standalone operands equivSymbolic", function() {
+      function run(tests) {
+        forEach(tests, function (v, i) {
+          it(v[0] + " | " + v[1], function() {
+            expect(MathCore.evaluate({
+              method: "equivSymbolic",
+              value: v[0],
+            }, v[1])).toBe(true);
+          });
+        });
+      }
+      run([
+        [">", ">"],
+        ["<", "<"],
+        ["=", "="],
+        ["!=", "!="],
+        ["<=", "<="],
+        [">=", ">="],
+        ["\\ne", "\\ne"],
+        ["\\approx", "\\approx"],
+      ]);
+    });
+    describe("standalone operands equivValue", function() {
+      function run(tests) {
+        forEach(tests, function (v, i) {
+          it(v[0] + " | " + v[1], function() {
+            expect(MathCore.evaluate({
+              method: "equivValue",
+              value: v[0],
+            }, v[1])).toBe(true);
+          });
+        });
+      }
+      run([
+        [">", ">"],
+        ["<", "<"],
+        ["=", "="],
+        ["!=", "!="],
+        ["<=", "<="],
+        [">=", ">="],
+        ["\\ne", "\\ne"],
+        ["\\approx", "\\approx"],
+      ]);
+    });
+    describe("inequalities with operands equivLiteral", function() {
+      function run(tests) {
+        forEach(tests, function (v, i) {
+          it(v[0] + " | " + v[1], function() {
+            expect(MathCore.evaluate({
+              method: "equivLiteral",
+              value: v[0],
+            }, v[1])).toBe(true);
+          });
+        });
+      }
+      run([
+        ["2>3", "2>3"],
+        ["2<3", "2<3"],
+        ["2=3", "2=3"],
+        ["2!=3", "2!=3"],
+        ["2<=3", "2<=3"],
+        ["2>=3", "2>=3"],
+        ["2\\ne3", "2\\ne3"],
+        ["2\\approx3", "2\\approx3"],
+      ]);
+    });
+    describe("inequalities with operands equivSymbolic", function() {
+      function run(tests) {
+        forEach(tests, function (v, i) {
+          it(v[0] + " | " + v[1], function() {
+            expect(MathCore.evaluate({
+              method: "equivSymbolic",
+              value: v[0],
+            }, v[1])).toBe(true);
+          });
+        });
+      }
+      run([
+        ["2>3", "2>3"],
+        ["2<3", "2<3"],
+        ["2=3", "2=3"],
+        ["2!=3", "2!=3"],
+        ["2=3", "3=2"],
+        ["2!=3", "3!=2"],
+        ["2<=3", "2<=3"],
+        ["2>=3", "2>=3"],
+        ["2\\ne3", "2\\ne3"],
+        ["2\\approx3", "2\\approx3"],
+        ["2\\ne3", "3\\ne2"],
+        ["2\\approx3", "3\\approx2"],
+        ["2>3", "5>6"],
+        ["2<3", "5<6"],
+        ["2=3", "5=6"],
+        ["2!=3", "5!=6"],
+        ["2=3", "6=5"],
+        ["2!=3", "6!=5"],
+        ["2<=3", "5<=6"],
+        ["2>=3", "5>=6"],
+        ["2\\ne3", "5\\ne6"],
+        ["2\\approx3", "5\\approx6"],
+        ["2\\ne3", "6\\ne5"],
+        ["2\\approx3", "6\\approx5"],
+      ]);
+    });
+    describe("inequalities with operands equivValue", function() {
+      function run(tests) {
+        forEach(tests, function (v, i) {
+          it(v[0] + " | " + v[1], function() {
+            expect(MathCore.evaluate({
+              method: "equivValue",
+              value: v[0],
+            }, v[1])).toBe(true);
+          });
+        });
+      }
+      run([
+        ["2>3", "2>3"],
+        ["2<3", "2<3"],
+        ["2=3", "2=3"],
+        ["2!=3", "2!=3"],
+        ["2=3", "3=2"],
+        ["2!=3", "3!=2"],
+        ["2<=3", "2<=3"],
+        ["2>=3", "2>=3"],
+        ["2\\ne3", "2\\ne3"],
+        ["2\\approx3", "2\\approx3"],
+        ["2\\ne3", "3\\ne2"],
+        ["2\\approx3", "3\\approx2"],
+        ["2>3", "2>4"],
+        ["2<3", "2<4"],
+        ["2=3", "2=4"],
+        ["2!=3", "2!=4"],
+        ["2=3", "4=2"],
+        ["2!=3", "4!=2"],
+        ["2<=3", "2<=4"],
+        ["2>=3", "2>=4"],
+        ["2\\ne3", "2\\ne4"],
+        ["2\\approx3", "2\\approx4"],
+        ["2\\ne3", "4\\ne2"],
+        ["2\\approx3", "4\\approx2"],
+        ["2>3", "5>6"],
+        ["2<3", "5<6"],
+        ["2=3", "5=6"],
+        ["2!=3", "5!=6"],
+        ["2=3", "6=5"],
+        ["2!=3", "6!=5"],
+        ["2<=3", "5<=6"],
+        ["2>=3", "5>=6"],
+        ["2\\ne3", "5\\ne6"],
+        ["2\\approx3", "5\\approx6"],
+        ["2\\ne3", "6\\ne5"],
+        ["2\\approx3", "6\\approx5"],
+      ]);
+    });
+    describe("inequalities with operands NOT equivLiteral", function() {
+      function run(tests) {
+        forEach(tests, function (v, i) {
+          it(v[0] + " | " + v[1], function() {
+            expect(MathCore.evaluate({
+              method: "equivLiteral",
+              value: v[0],
+            }, v[1])).toBe(false);
+          });
+        });
+      }
+      run([
+        ["2>3", "3>2"],
+        ["2<3", "3<2"],
+        ["2=3", "3=2"],
+        ["2!=3", "3!=2"],
+        ["2<=3", "3<=2"],
+        ["2>=3", "3>=2"],
+        ["2\\ne3", "3\\ne2"],
+        ["2\\approx3", "3\\approx2"],
+      ]);
+    });
+    describe("inequalities with operands NOT equivSymbolic", function() {
+      function run(tests) {
+        forEach(tests, function (v, i) {
+          it(v[0] + " | " + v[1], function() {
+            expect(MathCore.evaluate({
+              method: "equivSymbolic",
+              value: v[0],
+            }, v[1])).toBe(false);
+          });
+        });
+      }
+      run([
+        ["2>3", "3>2"],
+        ["2<3", "3<2"],
+        ["2<=3", "3<=2"],
+        ["2>=3", "3>=2"],
+        ["2>3", "2>4"],
+        ["2<3", "2<4"],
+        ["2=3", "2=4"],
+        ["2!=3", "2!=4"],
+        ["2=3", "4=2"],
+        ["2!=3", "4!=2"],
+        ["2<=3", "2<=4"],
+        ["2>=3", "2>=4"],
+        ["2\\ne3", "2\\ne4"],
+        ["2\\approx3", "2\\approx4"],
+        ["2\\ne3", "4\\ne2"],
+        ["2\\approx3", "4\\approx2"],
+      ]);
+    });
+    describe("inequalities with operands NOT equivValue", function() {
+      function run(tests) {
+        forEach(tests, function (v, i) {
+          it(v[0] + " | " + v[1], function() {
+            expect(MathCore.evaluate({
+              method: "equivValue",
+              value: v[0],
+            }, v[1])).toBe(false);
+          });
+        });
+      }
+      run([
+        ["2>3", "3>2"],
+        ["2<3", "3<2"],
+        ["2<=3", "3<=2"],
+        ["2>=3", "3>=2"],
+      ]);
+    });
     describe("Lists", function() {
       describe("equivSymbolic", function() {
         function run(tests) {
@@ -120,6 +366,18 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          [
+            '\\left\\{1,2,3,4\\right\\} \\backslash \\left\\{1,2\\right\\}',
+            '\\left\\{1,2,3,4\\right\\} \\backslash \\left\\{1,2\\right\\}'
+          ],
+          [
+            '\\left\\{1,2,3,4\\right\\} \\backslash \\left\\{1,2\\right\\}',
+            '\\left\\{3,4\\right\\}'
+          ],
+          [
+            '\\left\\{1,2,3,4\\right\\} - \\left\\{1,2\\right\\}',
+            '\\left\\{3,4\\right\\}'
+          ],
           ["{1, 2, 3, 4} \\backslash {1, 2}", "{1, 2, 3, 4} \\backslash {1, 2}"],
           ["", ""],
           ["\\left(-2,-16\\right),\\left(-1,-4\\right),\\left(0,0\\right),\\left(1,-4\\right),\\left(2,-16\\right)", "(-2,-16), (-1,-4), (0,0), (1,-4), (2,-16)"]

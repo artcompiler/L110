@@ -1504,6 +1504,82 @@ define(["mathcore"], function (MathCore) {
           ["x>y", "2x>y"],
         ]);
       });
+      describe("equivSmbolic + isSimplified", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivSymbolic",
+                value: v[0]
+              }, v[1])).toBe(true);
+              expect(MathCore.evaluate({
+                method: "isSimplified"
+              }, v[1])).toBe(true);
+            });
+          });
+        }
+        run([
+            ['20y=5x^2+5x+10', '4y=x^2+x+2']
+        ]);
+      });
+      describe("equivSmbolic + NOT isSimplified", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivSymbolic",
+                value: v[0]
+              }, v[1])).toBe(true);
+              expect(MathCore.evaluate({
+                method: "isSimplified"
+              }, v[1])).toBe(false);
+            });
+          });
+        }
+        run([
+            ['20y=5x^2+5x+10', '20y=5x^2+5x+10']
+        ]);
+      });
+      describe("isSimplified and equivSymbolic", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it("isSimplified: " + v[0], function() {
+              expect(MathCore.evaluate({
+                method: "isSimplified"
+              }, v[0])).toBe(true);
+            });
+            it("equivSymbolic: " + v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivSymbolic",
+                value: v[0]
+              }, v[1])).toBe(true);
+            });
+          });
+        }
+        run([
+            ["-4-4i", "\\left(1+i\\right)^5"]
+        ]);
+      });
+      describe("isFactorised and equivSymbolic", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it("isFactorised: " + v[0], function() {
+              expect(MathCore.evaluate({
+                method: "isFactorised"
+              }, v[0])).toBe(true);
+            });
+            it("equivSymbolic: " + v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivSymbolic",
+                value: v[0]
+              }, v[1])).toBe(true);
+            });
+          });
+        }
+        run([
+            ["(1+i)^5", "\\left(1+i\\right)^5"]
+        ]);
+      });
     });
   });
 });
