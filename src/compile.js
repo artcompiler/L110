@@ -35,6 +35,10 @@ var transformer = function() {
     "SET-DECIMAL-SEPARATOR": setDecimalSeparator,
     "SET-THOUSANDS-SEPARATOR": setThousandsSeparator,
     "FIELD": field,
+    "ALLOW-THOUSANDS-SEPARATOR": allowThousandsSeparator,
+    "ALLOW-INTERVAL": allowInterval,
+    "IGNORE-TEXT": ignoreText,
+    "IGNORE-TRAILING-ZEROS": ignoreTrailingZeros,
   };
   var nodePool;
   function reset() {
@@ -386,8 +390,36 @@ var transformer = function() {
     });
   }
 
+  function allowThousandsSeparator(node, options, resume) {
+    option(options, "allowThousandsSeparator", true);
+    visit(node.elts[0], options, function (err, val) {
+      resume(err, val);
+    });
+  }
+
+  function allowInterval(node, options, resume) {
+    option(options, "allowInterval", true);
+    visit(node.elts[0], options, function (err, val) {
+      resume(err, val);
+    });
+  }
+
   function ignoreOrder(node, options, resume) {
     option(options, "ignoreOrder", true);
+    visit(node.elts[0], options, function (err, val) {
+      resume(err, val);
+    });
+  }
+
+  function ignoreText(node, options, resume) {
+    option(options, "ignoreText", true);
+    visit(node.elts[0], options, function (err, val) {
+      resume(err, val);
+    });
+  }
+
+  function ignoreTrailingZeros(node, options, resume) {
+    option(options, "ignoreTrailingZeros", true);
     visit(node.elts[0], options, function (err, val) {
       resume(err, val);
     });
