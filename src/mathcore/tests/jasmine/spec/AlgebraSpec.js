@@ -27,14 +27,15 @@ if (TEST_LIB) {
   requirejs.config({
     baseUrl: "../../src",
     paths: {
-      'backward': '../lib/model/src/backward',
-      'assert': '../lib/model/src/assert',
-      'trace': '../lib/model/src/trace',
-      'ast': '../lib/model/src/ast',
-      'model': '../lib/model/src/model',
+      'backward': 'backward',
+      'assert': 'assert',
+      'trace': 'trace',
+      'ast': 'ast',
+      'model': 'model',
       'bigdecimal': '../lib/BigDecimal',
       'mathmodel': 'mathmodel',
-      'mathcore': 'mathcore'
+      'mathcore': 'mathcore',
+      'chemcore': 'chemcore',
     },
     shim: {
       'backward': {
@@ -194,6 +195,8 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["x<3", "3>x"],
+          ["1<2<3", "3>2>1"],
           ["-3x+2", "2-3x"],
           ["10 \\text{foo bar abc}", "\\text{foo bar abc} 10"],
           ["\\left(x+2\\right)^2+\\left(y-7\\right)^2=53", "\\left(x+2\\right)^2+\\left(-7+y\\right)^2=53"],

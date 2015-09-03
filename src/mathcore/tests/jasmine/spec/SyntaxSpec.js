@@ -27,14 +27,15 @@ if (TEST_LIB) {
   requirejs.config({
     baseUrl: "../../src",
     paths: {
-      'backward': '../lib/model/src/backward',
-      'assert': '../lib/model/src/assert',
-      'trace': '../lib/model/src/trace',
-      'ast': '../lib/model/src/ast',
-      'model': '../lib/model/src/model',
+      'backward': 'backward',
+      'assert': 'assert',
+      'trace': 'trace',
+      'ast': 'ast',
+      'model': 'model',
       'bigdecimal': '../lib/BigDecimal',
       'mathmodel': 'mathmodel',
-      'mathcore': 'mathcore'
+      'mathcore': 'mathcore',
+      'chemcore': 'chemcore',
     },
     shim: {
       'backward': {

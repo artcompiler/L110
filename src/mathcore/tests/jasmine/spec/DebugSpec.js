@@ -29,11 +29,11 @@ if (TEST_LIB) {
   requirejs.config({
     baseUrl: setBaseUrlSrc,
     paths: {
-      'backward': '../lib/model/src/backward',
-      'assert': '../lib/model/src/assert',
-      'trace': '../lib/model/src/trace',
-      'ast': '../lib/model/src/ast',
-      'model': '../lib/model/src/model',
+      'backward': 'backward',
+      'assert': 'assert',
+      'trace': 'trace',
+      'ast': 'ast',
+      'model': 'model',
       'bigdecimal': '../lib/BigDecimal',
       'mathmodel': 'mathmodel',
       'sympy': 'sympy',
@@ -115,6 +115,21 @@ var forEach = function forEach(array, fun) {
 define(["mathcore"], function (MathCore) {
   describe("Math Core", function() {
     describe("Debug", function() {
+      describe("equivLiteral", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivLiteral",
+                value: v[0],
+              }, v[1])).toBe(true);
+            });
+          });
+        }
+        run([
+          ["0", "0"],
+        ]);
+      });
     });
   });
 });

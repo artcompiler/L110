@@ -190,7 +190,8 @@ var MathCore = (function () {
       break;
     case "setDecimalSeparator":
       if (typeof v === "undefined" ||
-          typeof v === "string" && v.length === 1) {
+          typeof v === "string" && v.length === 1 ||
+          v instanceof Array && v.length > 0 && v[0].length === 1) {
         break;
       }
       assert(false, message(3007, [p, JSON.stringify(v)]));

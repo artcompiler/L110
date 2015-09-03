@@ -27,14 +27,15 @@ if (TEST_LIB) {
   requirejs.config({
     baseUrl: "../../src",
     paths: {
-      'backward': '../lib/model/src/backward',
-      'assert': '../lib/model/src/assert',
-      'trace': '../lib/model/src/trace',
-      'ast': '../lib/model/src/ast',
-      'model': '../lib/model/src/model',
+      'backward': 'backward',
+      'assert': 'assert',
+      'trace': 'trace',
+      'ast': 'ast',
+      'model': 'model',
       'bigdecimal': '../lib/BigDecimal',
       'mathmodel': 'mathmodel',
-      'mathcore': 'mathcore'
+      'mathcore': 'mathcore',
+      'chemcore': 'chemcore',
     },
     shim: {
       'backward': {
@@ -134,6 +135,10 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["\\abs{-3}", "\\left|-3\\right|"],
+          ["\\abs{-3}", "\\left|3\\right|"],
+          ["\\left|-3\\right|", "\\abs{3}"],
+          ["\\left|3\\right|", "\\abs{3}"],
           ["0", "0"],
           ["", ""]
         ]);
@@ -401,6 +406,29 @@ define(["mathcore"], function (MathCore) {
           ["1 000 000", "1000000"],
           ["1 000 000,00", "1000000,00"],
           ["1999", "1\\ 999"]
+        ]);
+      });
+      describe("equivLiteral setThousandsSeparator=[' '] setDecimalSeparator=[',', '.']", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivLiteral",
+                value: v[0],
+                options: {
+                  allowThousandsSeparator: true,
+                  setThousandsSeparator: [' '],
+                  setDecimalSeparator: [',', '.'],
+                }
+              }, v[1])).toBe(true);
+            });
+          });
+        }
+        run([
+          ["1 000", "1000"],
+          ["1 000 000", "1000000"],
+          ["1 000 000.00", "1000000,00"],
+          ["1999.", "1\\ 999,"]
         ]);
       });
       describe("NOT equivLiteral allowThousandsSeparator=[' '] setDecimalSeparator=undefined", function() {

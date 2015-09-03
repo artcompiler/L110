@@ -27,14 +27,15 @@ if (TEST_LIB) {
   requirejs.config({
     baseUrl: "../../src",
     paths: {
-      'backward': '../lib/model/src/backward',
-      'assert': '../lib/model/src/assert',
-      'trace': '../lib/model/src/trace',
-      'ast': '../lib/model/src/ast',
-      'model': '../lib/model/src/model',
+      'backward': 'backward',
+      'assert': 'assert',
+      'trace': 'trace',
+      'ast': 'ast',
+      'model': 'model',
       'bigdecimal': '../lib/BigDecimal',
       'mathmodel': 'mathmodel',
-      'chemcore': 'chemcore'
+      'mathcore': 'mathcore',
+      'chemcore': 'chemcore',
     },
     shim: {
       'backward': {
@@ -226,6 +227,12 @@ define(["chemcore"], function (ChemCore) {
           });
         }
         run([
+          ["\\text{C}_2\\text{H}_4\\xrightarrow{H_2O,\\text{H}_3\\text{PO}_4}C_2H_5OH",
+           "\\text{C}_2\\text{H}_4\\xrightarrow{H_2O,\\text{H}_3\\text{PO}_4}C_2H_5OH"],
+          ["\\text{C}_2\\text{H}_4\\xrightarrow[H_2O,\\text{H}_3\\text{PO}_4]{}C_2H_5OH",
+           "\\text{C}_2\\text{H}_4\\xrightarrow[H_2O,\\text{H}_3\\text{PO}_4]{}C_2H_5OH"],
+          ["\\text{C}_2\\text{H}_4\\xrightarrow[]{}C_2H_5OH",
+           "\\text{C}_2\\text{H}_4\\xrightarrow[]{}C_2H_5OH"],
           ["\\frac{[\\text{Cu}(\\text{NH}_3)_4{}^{2+}]^-}{[\\text{Cu}^{2+}]^-\\times[\\text{NH}_3]^4}",
            "\\frac{[\\text{Cu}(\\text{NH}_3)_4{}^{2+}]^-}{[\\text{Cu}^{2+}]^-\\times[\\text{NH}_3]^4}"],
           ["CH_2+2O_2 \\rightarrow CO_2+2H_2",

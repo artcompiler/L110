@@ -114,9 +114,9 @@ define(["mathcore"], function (MathCore) {
             it(v[0] + " | " + v[1] + " | " + JSON.stringify(v[2]), function() {
               expect(MathCore.evaluateVerbose({
                 method: v[0],
-                value: v[1][1],
+                value: v[1][0],
                 options: v[2]
-              }, v[1][0]).errorCode).toEqual(v[3]);
+              }, v[1][1]).errorCode).toEqual(v[3]);
             });
           });
         }
@@ -133,34 +133,34 @@ define(["mathcore"], function (MathCore) {
             ["equivLiteral", ["1.000", "10,00"], {
               allowThousandsSeparator: true,
               setThousandsSeparator: ['.'],
-            }, 2008],
+            }, 1008],
             ["equivLiteral", ["1,000", "1000"], {
               allowThousandsSeparator: true,
               setThousandsSeparator: [','],
               setDecimalSeparator: ',',
-            }, 2008],
+            }, 1008],
             ["equivLiteral", ["1,000", "1000"], {
               allowThousandsSeparator: true,
               setThousandsSeparator: [','],
               setDecimalSeparator: [',', '.'],
-            }, 3007],
-            ["isFactorised", ["3xy(x^2-3y^2+4xy)"], {field: "integer"}, 2001],          
+            }, 1008],
+            ["isFactorised", [undefined, "3xy(x^2-3y^2+4xy)"], {field: "integer"}, 2001],          
             ["equivLiteral", ["(1+2]", "(1+2)"], {}, 1001],
             ["equivLiteral", ["\\text{Range: }\\left[-\\infty,0\\right)",
                               "\\text{Range: }\\left(-\\infty,0\\right)"], {}, 1001],
-            ["isFactorised", ["==============="], {}, 1006],
-            ["equivLiteral", [undefined, "10"], {}, 3002],
-            ["equivLiteral", ["10", undefined], {}, 3003],
-            ["isFactorised", ["4k^2+9m^2"], {}, 2001],
-            ["isFactorised", ["xy+2ab"], {}, 2001],
-            ["isFactorised", ["(10x"], {}, 1001],
-            ["isFactorised", ["(xy^3+2z^2)(x-1)"], {}, 2001],
+            ["isFactorised", [undefined, "==============="], {}, 1006],
+            ["equivLiteral", ["10", undefined], {}, 3002],
+            ["equivLiteral", [undefined, "10"], {}, 3003],
+            ["isFactorised", [undefined, "4k^2+9m^2"], {}, 2001],
+            ["isFactorised", [undefined, "xy+2ab"], {}, 2001],
+            ["isFactorised", [undefined, "(10x"], {}, 1001],
+            ["isFactorised", [undefined, "(xy^3+2z^2)(x-1)"], {}, 2001],
             ["equivValue", ["x", "|x|"], {}, 2005],
             ["equivValue", ["5x^2+3x+2", "1"], {}, 2005],
             ["equivValue", ["10g", "10"], {}, 2009],
             ["equivValue", ["1000", "10,00"], {allowThousandsSeparator: true}, 1005],
-            ["isFactorised", ["x^2-25"], {Field: "integer"}, 3006],
-            ["isFactorised", ["x^2-25"], {field: "Integer"}, 3007],
+            ["isFactorised", [undefined, "x^2-25"], {Field: "integer"}, 3006],
+            ["isFactorised", [undefined, "x^2-25"], {field: "Integer"}, 3007],
           ];
           run(tests);
         });
@@ -170,22 +170,24 @@ define(["mathcore"], function (MathCore) {
               it(v[0] + " | " + v[1], function() {
                 expect(MathCore.evaluateVerbose({
                   method: v[0],
-                  value: v[1][1]
-                }, v[1][0]).location).toEqual(v[2]);
+                  value: v[1][0]
+                }, v[1][1]).location).toEqual(v[2]);
               });
             });
           }
           describe("various", function() {
             var tests = [
-              ["equivLiteral", [undefined, "10"], "user"],
-              ["equivLiteral", ["10", undefined], "spec"],
-              ["isFactorised", ["4k^2+9m^2"], "user"],
-              ["isFactorised", ["x^2+xy+3y^2"], "user"],
-              ["isFactorised", ["(10x"], "user"],
-              ["isFactorised", ["x^y+1"], "user"],
-              ["isFactorised", ["(xy^3+2z^2)(x-1)"], "user"],
-              ["isFactorised", ["(x^y+1)(x-1)"], "user"],
-              ["equivValue", ["1", "5x^2+3x+2"], "spec"],
+              ["equivValue", ["10cm", "foobar"], "user"],
+              ["equivLiteral", [undefined, "10"], "spec"],
+              ["equivLiteral", ["10", undefined], "user"],
+              ["isFactorised", [undefined, "4k^2+9m^2"], "user"],
+              ["isFactorised", [undefined, "x^2+xy+3y^2"], "user"],
+              ["isFactorised", [undefined, "(10x"], "user"],
+              ["isFactorised", [undefined, "x^y+1"], "user"],
+              ["isFactorised", [undefined, "(xy^3+2z^2)(x-1)"], "user"],
+              ["isFactorised", [undefined, "(x^y+1)(x-1)"], "user"],
+              ["equivValue", ["1", "5x^2+3x+2"], "user"],
+              ["equivValue", ["5x^2+3x+2", "1"], "spec"],
             ];
             run(tests);
           });

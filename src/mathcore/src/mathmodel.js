@@ -1657,7 +1657,18 @@
           forEach(node.args, function (n) {
             args.push(normalizeLiteral(n));
           });
-          node.args = args;
+          if (node.op === Model.GT ||
+              node.op === Model.GE ) {
+            // Swap adjacent elements and reverse the operator.
+            assert(args.length === 2, "Internal error: comparisons have only two operands");
+            var t = args[0];
+            args[0] = args[1];
+            args[1] = t;
+            node.op = node.op === Model.GT ? Model.LT : Model.LE;
+            node.args = args;
+          } else {
+            node.args = args;
+          }
           return node;
         },
       });
@@ -4730,10 +4741,10 @@
     }
     var v1 = mathValue(n1b, env, true);
     var v2 = mathValue(n2b, env, true);
-    assert(v1 !== null || isComparison(n1b.op), message(2005));
-    assert(n1b.op !== Model.PM || v1t !== null, message(2005));
-    assert(v2 !== null || isComparison(n2b.op), message(2005));
-    assert(n2b.op !== Model.PM || v2t !== null, message(2005));
+    assert(v1 !== null || isComparison(n1b.op), message(2005), "spec");
+    assert(n1b.op !== Model.PM || v1t !== null, message(2005), "spec");
+    assert(v2 !== null || isComparison(n2b.op), message(2005), "user");
+    assert(n2b.op !== Model.PM || v2t !== null, message(2005), "user");
     Assert.clearLocation();
     // Not lists so check values and units. At this point the values reflect
     // the relative magnitudes of the units.
