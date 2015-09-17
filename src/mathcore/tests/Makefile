@@ -28,6 +28,9 @@ debug:	check
 new:	check
 	open ../tests/jasmine/NewRunner.html
 
+content: check
+	open ../tests/jasmine/ContentRunner.html
+
 check:
 	$(shell echo ./check-lib.sh)
 

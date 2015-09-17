@@ -1229,6 +1229,8 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["", "10"],
+          ["10", "20"],
           ["in", "10in"],
           ["cm", "10cm"],
           ["cm, m, ns", "10cm"],
@@ -1247,6 +1249,9 @@ define(["mathcore"], function (MathCore) {
           });
         };
         run([
+          ["", ""],
+          ["", "   "],
+          ["10", "20in"],
           ["in", "10ft"],
           ["m", "10cm"],
           ["m, ns", "10cm"],

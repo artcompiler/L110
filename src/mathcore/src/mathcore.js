@@ -20,10 +20,10 @@ var MathCore = (function () {
 
   var u = 1;
   var k = 1000;
-  var c = Math.pow(10, -2);
-  var m = Math.pow(10, -3);
-  var mu = Math.pow(10, -6); // micro, \\mu
-  var n = Math.pow(10, -9);
+  var c = new BigDecimal("1E-2"); //Math.pow(10, -2);
+  var m = new BigDecimal("1E-3"); //Math.pow(10, -3);
+  var mu = new BigDecimal("1E-6"); //Math.pow(10, -6); // micro, \\mu
+  var n = new BigDecimal("1E-9"); //Math.pow(10, -9);
   var env = {
     "g": { type: "unit", value: u, base: "g" },
     "s": { type: "unit", value: u, base: "s" },
@@ -264,8 +264,9 @@ var MathCore = (function () {
       case "isTrue":
         result = solutionNode.isTrue();
         break;
-      case "hasSyntax":
-        result = solutionNode.hasSyntax();
+      case "validSyntax":
+        // If we got this far, then value parsed.
+        result = true;
         break;
       default:
         assert(false, message(3004, [method]));

@@ -122,8 +122,6 @@ define(["mathcore"], function (MathCore) {
         }
         describe("various", function() {
           var tests = [
-            ["equivLiteral", ["\\int_1^2", "\\int_1^2"], {}, 1006],
-            ["equivLiteral", ["\\text", "\\text"], {}, 1009],
             ["equivValue", ["3 \\gt x \\ge 2", "2 \\le x \\lt 3"], {}, 2005],
             ["equivLiteral", [".", "."], {}, 1004],
             ["equivLiteral", ["10", "10..."], {}, 1007],
@@ -148,7 +146,6 @@ define(["mathcore"], function (MathCore) {
             ["equivLiteral", ["(1+2]", "(1+2)"], {}, 1001],
             ["equivLiteral", ["\\text{Range: }\\left[-\\infty,0\\right)",
                               "\\text{Range: }\\left(-\\infty,0\\right)"], {}, 1001],
-            ["isFactorised", [undefined, "==============="], {}, 1006],
             ["equivLiteral", ["10", undefined], {}, 3002],
             ["equivLiteral", [undefined, "10"], {}, 3003],
             ["isFactorised", [undefined, "4k^2+9m^2"], {}, 2001],

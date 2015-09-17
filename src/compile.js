@@ -27,6 +27,7 @@ var transformer = function() {
     "IS-FACTORISED": isFactorised,
     "IS-UNIT": isUnit,
     "IS-TRUE": isTrue,
+    "VALID-SYNTAX": validSyntax,
     "INVERSE-RESULT": inverseResult,
     "DECIMAL-PLACES": decimalPlaces,
     "ALLOW-DECIMAL": allowDecimal,
@@ -345,6 +346,25 @@ var transformer = function() {
             score: val ? (val.result ? 1 : -1) : 0,
             response: response,
             objectCode: composeValidation("isTrue", options)
+          });
+        });
+      }
+    });
+  }
+
+  function validSyntax(node, options, resume) {
+    visit(node.elts[0], options, function (err, val) {
+      var response = val;
+      if (response) {
+        MathCore.evaluateVerbose({
+          method: "validSyntax",
+          options: options,
+        }, response, function (err, val) {
+          response = escapeStr(response);
+          resume(err, {
+            score: val ? (val.result ? 1 : -1) : 0,
+            response: response,
+            objectCode: composeValidation("validSyntax", options)
           });
         });
       }

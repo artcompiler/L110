@@ -132,6 +132,7 @@
   }
 
   function numberNode(val, doScale, roundOnly, isRepeating) {
+    assert(!(val instanceof Array));
     // doScale - scale n if true
     // roundOnly - only scale if rounding
     var mv, node, minusOne;
@@ -304,31 +305,33 @@
   }
 
   function toRadians(node) {
+    // Convert node to radians
+    assert(node.op);
     var val = bigOne, uu;
+    var args = [];
     if (node.op === Model.MUL) {
       forEach(node.args, function (n) {
         if (n.op === Model.VAR) {
           switch (n.args[0]) {
           case "\\degree":
-            val = val.multiply(new BigDecimal(""+Math.PI).divide(new BigDecimal("180")));
+            args.push(numberNode(new BigDecimal(""+Math.PI).divide(new BigDecimal("180"))));
             break;
           case "\\radians":
             // Do nothing.
             break;
           default:
-            val = val.multiply(toRadians(n));
+            args.push(toRadians(n));
             break;
           }
         } else {
-          val = toRadians(n);
+          args.push(n);
         }
       });
-    } else if (node.op === Model.VAR && node.args[0] === "\\pi") {
-      val = mathValue(numberNode(Math.PI), true);
+      node = multiplyNode(args);
     } else {
-      val = mathValue(node, true);
+      node = node;
     }
-    return val;
+    return node;
   }
 
   function logBase(b, v) {
@@ -454,7 +457,10 @@
         node = visit.format(node);
         break;
       default:
-        assert(false, "Should not get here. Unhandled node operator " + node.op);
+        if (visit.name !== "normalizeLiteral" &&
+            visit.name !== "sort") {
+          assert(false, "Should not get here. Unhandled node operator " + node.op);
+        }
         break;
       }
       return node;
@@ -1273,9 +1279,7 @@
           return node;
         },
         variable: function(node) {
-          if (node.args[0] === "e") {
-            node = numberNode(Math.E);
-          } else if (node.args[0] === "i" && !option("dontSimplifyImaginary")) {
+          if (node.args[0] === "i" && !option("dontSimplifyImaginary")) {
             node = nodeImaginary;
           }
           return node;
@@ -2935,7 +2939,7 @@
           }
           return node;
           function fold(op, expo, base) {
-            var mv;
+            var mv, node;
             var bmv = mathValue(base);
             var emv = mathValue(expo, {}, true);
             if (op === Model.POW) {
@@ -3023,6 +3027,11 @@
           }
         },
         variable: function(node) {
+          var val, n;
+          var env = Model.env;
+          if (node.args[0] === "e") {
+            node = numberNode(Math.E);
+          }
           return node;
         },
         comma: function(node) {
@@ -3188,6 +3197,9 @@
           switch (node.op) {
           case Model.SUB:
             var val = mathValue(node.args[0], env, allowDecimal);
+            if (val === null) {
+              return null;
+            }
             return val.multiply(bigMinusOne);
           case Model.FACT:
             var n = mathValue(node.args[0], env, allowDecimal);
@@ -3226,14 +3238,14 @@
           case Model.ARCCOS:
           case Model.ARCTAN:
             if (allowDecimal) {
-              var val = toRadians(node.args[0]);
+              var val = mathValue(toRadians(node.args[0]), env, allowDecimal);
               return trig(val, node.op);
             }
             return null;
           case Model.ADD:
             return mathValue(node.args[0], env, allowDecimal);
           case Model.DEGREE:
-            return toRadians(node.args[0]);
+            return mathValue(toRadians(node.args[0]), env, allowDecimal);
           default:
             return null;
           }
@@ -5109,7 +5121,9 @@
       u2 = [u2];
     }
     var result = false;
-    if (u2.length) {
+    if (u1.length ===  0 && u2.length === 0 && n2.op !== Model.NONE) {
+      result = true;  // Make degenerate case true (e.g. isUnit "10" "20").
+    } else if (u2.length) {
       result = every(u2, function (v) {
         return indexOf(u1, v) >= 0;
       });

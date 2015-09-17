@@ -153,6 +153,32 @@ define(["mathcore"], function (MathCore) {
       ]);
     });
     describe("Miscellaneous Syntax", function() {
+      describe("validSyntax", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0], function() {
+              expect(MathCore.evaluate({
+                method: "validSyntax",
+              }, v[0])).toBe(true);
+            });
+          });
+        }
+        run([
+          ["2>1"],
+          ["1>=1"],
+          ["!="],
+          ["\\ne"],
+          ["\\approx"],
+          ["10 != 11"],
+          ["10 \\ne 11"],
+          ["10 \\approx 11"],
+          ["", ""],
+          ["mg"],
+          ["\\mug"],
+          ["\\forall x \\in X, \\exists y \\lt \\epsilon"],
+          ["\\cos (2\\theta) = \\cos^2 \\theta - \\sin^2 \\theta"],
+        ]);
+      });
       describe("equivLiteral", function() {
         function run(tests) {
           forEach(tests, function (v, i) {

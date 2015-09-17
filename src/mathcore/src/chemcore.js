@@ -327,6 +327,10 @@ var ChemCore = (function () {
       case "isTrue":
         result = solutionNode.isTrue();
         break;
+      case "validSyntax":
+        // If we got this far, then value parsed.
+        result = true;
+        break;
       default:
         assert(false, message(4004, [method]));
         break;

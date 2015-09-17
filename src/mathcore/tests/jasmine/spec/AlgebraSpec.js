@@ -241,6 +241,7 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["f_{\\text{G}}=\\sin(98\\pi t)", "f_{\\text{G}}=\\sin(98\\pi t)"],
           ["x=1/3\\pi*24", "x=8\\pi"],
           ["x=1/3\\pi*2^2*18", "x=24\\pi"],
           ["x=y", "Ax=Ay"],

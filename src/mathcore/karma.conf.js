@@ -29,7 +29,8 @@ module.exports = function(config) {
         // source files, that you wanna generate coverage for
         // do not include tests or libraries
         // (these files will be instrumented by Istanbul)
-        'www/latest/app/**/*.js': ['coverage']
+        'lib/mathcore.js': ['coverage'],
+        'lib/chemcore.js': ['coverage']
     },
 
 
@@ -41,6 +42,7 @@ module.exports = function(config) {
     // optionally, configure the reporter
     coverageReporter: {
         reporters: [
+            {type : 'text-summary'},
             {type : 'lcov', dir : 'reports/js/coverage/lcov', subdir: '.'},
             {type : 'html', dir : 'reports/js/coverage/html', subdir: '.'},
             {type : 'cobertura', dir : 'reports/js/coverage/cobertura', subdir: '.'}
