@@ -417,6 +417,12 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["\\format{\\mixedFraction}", "1 \\frac{2.0}{3.0}"],
+          ["\\format{\\mixedFraction}", "1 \\frac{1/2}{3/4}"],
+          ["\\format{\\nonMixedFraction}", "\\frac{2.0}{3.0}"],
+          ["\\format{\\nonMixedFraction}", "\\frac{1/2}{3/4}"],
+          ["\\format{\\fraction}", "\\frac{2.0}{3.0}"],
+          ["\\format{\\fraction}", "\\frac{1/2}{3/4}"],
           [["\\format{\\number{3}}"], "23"],
           [["\\format{\\number{3}}"], "233"],
           [["\\format{\\number{3}}"], "2333"],

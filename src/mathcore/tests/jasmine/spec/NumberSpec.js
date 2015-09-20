@@ -155,6 +155,7 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["2 3", "6"],
           ["0", ""]
         ]);
       });
