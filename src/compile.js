@@ -437,7 +437,6 @@ var transformer = function() {
           method: "validSyntax",
           options: options,
         }, response, function (err, val) {
-          console.log("validSyntax() err=" + err + " val=" + JSON.stringify(val));
           if (err) {
             errs = errs.concat(error(err, node.elts[0]));
           }
@@ -647,7 +646,6 @@ var renderer = function() {
 
   function render(node, resume) {
     node = node[0];
-    console.log("render() node=" + JSON.stringify(node));
     if (!node.response) {
       resume("ERROR Invalid input: " + JSON.stringify(node));
     } else {

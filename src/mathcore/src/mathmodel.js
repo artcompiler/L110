@@ -4984,6 +4984,8 @@
         // Handle any semantic exceptions raised by equivValue.
         result = false;
       }
+      Assert.setLocation(prevLocation);
+      return result; // equivValue implements inverseResult
     } else {
       var mv = mathValue(n1);
       if (mv && !isZero(mv)) {
@@ -4991,8 +4993,8 @@
       } else {
         result = false;
       }
+      Assert.setLocation(prevLocation);
     }
-    Assert.setLocation(prevLocation);
     var inverseResult = option("inverseResult");
     return inverseResult ? !result : result;
   }
