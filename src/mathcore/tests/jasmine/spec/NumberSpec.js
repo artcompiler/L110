@@ -1185,7 +1185,7 @@ define(["mathcore"], function (MathCore) {
           ["1000mg=1g"],
           ["1cm^3=1cm^3"],
           ["12in=1ft"],
-          ["4yd", "12ft"],
+          ["4yd=12ft"],
           ["5280ft=1mi"],
           ["1km=1000m"],
           ["1000mm=1m"],

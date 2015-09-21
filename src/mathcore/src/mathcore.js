@@ -107,7 +107,7 @@ var MathCore = (function () {
       var errorCode = 0, msg = "Normal completion", stack, location;
       evaluator.evaluate(solution, function (err, val) {
         console.log("evaluateVerbose() val=" + val);
-        resume(null, {
+        resume([], {
           result: val,
           errorCode: errorCode,
           message: msg,
@@ -124,7 +124,7 @@ var MathCore = (function () {
       stack = e.stack;
       location = e.location;
       console.log("ERROR evaluateVerbose stack=" + stack);
-      resume(e.stack, undefined);
+      resume([e.stack], undefined);
     }
 
     function parseErrorCode(e) {

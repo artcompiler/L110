@@ -134,6 +134,7 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["(440+56)*10 = 14,000"],
           ["3x+y^2=4x+y^2"],
           ["x>1"],
           ["x < 0.5x + 0.5x"],

@@ -44,6 +44,12 @@ var transformer = function() {
   var nodePool;
   function reset() {
   }
+  function error(str, nid) {
+    return {
+      str: str,
+      nid: nid,
+    };
+  }
   function transform(pool, resume) {
     reset();
     nodePool = pool;
@@ -95,47 +101,86 @@ var transformer = function() {
 
   function str(node, options, resume) {
     var val = node.elts[0];
-    resume(null, val);
+    resume([], val);
   }
 
   function num(node, options, resume) {
     var val = node.elts[0];
-    resume(null, val);
+    resume([], val);
   }
 
   function ident(node, options, resume) {
     var val = node.elts[0];
-    resume(null, val);
+    resume([], val);
   }
 
   function bool(node, options, resume) {
     var val = node.elts[0];
-    resume(null, val);
+    resume([], val);
   }
-
   function list(node, options, resume) {
+    if (node.elts && node.elts.length > 1) {
+      visit(node.elts[0], options, function (err1, val1) {
+        node.elts.shift();
+        list(node, options, function (err2, val2) {
+          resume([].concat(err1).concat(err2), [].concat(val1).concat(val2));
+        });
+      });
+    } else if (node.elts && node.elts.length === 0) {
+      visit(node.elts[0], options, function (err1, val1) {
+        resume([].concat(err1), [].concat(val1));
+      });
+    } else {
+      resume([], []);
+    }
+  };
+  function binding(node, options, resume) {
+    visit(node.elts[0], options, function (err1, val1) {
+      visit(node.elts[1], options, function (err2, val2) {
+        resume([].concat(err1).concat(err2), {key: val1, val: val2});
+      });
+    });
+  };
+  function record(node, options, resume) {
+    if (node.elts && node.elts.length > 1) {
+      visit(node.elts[0], options, function (err1, val1) {
+        node.elts.shift();
+        record(node, options, function (err2, val2) {
+          resume([].concat(err1).concat(err2), [].concat(val1).concat(val2));
+        });
+      });
+    } else if (node.elts && node.elts.length > 0) {
+      visit(node.elts[0], options, function (err1, val1) {
+        resume([].concat(err1), [].concat(val1));
+      });
+    } else {
+      resume([], []);
+    }
+  };
+  function program(node, options, resume) {
+    if (!options) {
+      options = {};
+    }
     visit(node.elts[0], options, function (err, val) {
-      if (!(val instanceof Array)) {
-        val = [val];
-      }
-      resume(null, val);
+      resume(err, val);
     });
   }
-
-  function program(node, options, resume) {
-    var options = {};
-    return visit(node.elts[0], options, resume);
-  }
-
   function exprs(node, options, resume) {
-    var elts = []
-    if (node.elts) {
-      for (var i = 0; i < node.elts.length; i++) {
-        elts.push(visit(node.elts[i], options, resume));
-      }
+    if (node.elts && node.elts.length > 1) {
+      visit(node.elts[0], options, function (err1, val1) {
+        node.elts.shift();
+        exprs(node, options, function (err2, val2) {
+          resume([].concat(err1).concat(err2), [].concat(val1).concat(val2));
+        });
+      });
+    } else if (node.elts && node.elts.length > 0) {
+      visit(node.elts[0], options, function (err1, val1) {
+        resume([].concat(err1), [].concat(val1));
+      });
+    } else {
+      resume([], []);
     }
-    return elts;
-  }
+  };
 
   // Get or set an option on a node.
   function option(options, id, val) {
@@ -172,11 +217,13 @@ var transformer = function() {
       }
     };
   }
-
   function equivSyntax(node, options, resume) {
+    var errs = [];
     visit(node.elts[1], options, function (err, val) {
+      errs = errs.concat(err);
       var reference = val;
       visit(node.elts[0], options, function (err, val) {
+        errs = errs.concat(err);
         var response = val;
         if (response) {
           MathCore.evaluateVerbose({
@@ -184,7 +231,10 @@ var transformer = function() {
             options: options,
             value: reference,
           }, response, function (err, val) {
-            resume(null, {
+            if (err) {
+              errs = errs.concat(error(err, node.elts[0]));
+            }
+            resume(errs, {
               score: val ? (val.result ? 1 : -1) : 0,
               response: response,
               value: reference,
@@ -195,11 +245,13 @@ var transformer = function() {
       });
     });
   }
-
   function equivLiteral(node, options, resume) {
+    var errs = [];
     visit(node.elts[1], options, function (err, val) {
+      errs = errs.concat(err);
       var reference = val;
       visit(node.elts[0], options, function (err, val) {
+        errs = errs.concat(err);
         var response = val;
         if (response) {
           MathCore.evaluateVerbose({
@@ -207,9 +259,12 @@ var transformer = function() {
             options: options,
             value: reference,
           }, response, function (err, val) {
+            if (err) {
+              errs = errs.concat(error(err, node.elts[0]));
+            }
             response = escapeStr(response);
             reference = escapeStr(reference);
-            resume(null, {
+            resume(errs, {
               score: val ? (val.result ? 1 : -1) : 0,
               response: response,
               value: reference,
@@ -220,11 +275,13 @@ var transformer = function() {
       });
     });
   }
-
   function equivSymbolic(node, options, resume) {
+    var errs = [];
     visit(node.elts[1], options, function (err, val) {
+      errs = errs.concat(err);
       var reference = val;
       visit(node.elts[0], options, function (err, val) {
+        errs = errs.concat(err);
         var response = val;
         if (response) {
           MathCore.evaluateVerbose({
@@ -232,29 +289,29 @@ var transformer = function() {
             options: options,
             value: reference,
           }, response, function (err, val) {
-            console.log("equivSymbolic() err=" + err + " val=" + val);
+            if (err) {
+              errs = errs.concat(error(err, 0));
+            }
             response = escapeStr(response);
             reference = escapeStr(reference);
-            if (err) {
-              resume(err, null);
-            } else {
-              resume(null, {
-                score: val ? (val.result ? 1 : -1) : 0,
-                response: response,
-                value: reference,
-                objectCode: composeValidation("equivSymbolic", options, reference)
-              });
-            }
+            resume(errs, {
+              score: val ? (val.result ? 1 : -1) : 0,
+              response: response,
+              value: reference,
+              objectCode: composeValidation("equivSymbolic", options, reference)
+            });
           });
         }
       });
     });
   }
-
   function equivValue(node, options, resume) {
+    var errs = [];
     visit(node.elts[1], options, function (err, val) {
+      errs = errs.concat(err);
       var reference = val;
       visit(node.elts[0], options, function (err, val) {
+        errs = errs.concat(err);
         var response = val;
         if (response) {
           MathCore.evaluateVerbose({
@@ -262,9 +319,12 @@ var transformer = function() {
             options: options,
             value: reference,
           }, response, function (err, val) {
+            if (err) {
+              err = errs.concat(error(err, node.elts[0]));
+            }
             response = escapeStr(response);
             reference = escapeStr(reference);
-            resume(null, {
+            resume(errs, {
               score: val ? (val.result ? 1 : -1) : 0,
               response: response,
               value: reference,
@@ -275,17 +335,21 @@ var transformer = function() {
       });
     });
   }
-
   function isFactorised(node, options, resume) {
+    var errs = [];
     visit(node.elts[0], options, function (err, val) {
+      errs = errs.concat(err);
       var response = val;
       if (response) {
         MathCore.evaluateVerbose({
           method: "isFactorised",
           options: options,
         }, response, function (err, val) {
+          if (err) {
+            err = errs.concat(error(err, node.elts[0]));
+          }
           response = escapeStr(response);
-          resume(err, {
+          resume(errs, {
             score: val ? (val.result ? 1 : -1) : 0,
             response: response,
             objectCode: composeValidation("isFactorised", options)
@@ -294,17 +358,21 @@ var transformer = function() {
       }
     });
   }
-
   function isSimplified(node, options, resume) {
+    var errs = [];
     visit(node.elts[0], options, function (err, val) {
+      errs = errs.concat(err);
       var response = val;
       if (response) {
         MathCore.evaluateVerbose({
           method: "isSimplified",
           options: options,
         }, response, function (err, val) {
+          if (err) {
+            err = errs.concat(error(err, node.elts[0]));
+          }
           response = escapeStr(response);
-          resume(err, {
+          resume(errs, {
             score: val ? (val.result ? 1 : -1) : 0,
             response: response,
             objectCode: composeValidation("isSimplified", options)
@@ -313,17 +381,21 @@ var transformer = function() {
       }
     });
   }
-
   function isExpanded(node, options, resume) {
+    var errs = [];
     visit(node.elts[0], options, function (err, val) {
+      errs = errs.concat(err);
       var response = val;
       if (response) {
         MathCore.evaluateVerbose({
           method: "isExpanded",
           options: options,
         }, response, function (err, val) {
+          if (err) {
+            err = errs.concat(error(err, node.elts[0]));
+          }
           response = escapeStr(response);
-          resume(err, {
+          resume(errs, {
             score: val ? (val.result ? 1 : -1) : 0,
             response: response,
             objectCode: composeValidation("isExpanded", options)
@@ -332,17 +404,21 @@ var transformer = function() {
       }
     });
   }
-
   function isTrue(node, options, resume) {
+    var errs = [];
     visit(node.elts[0], options, function (err, val) {
+      errs = errs.concat(err);
       var response = val;
       if (response) {
         MathCore.evaluateVerbose({
           method: "isTrue",
           options: options,
         }, response, function (err, val) {
+          if (err) {
+            err = errs.concat(error(err, node.elts[0]));
+          }
           response = escapeStr(response);
-          resume(err, {
+          resume(errs, {
             score: val ? (val.result ? 1 : -1) : 0,
             response: response,
             objectCode: composeValidation("isTrue", options)
@@ -351,17 +427,22 @@ var transformer = function() {
       }
     });
   }
-
   function validSyntax(node, options, resume) {
+    var errs = [];
     visit(node.elts[0], options, function (err, val) {
+      errs = errs.concat(err);
       var response = val;
       if (response) {
         MathCore.evaluateVerbose({
           method: "validSyntax",
           options: options,
         }, response, function (err, val) {
+          console.log("validSyntax() err=" + err + " val=" + JSON.stringify(val));
+          if (err) {
+            errs = errs.concat(error(err, node.elts[0]));
+          }
           response = escapeStr(response);
-          resume(err, {
+          resume(errs, {
             score: val ? (val.result ? 1 : -1) : 0,
             response: response,
             objectCode: composeValidation("validSyntax", options)
@@ -370,11 +451,13 @@ var transformer = function() {
       }
     });
   }
-
   function isUnit(node, options, resume) {
+    var errs = [];
     visit(node.elts[1], options, function (err, val) {
+      errs = errs.concat(err);
       var reference = val;
       visit(node.elts[0], options, function (err, val) {
+        errs = errs.concat(err);
         var response = val;
         if (response) {
           MathCore.evaluateVerbose({
@@ -382,9 +465,12 @@ var transformer = function() {
             options: options,
             value: reference,
           }, response, function (err, val) {
+            if (err) {
+              errs = errs.concat(error(err, node.elts[0]));
+            }
             response = escapeStr(response);
             reference = escapeStr(reference);
-            resume(null, {
+            resume(errs, {
               score: val ? (val.result ? 1 : -1) : 0,
               response: response,
               value: reference,
@@ -560,13 +646,15 @@ var renderer = function() {
   }
 
   function render(node, resume) {
+    node = node[0];
+    console.log("render() node=" + JSON.stringify(node));
     if (!node.response) {
       resume("ERROR Invalid input: " + JSON.stringify(node));
     } else {
-      tex2SVG(node.response, function (err, val) {
+      tex2SVG(String(node.response), function (err, val) {
         node.responseSVG = escapeXML(val);
         if (node.value) {
-          tex2SVG(node.value, function (err, val) {
+          tex2SVG(String(node.value), function (err, val) {
             node.valueSVG = escapeXML(val);
             resume(null, node);
           });
@@ -626,7 +714,7 @@ exports.compiler = function () {
   function compile(src, resume) {
     try {
       transformer.transform(src, function (err, val) {
-        if (err) {
+        if (err.length) {
           resume(err, val);
         } else {
           renderer.render(val, function (err, val) {

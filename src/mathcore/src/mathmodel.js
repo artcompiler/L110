@@ -4985,7 +4985,12 @@
         result = false;
       }
     } else {
-      result = !isZero(mathValue(n1));
+      var mv = mathValue(n1);
+      if (mv && !isZero(mv)) {
+        result = true;
+      } else {
+        result = false;
+      }
     }
     Assert.setLocation(prevLocation);
     var inverseResult = option("inverseResult");

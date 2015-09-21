@@ -9,6 +9,9 @@ window.exports.viewer = (function () {
   function update(el, obj, src, pool) {
     obj = JSON.parse(obj);
     if (!obj.objectCode) {
+      d3.select(el).html('<g/>');
+      var bbox = $("#graff-view svg g")[0].getBBox();
+      $(el).attr("height", (bbox.height + 20) + "px");
       return;
     }
     var fill, fontStyle;
