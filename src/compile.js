@@ -231,7 +231,7 @@ var transformer = function() {
             options: options,
             value: reference,
           }, response, function (err, val) {
-            if (err) {
+            if (err && err.length) {
               errs = errs.concat(error(err, node.elts[0]));
             }
             resume(errs, {
@@ -259,7 +259,7 @@ var transformer = function() {
             options: options,
             value: reference,
           }, response, function (err, val) {
-            if (err) {
+            if (err && err.length) {
               errs = errs.concat(error(err, node.elts[0]));
             }
             response = escapeStr(response);
@@ -289,7 +289,7 @@ var transformer = function() {
             options: options,
             value: reference,
           }, response, function (err, val) {
-            if (err) {
+            if (err && err.length) {
               errs = errs.concat(error(err, 0));
             }
             response = escapeStr(response);
@@ -319,7 +319,7 @@ var transformer = function() {
             options: options,
             value: reference,
           }, response, function (err, val) {
-            if (err) {
+            if (err && err.length) {
               err = errs.concat(error(err, node.elts[0]));
             }
             response = escapeStr(response);
@@ -345,7 +345,7 @@ var transformer = function() {
           method: "isFactorised",
           options: options,
         }, response, function (err, val) {
-          if (err) {
+          if (err && err.length) {
             err = errs.concat(error(err, node.elts[0]));
           }
           response = escapeStr(response);
@@ -368,7 +368,7 @@ var transformer = function() {
           method: "isSimplified",
           options: options,
         }, response, function (err, val) {
-          if (err) {
+          if (err && err.length) {
             err = errs.concat(error(err, node.elts[0]));
           }
           response = escapeStr(response);
@@ -391,7 +391,7 @@ var transformer = function() {
           method: "isExpanded",
           options: options,
         }, response, function (err, val) {
-          if (err) {
+          if (err && err.length) {
             err = errs.concat(error(err, node.elts[0]));
           }
           response = escapeStr(response);
@@ -414,7 +414,7 @@ var transformer = function() {
           method: "isTrue",
           options: options,
         }, response, function (err, val) {
-          if (err) {
+          if (err && err.length) {
             err = errs.concat(error(err, node.elts[0]));
           }
           response = escapeStr(response);
@@ -437,7 +437,7 @@ var transformer = function() {
           method: "validSyntax",
           options: options,
         }, response, function (err, val) {
-          if (err) {
+          if (err && err.length) {
             errs = errs.concat(error(err, node.elts[0]));
           }
           response = escapeStr(response);
@@ -464,7 +464,7 @@ var transformer = function() {
             options: options,
             value: reference,
           }, response, function (err, val) {
-            if (err) {
+            if (err && err.length) {
               errs = errs.concat(error(err, node.elts[0]));
             }
             response = escapeStr(response);
@@ -686,7 +686,6 @@ var renderer = function() {
     } else {
       var indent = "   "
     }
-
     var elts = ""
     if (node.elts) {
       for (var i = 0; i < node.elts.length; i++) {
@@ -695,7 +694,6 @@ var renderer = function() {
         }
       }
     }
-
     if (tagName === "g" && attrs.length === 0) {   // skip g elements without attrs
       var tag = elts
     } else if (tagName === "script" && node.elts.length === 1) {
@@ -713,6 +711,7 @@ exports.compiler = function () {
     try {
       transformer.transform(src, function (err, val) {
         if (err.length) {
+          console.log("transform() ERROR " + JSON.stringify(err));
           resume(err, val);
         } else {
           renderer.render(val, function (err, val) {

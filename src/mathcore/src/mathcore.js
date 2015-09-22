@@ -106,7 +106,6 @@ var MathCore = (function () {
       var evaluator = makeEvaluator(spec);
       var errorCode = 0, msg = "Normal completion", stack, location;
       evaluator.evaluate(solution, function (err, val) {
-        console.log("evaluateVerbose() val=" + val);
         resume([], {
           result: val,
           errorCode: errorCode,
@@ -273,7 +272,6 @@ var MathCore = (function () {
         break;
       }
       Model.popEnv();
-      console.log("evaluate() result=" + JSON.stringify(result));
       resume(null, result);
     }
     return {
