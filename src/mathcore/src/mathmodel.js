@@ -4909,7 +4909,7 @@
         if (n1.op === Model.MUL) {
           for (var i = 0; i < n1.args.length; i++) {
             if (n1.args[i].op === Model.INTERVAL &&
-                !equivLiteral(n1.args[i], n2.args[i], resume)) {
+                !equivLiteral(n1.args[i], n2.args[i])) {
               // Check immediately nested intervals.
               return inverseResult ? true : false;
             }
