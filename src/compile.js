@@ -284,6 +284,7 @@ var transformer = function() {
         errs = errs.concat(err);
         var response = val;
         if (response) {
+          console.log("equivSymbolic() reference=" + reference + " response=" + response);
           MathCore.evaluateVerbose({
             method: "equivSymbolic",
             options: options,
