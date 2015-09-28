@@ -245,6 +245,7 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["x\\in(-\\infty,14]", "x\\in(-\\infty,14]"],
           ["(1,2]", "(1,2]"],
           ["[1,2]", "[1,2]"],
         ]);
@@ -264,8 +265,26 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["x\\in(-\\infty,14]", "x\\in(-\\infty,14)"],
           ["(1,2]", "(1,2)"],
           ["[1,2]", "(1,2)"],
+        ]);
+      });
+      describe("NOT equivLiteral", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivLiteral",
+                options: {
+                },
+                value: v[0]
+              }, v[1])).toBe(false);
+            });
+          });
+        }
+        run([
+          ["x>10", "10<x"],
         ]);
       });
       describe("NOT equivLiteral", function() {
@@ -283,7 +302,6 @@ define(["mathcore"], function (MathCore) {
           [".", "."],
           ["558x3=\\text{6\\ and\\ it\\ is\\ position\\ 25\\ or\\ 28\\ or\\ something\\ like\\ that.\\ }65", "(-2,-16), (-1,-4), (0,0), (1,-4), (2,-16)"],
           ["558x3=6\\ and\\ it\\ is\\ position\\ 25\\ or\\ 28\\ or\\ something\\ like\\ that.\\ 65", "(-2,-16), (-1,-4), (0,0), (1,-4), (2,-16)"],
-          ["[1,2]", "(1,2)"],
           ["10 \\text{foo bar abc}", "\\text{foo bar abc} 10"],
           ["x_y^z", "x_y_z"],
           ["10 \\lt 20", "10 \\le 20"],
@@ -333,9 +351,9 @@ define(["mathcore"], function (MathCore) {
           ["\\format{\\number}", "-10"],
           ["\\format{\\number}", "0.\\overline{3}"],
           ["\\format{\\decimal}", "0.\\overline{3}"],
-          [["\\format{\\nonMixedFraction}"], "1/2"],
-          [["\\format{\\nonMixedFraction}"], "\\frac{1}{2}"],
-          [["\\format{\\nonMixedFraction}"], "\\frac{1}{2}"],
+          [["\\format{\\simpleFraction}"], "1/2"],
+          [["\\format{\\simpleFraction}"], "\\frac{1}{2}"],
+          [["\\format{\\simpleFraction}"], "\\frac{1}{2}"],
           [["\\format{\\variable{1}}\\format{\\variable}\\format{\\variable{1}}"], "aaa"],
           [["\\format{\\integer}"], "1"],
           [["\\format{\\variable}"], "a"],
@@ -419,8 +437,8 @@ define(["mathcore"], function (MathCore) {
         run([
           ["\\format{\\mixedFraction}", "1 \\frac{2.0}{3.0}"],
           ["\\format{\\mixedFraction}", "1 \\frac{1/2}{3/4}"],
-          ["\\format{\\nonMixedFraction}", "\\frac{2.0}{3.0}"],
-          ["\\format{\\nonMixedFraction}", "\\frac{1/2}{3/4}"],
+          ["\\format{\\simpleFraction}", "\\frac{2.0}{3.0}"],
+          ["\\format{\\simpleFraction}", "\\frac{1/2}{3/4}"],
           ["\\format{\\fraction}", "\\frac{2.0}{3.0}"],
           ["\\format{\\fraction}", "\\frac{1/2}{3/4}"],
           [["\\format{\\number{3}}"], "23"],
@@ -431,10 +449,10 @@ define(["mathcore"], function (MathCore) {
           ["\\format{\\number{1}}", "0.\\overline{3}"],
           ["\\format{\\decimal{1}}", "0.\\overline{3}"],
           ["\\format{\\number{3}}", "123"],
-          [["\\format{\\nonMixedFraction}"], "1.23\\frac{1}{2}"],
-          [["\\format{\\nonMixedFraction}"], "1 1/2"],
-          [["\\format{\\nonMixedFraction}"], "1\\frac{1}{2}"],
-          [["\\format{\\nonMixedFraction}"], "1.23\\frac{1}{2}"],
+          [["\\format{\\simpleFraction}"], "1.23\\frac{1}{2}"],
+          [["\\format{\\simpleFraction}"], "1 1/2"],
+          [["\\format{\\simpleFraction}"], "1\\frac{1}{2}"],
+          [["\\format{\\simpleFraction}"], "1.23\\frac{1}{2}"],
           [["\\format{\\scientific}"], "1.0\\div10"],
           ["\\format{\\variable{1}}\\format{\\variable{1}}", "xy"],
           [["\\format{\\decimal}"], "1,000.0"],

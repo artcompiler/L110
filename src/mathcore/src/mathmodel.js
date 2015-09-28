@@ -193,12 +193,17 @@
     if (typeof n === "number") {
       return -n;
     } else if (n.op === Model.MUL) {      
-      return multiplyNode(n.args.concat(nodeMinusOne));
+      n.args.unshift(negate(n.args.shift()));
+      return n;
     } else if (n.op === Model.NUM) {
       if (n.args[0] === "Infinity") {
         return nodeMinusInfinity;
       } else if (n.args[0] === "-Infinity") {
         return nodeInfinity;
+      } else if (n.args[0].charAt(0) === "-") {
+        return unaryNode(Model.SUB, [n]);
+      } else {
+        return numberNode("-" + n.args[0]);
       }
     }
     return multiplyNode([nodeMinusOne, n]);
@@ -962,7 +967,8 @@
             return true;
           }
           break;
-        case "\\nonMixedFraction":
+        case "\\simpleFraction":
+        case "\\nonMixedFraction": // deprecated
           if (node.isFraction) {
             return true;
           }
@@ -1175,8 +1181,10 @@
           return node;
         },
         additive: function (node) {
-          assert(node.op !== Model.SUB, "Subtraction should be eliminated during parsing");
-          if (node.op === Model.PM) {
+          if (node.op === Model.SUB) {
+            assert(node.args.length === 2);
+            node = binaryNode(Model.ADD, [node.args[0], negate(node.args[1])]);
+          } else if (node.op === Model.PM) {
             assert(node.args.length === 2, "Operator \pm can only be used on binary nodes");
             node = binaryNode(Model.ADD, [
               node.args[0],
@@ -1240,6 +1248,8 @@
           var arg0 = normalize(node.args[0]);
           switch (node.op) {
           case Model.SUB:
+            node = negate(arg0);
+/*
             // Convert SUBs to ADDs
             // Avoid nested MULs
             switch (arg0.op) {
@@ -1251,6 +1261,7 @@
               node = multiplyNode([arg0, nodeMinusOne]);
               break;
             }
+*/
             break;
           case Model.PERCENT:
             node = multiplyNode([
@@ -1661,8 +1672,9 @@
           forEach(node.args, function (n) {
             args.push(normalizeLiteral(n));
           });
-          if (node.op === Model.GT ||
-              node.op === Model.GE ) {
+          if (option("ignoreOrder") &&
+              (node.op === Model.GT ||
+               node.op === Model.GE)) {
             // Swap adjacent elements and reverse the operator.
             assert(args.length === 2, "Internal error: comparisons have only two operands");
             var t = args[0];
@@ -4903,24 +4915,8 @@
     }
     var nid1 = Ast.intern(n1);
     var nid2 = Ast.intern(n2);
-    if (nid1 === nid2) {
-      if (n1.op !== Model.INTERVAL && n1.op !== Model.LIST) {
-        // Check special case of \text{..} [..]
-        if (n1.op === Model.MUL) {
-          for (var i = 0; i < n1.args.length; i++) {
-            if (n1.args[i].op === Model.INTERVAL &&
-                !equivLiteral(n1.args[i], n2.args[i])) {
-              // Check immediately nested intervals.
-              return inverseResult ? true : false;
-            }
-          }
-        }
-        return inverseResult ? false : true;
-      } else if (n1.lbrk === n2.lbrk && n1.rbrk === n2.rbrk) {
-        return inverseResult ? false : true;
-      }
-    }
-    return inverseResult ? true : false;
+    var result = nid1 === nid2;
+    return inverseResult ? !result : result;
   }
 
   // Check if two equations are mathematically equivalent. Two equations are
