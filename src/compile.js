@@ -226,6 +226,7 @@ var transformer = function() {
         errs = errs.concat(err);
         var response = val;
         if (response) {
+          options.strict = true;
           MathCore.evaluateVerbose({
             method: "equivSyntax",
             options: options,
@@ -254,6 +255,7 @@ var transformer = function() {
         errs = errs.concat(err);
         var response = val;
         if (response) {
+          options.strict = true;
           MathCore.evaluateVerbose({
             method: "equivLiteral",
             options: options,
@@ -285,6 +287,7 @@ var transformer = function() {
         var response = val;
         if (response) {
           console.log("equivSymbolic() reference=" + reference + " response=" + response);
+          options.strict = true;
           MathCore.evaluateVerbose({
             method: "equivSymbolic",
             options: options,
@@ -315,6 +318,7 @@ var transformer = function() {
         errs = errs.concat(err);
         var response = val;
         if (response) {
+          options.strict = true;
           MathCore.evaluateVerbose({
             method: "equivValue",
             options: options,
@@ -342,6 +346,7 @@ var transformer = function() {
       errs = errs.concat(err);
       var response = val;
       if (response) {
+        options.strict = true;
         MathCore.evaluateVerbose({
           method: "isFactorised",
           options: options,
@@ -365,6 +370,7 @@ var transformer = function() {
       errs = errs.concat(err);
       var response = val;
       if (response) {
+        options.strict = true;
         MathCore.evaluateVerbose({
           method: "isSimplified",
           options: options,
@@ -388,6 +394,7 @@ var transformer = function() {
       errs = errs.concat(err);
       var response = val;
       if (response) {
+        options.strict = true;
         MathCore.evaluateVerbose({
           method: "isExpanded",
           options: options,
@@ -411,6 +418,7 @@ var transformer = function() {
       errs = errs.concat(err);
       var response = val;
       if (response) {
+        options.strict = true;
         MathCore.evaluateVerbose({
           method: "isTrue",
           options: options,
@@ -434,6 +442,7 @@ var transformer = function() {
       errs = errs.concat(err);
       var response = val;
       if (response) {
+        options.strict = true;
         MathCore.evaluateVerbose({
           method: "validSyntax",
           options: options,
@@ -460,6 +469,7 @@ var transformer = function() {
         errs = errs.concat(err);
         var response = val;
         if (response) {
+          options.strict = true;
           MathCore.evaluateVerbose({
             method: "isUnit",
             options: options,
