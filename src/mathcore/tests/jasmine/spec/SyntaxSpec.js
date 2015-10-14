@@ -108,6 +108,23 @@ var forEach = function forEach(array, fun) {
 
 define(["mathcore"], function (MathCore) {
   describe("Math Core", function() {
+    it("spec is being changed when typing -1 and validating on any keypress", function() {
+      var result,
+      spec = {
+        method: "equivSyntax",
+        value: "-\\frac{1}{2}",
+        options: {
+          inverseResult: false,
+          decimalPlaces: 10,
+          ignoreOrder: false
+        }
+      };
+      result = MathCore.evaluateVerbose(spec, '-');
+      expect(result.result).toBe(false);
+      expect(spec.options.is_normal).toBeUndefined();
+      result = MathCore.evaluateVerbose(spec, '-1');
+      expect(result.result).toBe(false);
+    });
     describe("standalone operands equivLiteral", function() {
       function run(tests) {
         forEach(tests, function (v, i) {
@@ -136,6 +153,28 @@ define(["mathcore"], function (MathCore) {
           it(v[0] + " | " + v[1], function() {
             expect(MathCore.evaluate({
               method: "equivSymbolic",
+              value: v[0],
+            }, v[1])).toBe(true);
+          });
+        });
+      }
+      run([
+        [">", ">"],
+        ["<", "<"],
+        ["=", "="],
+        ["!=", "!="],
+        ["<=", "<="],
+        [">=", ">="],
+        ["\\ne", "\\ne"],
+        ["\\approx", "\\approx"],
+      ]);
+    });
+    describe("standalone operands equivValue", function() {
+      function run(tests) {
+        forEach(tests, function (v, i) {
+          it(v[0] + " | " + v[1], function() {
+            expect(MathCore.evaluate({
+              method: "equivValue",
               value: v[0],
             }, v[1])).toBe(true);
           });

@@ -271,6 +271,8 @@ var ChemCore = (function () {
     case "ignoreOrder":
     case "inverseResult":
     case "ignoreText":
+    case "ignoreCoefficientOne":
+    case "strict":
       if (typeof v === "undefined" || typeof v === "boolean") {
         break;
       }
@@ -301,7 +303,6 @@ var ChemCore = (function () {
     var valueNode = value != undefined ? Model.create(value, "spec") : undefined;
     Model.popEnv();
     var evaluate = function evaluate(solution) {
-      Ast.clearPool();
       Model.pushEnv(env);
       Assert.setLocation("user");
       assert(solution != undefined, message(4002));

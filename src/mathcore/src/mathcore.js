@@ -176,6 +176,8 @@ var MathCore = (function () {
     case "ignoreTrailingZeros":
     case "allowThousandsSeparator":
     case "compareSides":
+    case "ignoreCoefficientOne":
+    case "strict":
       if (typeof v === "undefined" || typeof v === "boolean") {
         break;
       }
@@ -220,7 +222,6 @@ var MathCore = (function () {
     var valueNode = value != undefined ? Model.create(value, "spec") : undefined;
     Model.popEnv();
     var evaluate = function evaluate(solution, resume) {
-      Ast.clearPool();
       Assert.setLocation("user");
       assert(solution != undefined, message(3002));
       Model.pushEnv(env);

@@ -6,7 +6,8 @@
  */
 "use strict";
 // This module has no exports. It is executed to define Model.fn plugins.
-(function () {
+(function (ast) {
+
   var messages = Assert.messages;
 
   // Add messages here.
@@ -24,7 +25,7 @@
   messages[2011] = "Invalid option value %2 for option %1.";
   messages[2012] = "Expressions with comparison or equality operators cannot be compared with equivValue.";
   messages[2013] = "Invalid matrix multiplication.";
-  messages[2014] = "Invalid syntax.";
+  messages[2014] = "Incomplete expression found.";
   messages[2015] = "Invalid format name '%1'.";
 
   var bigZero = new BigDecimal("0");
@@ -192,9 +193,9 @@
   function negate(n) {
     if (typeof n === "number") {
       return -n;
-    } else if (n.op === Model.MUL) {      
-      n.args.unshift(negate(n.args.shift()));
-      return n;
+    } else if (n.op === Model.MUL) {
+      var args = n.args.slice(0); // copy
+      return multiplyNode([negate(args.shift())].concat(args));
     } else if (n.op === Model.NUM) {
       if (n.args[0] === "Infinity") {
         return nodeMinusInfinity;
@@ -367,7 +368,7 @@
 
   // The outer Visitor function provides a global scope for all visitors,
   // as well as dispatching to methods within a visitor.
-  function Visitor() {
+  function Visitor(ast) {
     var normalNumber = numberNode("298230487121230434902874");
     normalNumber.is_normal = true;
     function visit(node, visit, resume) {
@@ -1030,6 +1031,10 @@
       return name;
     }
 
+    function isEmptyNode(node) {
+      return node.op === Model.VAR && node.args[0] === "0";
+    }
+
     function normalizeSyntax(root, ref) {
       var options = Model.options ? Model.options : {};
       if (!ref || !ref.args) {
@@ -1040,7 +1045,7 @@
         assert(false, "Should not get here. Illformed node.");
         return 0;
       }
-      var nid = Ast.intern(root);
+      var nid = ast.intern(root);
       var node = Model.create(visit(root, {
         name: "normalizeSyntax",
         format: function(node) {
@@ -1159,15 +1164,21 @@
     // multiplication. It does not perform expansion or simplification so that
     // the basic structure of the expression is preserved. Also, flattens binary
     // trees into N-ary nodes.
+    var normalizedNodes = [];
     function normalize(root) {
       if (!root || !root.args) {
         assert(false, "Should not get here. Illformed node.");
         return 0;
       }
-      var nid = Ast.intern(root);
+      var nid = ast.intern(root);      
       if (root.normalizeNid === nid) {
         return root;
       }
+      var cachedNode;
+      if ((cachedNode = normalizedNodes[nid]) !== undefined) {
+        return cachedNode;
+      }
+      var rootNid = nid;
       var node = Model.create(visit(root, {
         name: "normalize",
         numeric: function (node) {
@@ -1209,14 +1220,14 @@
           var hasPM;
           forEach(node.args, function (n) {
             n = normalize(n);
-            if (Ast.intern(n) === Ast.intern(nodeOne)) {
+            if (ast.intern(n) === ast.intern(nodeOne)) {
               // If number node one, then erase it. Can't use mathValue here,
               // because it simplifies constant expressions.
               return;
             }
             if (args.length > 0 &&
-                Ast.intern(n) === Ast.intern(nodeMinusOne) &&
-                Ast.intern(args[args.length-1]) === Ast.intern(nodeMinusOne)) {
+                ast.intern(n) === ast.intern(nodeMinusOne) &&
+                ast.intern(args[args.length-1]) === ast.intern(nodeMinusOne)) {
               // Double negative, so erase both.
               args.pop();
               return;
@@ -1248,19 +1259,6 @@
           switch (node.op) {
           case Model.SUB:
             node = negate(arg0);
-/*
-            // Convert SUBs to ADDs
-            // Avoid nested MULs
-            switch (arg0.op) {
-            case Model.MUL:
-              arg0.args.push(nodeMinusOne);
-              node = arg0;
-              break;
-            default:
-              node = multiplyNode([arg0, nodeMinusOne]);
-              break;
-            }
-*/
             break;
           case Model.PERCENT:
             node = multiplyNode([
@@ -1271,7 +1269,9 @@
             break;
           case Model.PM:
             if (isNeg(mathValue(arg0, true))) {
-              node.args[0] = multiplyNode([nodeMinusOne, arg0], true);
+//              node.args[0] = multiplyNode([nodeMinusOne, arg0], true);
+              var args = node.args.slice(0);
+              node = newNode(node.op, [negate(args.shift())].concat(args));
             }
             break;
           case Model.FACT:
@@ -1299,7 +1299,7 @@
           switch(node.op) {
           case Model.LOG:
             // log_e has special meaning so don't normalize 'e' in that case.
-            if (Ast.intern(node.args[0]) === Ast.intern(nodeE)) {
+            if (ast.intern(node.args[0]) === ast.intern(nodeE)) {
               args.push(nodeE);
             } else {
               args.push(normalize(node.args[0]));
@@ -1363,23 +1363,30 @@
         },
       }), root.location);
       // If the node has changed, simplify again
-      while (nid !== Ast.intern(node)) {
-        nid = Ast.intern(node);
+      while (nid !== ast.intern(node)) {
+        nid = ast.intern(node);
         node = normalize(node);
       }
       node.normalizeNid = nid;
+      normalizedNodes[rootNid] = node;
       return node;
     }
 
+    var sortedNodes = [];
     function sort(root) {
       if (!root || !root.args) {
         assert(false, "Should not get here. Illformed node.");
         return 0;
       }
-      var nid = Ast.intern(root);
+      var nid = ast.intern(root);
       if (root.sortNid === nid) {
         return root;
       }
+      var cachedNode;
+      if ((cachedNode = sortedNodes[nid]) !== undefined) {
+        return cachedNode;
+      }
+      var rootNid = nid;
       var node = visit(root, {
         name: "sort",
         numeric: function (node) {
@@ -1597,11 +1604,12 @@
         },
       });
       // If the node has changed, sort again
-      while (nid !== Ast.intern(node)) {
-        nid = Ast.intern(node);
+      while (nid !== ast.intern(node)) {
+        nid = ast.intern(node);
         node = sort(node);
       }
       node.sortNid = nid;
+      sortedNodes[rootNid] = node;
       return node;
     }
 
@@ -1610,7 +1618,7 @@
         assert(false, "Should not get here. Illformed node.");
         return 0;
       }
-      var nid = Ast.intern(root);
+      var nid = ast.intern(root);
       if (root.normalizeLiteralNid === nid) {
         return root;
       }
@@ -1688,8 +1696,8 @@
         },
       });
       // If the node has changed, normalizeLiteral again
-      while (nid !== Ast.intern(node)) {
-        nid = Ast.intern(node);
+      while (nid !== ast.intern(node)) {
+        nid = ast.intern(node);
         node = normalizeLiteral(node);
       }
       node.normalizeLiteralNid = nid;
@@ -1701,7 +1709,7 @@
         assert(false, "Should not get here. Illformed node.");
         return 0;
       }
-      var nid = Ast.intern(root);
+      var nid = ast.intern(root);
       if (root.normalizeExpandedNid === nid) {
         return root;
       }
@@ -1764,8 +1772,8 @@
         },
       });
       // If the node has changed, normalizeExpanded again
-      while (nid !== Ast.intern(node)) {
-        nid = Ast.intern(node);
+      while (nid !== ast.intern(node)) {
+        nid = ast.intern(node);
         node = normalizeExpanded(node);
       }
       node.normalizeExpandedNid = nid;
@@ -2080,6 +2088,7 @@
 
     // Group like factors and terms into nodes that will simplify nicely.
     // We don't use the visitor mechanism because this is not recursive.
+    var groupedNodes = [];
     function groupLikes(node) {
       var hash = {};
       var vp, keyid;
@@ -2087,6 +2096,13 @@
         // We only care about factors and terms.
         return node;
       }
+      assert(node.args.length > 1);
+      var nid = ast.intern(node);
+      var cachedNode;
+      if ((cachedNode = groupedNodes[nid]) !== undefined) {
+        return cachedNode;
+      }
+      var rootNid = nid;
       node = flattenNestedNodes(node);
       forEach(node.args, function (n, i) {
         var key;
@@ -2125,7 +2141,7 @@
         if (typeof key === "string") {
           key = variableNode(key);
         }
-        keyid = Ast.intern(key);
+        keyid = ast.intern(key);
         var list = hash[keyid] ? hash[keyid] : (hash[keyid] = []);
         list.push(n);
       });
@@ -2242,6 +2258,7 @@
         node = binaryNode(node.op, args);
       }
       node = sort(node);
+      groupedNodes[rootNid] = node;
       return node;
     }
 
@@ -2255,7 +2272,7 @@
       var vp, vpnid, list;
       var result = !every(node.args, function (n) {
         // (x+3)(x+3) (xy^2)
-        vpnid = Ast.intern(n);
+        vpnid = ast.intern(n);
         list = hash[vpnid] ? hash[vpnid] : (hash[vpnid] = []);
         list.push(n);
         // If there are duplicates and those duplicates do not have multiple terms.
@@ -2279,7 +2296,7 @@
       var vp, vpnid, list;
       forEach(args, function (n) {
         // (x+3)(x+3) (xy^2)
-        vpnid = Ast.intern(n);
+        vpnid = ast.intern(n);
         list = hash[vpnid] ? hash[vpnid] : (hash[vpnid] = []);
         list.push(n);
       });
@@ -2306,10 +2323,10 @@
       var aa = [];
       if (node.op === Model.COMMA) {
         forEach(node.args, function(n) {
-          aa.push(Ast.intern(n));
+          aa.push(ast.intern(n));
         });
       } else {
-        aa.push(Ast.intern(node));
+        aa.push(ast.intern(node));
       }
       return aa;
     }
@@ -2330,20 +2347,27 @@
       });
       var args = [];
       forEach(nids, function (nid) {
-        args.push(Ast.node(nid));
+        args.push(ast.node(nid));
       });
       return newNode(Model.COMMA, args);
     }
 
+    var simplifiedNodes = [];
     function simplify(root, env, resume) {
       if (!root || !root.args) {
         assert(false, "Should not get here. Illformed node.");
         return 0;
       }
-      var nid = Ast.intern(root);
+      assert(root.op !== Model.MUL || root.args.length > 1);
+      var nid = ast.intern(root);
       if (root.simplifyNid === nid) {
         return root;
       }
+//      var cachedNode;
+//      if ((cachedNode = simplifiedNodes[nid]) !== undefined) {
+//        return cachedNode;
+//      }
+//      var rootNid = nid;
       Assert.checkCounter();
       var node = Model.create(visit(root, {
         name: "simplify",
@@ -2465,10 +2489,10 @@
               n0 = multiplyNode(nn);
             }
             // Multiply top common denominator. Simplify to cancel factors.
-            var nid0 = Ast.intern(d);
+            var nid0 = ast.intern(d);
             var index = -1;
             some(dd, function (n, i) {
-              var nid1 = Ast.intern(n);
+              var nid1 = ast.intern(n);
               if (nid0 === nid1) {
                 index = i;
                 return true;
@@ -2500,7 +2524,7 @@
             }
             // Add to denoms if not already there.
             if (every(denoms, function (d) {
-              return Ast.intern(d) !== Ast.intern(d0);
+              return ast.intern(d) !== ast.intern(d0);
             })) {
               denoms.push(d0);
             }
@@ -2595,7 +2619,7 @@
               var rvpart = variablePart(rnode);
               // combine terms with like factors
               if (lvpart !== null && rvpart !== null &&
-                  Ast.intern(lvpart) === Ast.intern(rvpart)) {
+                  ast.intern(lvpart) === ast.intern(rvpart)) {
                 var c = binaryNode(Model.ADD, [lcoeff, rcoeff]);
                 var cmv = mathValue(c);
                 if (isZero(cmv)) {
@@ -2605,7 +2629,7 @@
                 }
                 return multiplyNode([c, lvpart]);
               } else if (lnode.op === Model.LOG && rnode.op === Model.LOG &&
-                         (Ast.intern(lnode.args[0]) === Ast.intern(rnode.args[0]))) {
+                         (ast.intern(lnode.args[0]) === ast.intern(rnode.args[0]))) {
                 return simplify(newNode(Model.LOG, [lnode.args[0], multiplyNode([lnode.args[1], rnode.args[1]])]));
               } else if (ldegr === 0 && rdegr === 0) {
                 // Have two constants
@@ -2613,7 +2637,7 @@
                 var mv2 = mathValue(rnode, true);
                 if (isInteger(mv1) && isInteger(mv2)) {
                   return numberNode(mv1.add(mv2));
-                } else if (Ast.intern(lnode) === Ast.intern(rnode)) {
+                } else if (ast.intern(lnode) === ast.intern(rnode)) {
                   return multiplyNode([numberNode("2"), lnode]);
                 } else if ((!env || !env.dontGroup) && !option("dontFactorTerms") && commonFactors(lnode, rnode).length > 0) {
                   return [factorTerms(lnode, rnode)];
@@ -2623,7 +2647,7 @@
               }
             }
 
-            if (Ast.intern(lnode) === Ast.intern(rnode)) {
+            if (ast.intern(lnode) === ast.intern(rnode)) {
               return multiplyNode([numberNode("2"), lnode]);
             } else if (isZero(mathValue(lcoeff))) {
               return rnode;
@@ -2647,11 +2671,12 @@
             // Have a new kind of node start over.
             return node;
           }
-          var nid = Ast.intern(node);
+          var nid = ast.intern(node);
           var args = node.args.slice(0);
           var n0 = [simplify(args.shift())];
           if (n0[0].op === Model.MUL) {
-            n0 = n0[0].args;
+            // flatten
+            n0 = n0[0].args.slice(0);
           }
           // For each next value, pop last value and fold it with next value.
           forEach(args, function (n1, i) {
@@ -2774,14 +2799,14 @@
                   }
                 }
               } else if (lnode.op === Model.POW && rnode.op === Model.POW &&
-                         Ast.intern(lnode.args[1]) === Ast.intern(rnode.args[1])) {
+                         ast.intern(lnode.args[1]) === ast.intern(rnode.args[1])) {
                 // x^z*y^z -> (x*y)^z
                 var lbase = lnode.args[0];
                 var rbase = rnode.args[0];
                 var lexpo = exponent(lnode);
                 var rexpo = exponent(rnode);
                 if (lexpo === 0.5 &&
-                    Ast.intern(lbase) === Ast.intern(rbase)) {
+                    ast.intern(lbase) === ast.intern(rbase)) {
                   // Found square of square roots, so simplify
                   node = lbase;
                 } else {
@@ -2790,7 +2815,7 @@
               } else {
                 node = [lnode, rnode];
               }
-            } else if (lvpart && rvpart && Ast.intern(lvpart) === Ast.intern(rvpart)) {
+            } else if (lvpart && rvpart && ast.intern(lvpart) === ast.intern(rvpart)) {
               // one or both nodes contain var
               var lnode = multiplyNode([lcoeff, rcoeff]);
               if (lvpart.op === Model.POW) {
@@ -2813,8 +2838,8 @@
               } else {
                 node = [lnode, rnode];
               }
-            } else if (Ast.intern(lnode.op === Model.POW ? lnode.args[0] : lnode) ===
-                       Ast.intern(rnode.op === Model.POW ? rnode.args[0] : rnode)) {
+            } else if (ast.intern(lnode.op === Model.POW ? lnode.args[0] : lnode) ===
+                       ast.intern(rnode.op === Model.POW ? rnode.args[0] : rnode)) {
               // Same base, different exponents
               var b, el, er;
               if (lnode.op === Model.POW) {
@@ -2862,7 +2887,7 @@
               }
             } else if (option("dontExpandPowers") &&
                        lnode.op === Model.POW && rnode.op === Model.POW &&
-                       Ast.intern(lnode.args[1]) === Ast.intern(rnode.args[1])) {
+                       ast.intern(lnode.args[1]) === ast.intern(rnode.args[1])) {
               // x^z*y^z -> (xy)^z
               var lbase = lnode.args[0];
               var rbase = rnode.args[0];
@@ -2926,7 +2951,7 @@
         exponential: function (node) {
           var base = node.args[0];
           // Make a copy of and reverse args to work from right to left
-          var nid = Ast.intern(node);
+          var nid = ast.intern(node);
           var args = node.args.slice(0).reverse();
           var n0 = [simplify(args.shift())];
           // For each next value, pop last value and fold it with next value.
@@ -2970,7 +2995,7 @@
               } else if (isOne(emv)) {
                 // x^1
                 return [base];
-              } else if (Ast.intern(base) === Ast.intern(nodeImaginary) && emv !== null) {
+              } else if (ast.intern(base) === ast.intern(nodeImaginary) && emv !== null) {
                 if (emv.remainder(bigFour).compareTo(bigZero) === 0) {
                   return [nodeOne];
                 } else if (emv.remainder(bigThree).compareTo(bigZero) === 0) {
@@ -2981,7 +3006,7 @@
                   return [nodeImaginary];
                 }
                 return [expo, base];
-              } else if (Ast.intern(expo) === Ast.intern(nodeOneHalf)) {
+              } else if (ast.intern(expo) === ast.intern(nodeOneHalf)) {
                 // \sqrt{x}
                 return squareRoot(base);
               } else if (!option("dontExpandPowers") && base.op === Model.MUL) {
@@ -3119,11 +3144,12 @@
         },
       }), root.location);
       // If the node has changed, simplify again
-      while (nid !== Ast.intern(node)) {
-        nid = Ast.intern(node);
+      while (nid !== ast.intern(node)) {
+        nid = ast.intern(node);
         node = simplify(node, env);
       }
       node.simplifyNid = nid;
+//      simplifiedNodes[rootNid] = node;
       return node;
     }
 
@@ -3551,15 +3577,21 @@
       return [sort(node)];
     }
 
+    var expandedNodes = [];
     function expand(root, env) {
       if (!root || !root.args) {
         assert(false, "Should not get here. Illformed node.");
         return 0;
       }
-      var nid = Ast.intern(root);
+      var nid = ast.intern(root);
       if (root.expandNid === nid) {
         return root;
       }
+      var cachedNode;
+      if ((cachedNode = expandedNodes[nid]) !== undefined) {
+        return cachedNode;
+      }
+      var rootNid = nid;
       var node = Model.create(visit(root, {
         name: "expand",
         numeric: function (node) {
@@ -3567,7 +3599,7 @@
           return node;
         },
         additive: function (node) {
-          var nid = Ast.intern(node);
+          var nid = ast.intern(node);
           var args = node.args.slice(0);  // make copy
           var n0 = [expand(args.shift())];
           forEach(args, function (n1) {
@@ -3596,7 +3628,7 @@
           }
         },
         multiplicative: function (node) {
-          var nid = Ast.intern(node);
+          var nid = ast.intern(node);
           var args = node.args.slice(0);  // make copy
           var n0 = [expand(args.shift())];
           // For each next value, pop last value and fold it with next value.
@@ -3706,7 +3738,7 @@
         exponential: function (node) {
           // (xy)^z -> x^zy^z
           // Make a copy of and reverse args to work from right to left
-          var nid = Ast.intern(node);
+          var nid = ast.intern(node);
           var args = node.args.slice(0).reverse();
           var n0 = [expand(args.shift())];
           // For each next value, pop last value and fold it with next value.
@@ -3854,11 +3886,12 @@
         },
       }), root.location);
       // If the node has changed, simplify again
-      while (nid !== Ast.intern(node)) {
-        nid = Ast.intern(node);
+      while (nid !== ast.intern(node)) {
+        nid = ast.intern(node);
         node = expand(node);
       }
       node.expandNid = nid;
+      expandedNodes[rootNid] = node;
       return node;
     }
 
@@ -3973,7 +4006,7 @@
         t = factors(n, null, false, true);
         var ff = [];
         forEach(t, function (n) {
-          ff.push(Ast.intern(n));
+          ff.push(ast.intern(n));
         });
         t2.push(ff);
       });
@@ -4001,7 +4034,7 @@
       var cf = cfacts.slice(0);
       var i;
       forEach(lfacts, function (f) {
-        if ((i = indexOf(cf, Ast.intern(f))) === -1) {
+        if ((i = indexOf(cf, ast.intern(f))) === -1) {
           lfacts2.push(f);
         } else {
           delete cf[i];  // erase the matched factor
@@ -4009,7 +4042,7 @@
       });
       var cf = cfacts.slice(0);
       forEach(rfacts, function (f) {
-        if ((i = indexOf(cf, Ast.intern(f))) === -1) {
+        if ((i = indexOf(cf, ast.intern(f))) === -1) {
           rfacts2.push(f);
         } else {
           delete cf[i];  // erase the matched factor
@@ -4023,7 +4056,7 @@
         args.push(makeTerm(aa));
       }
       forEach(cfacts, function (i) {
-        args.push(new Ast().node(i));
+        args.push(ast.node(i));
       });
       return makeFactor(args)[0];
     }
@@ -4165,7 +4198,7 @@
             t = factors(n);
             var ff = [];
             forEach(t, function (n) {
-              ff.push(Ast.intern(n));
+              ff.push(ast.intern(n));
             });
             t2.push(ff);
           });
@@ -4427,24 +4460,29 @@
     this.factorGroupingKey = factorGroupingKey;
   }
 
-  var visitor = new Visitor();
+  var visitor = new Visitor(new Ast);
   function degree(node, notAbsolute) {
+    var visitor = new Visitor(new Ast);
     return visitor.degree(node, notAbsolute);
   }
 
   function constantPart(node) {
+    var visitor = new Visitor(new Ast);
     return visitor.constantPart(node);
   }
 
   function variables(node) {
+    var visitor = new Visitor(new Ast);
     return visitor.variables(node);
   }
 
   function variablePart(node) {
+    var visitor = new Visitor(new Ast);
     return visitor.variablePart(node);
   }
 
   function sort(node) {
+    var visitor = new Visitor(new Ast);
     var prevLocation = Assert.location;
     if (node.location) {
       Assert.setLocation(node.location);
@@ -4455,6 +4493,7 @@
   }
 
   function normalize(node) {
+    var visitor = new Visitor(new Ast);
     var prevLocation = Assert.location;
     if (node.location) {
       Assert.setLocation(node.location);
@@ -4465,6 +4504,7 @@
   }
 
   function normalizeLiteral(node) {
+    var visitor = new Visitor(new Ast);
     var prevLocation = Assert.location;
     if (node.location) {
       Assert.setLocation(node.location);
@@ -4475,6 +4515,7 @@
   }
 
   function normalizeSyntax(node, ref) {
+    var visitor = new Visitor(new Ast);
     var prevLocation = Assert.location;
     if (node.location) {
       Assert.setLocation(node.location);
@@ -4485,6 +4526,7 @@
   }
 
   function normalizeExpanded(node) {
+    var visitor = new Visitor(new Ast);
     var prevLocation = Assert.location;
     if (node.location) {
       Assert.setLocation(node.location);
@@ -4495,6 +4537,7 @@
   }
 
   function mathValue(node, env, allowDecimal) {
+    var visitor = new Visitor(new Ast);
     var prevLocation = Assert.location;
     if (node.location) {
       Assert.setLocation(node.location);
@@ -4505,6 +4548,7 @@
   }
 
   function units(node, env) {
+    var visitor = new Visitor(new Ast);
     var prevLocation = Assert.location;
     if (node.location) {
       Assert.setLocation(node.location);
@@ -4515,6 +4559,7 @@
   }
 
   function simplify(node, env) {
+    var visitor = new Visitor(new Ast);
     var prevLocation = Assert.location;
     if (node.location) {
       Assert.setLocation(node.location);
@@ -4536,6 +4581,7 @@
   }
 
   function hasLikeFactors(node, env) {
+    var visitor = new Visitor(new Ast);
     var prevLocation = Assert.location;
     if (node.location) {
       Assert.setLocation(node.location);
@@ -4546,6 +4592,7 @@
   }
 
   function expand(node, env) {
+    var visitor = new Visitor(new Ast);
     var prevLocation = Assert.location;
     if (node.location) {
       Assert.setLocation(node.location);
@@ -4556,6 +4603,7 @@
   }
 
   function terms(node, env) {
+    var visitor = new Visitor(new Ast);
     var prevLocation = Assert.location;
     if (node.location) {
       Assert.setLocation(node.location);
@@ -4566,6 +4614,7 @@
   }
 
   function factorGroupingKey(node, env) {
+    var visitor = new Visitor(new Ast);
     var prevLocation = Assert.location;
     if (node.location) {
       Assert.setLocation(node.location);
@@ -4576,6 +4625,7 @@
   }
 
   function factors(node, env) {
+    var visitor = new Visitor(new Ast);
     var prevLocation = Assert.location;
     if (node.location) {
       Assert.setLocation(node.location);
@@ -4586,6 +4636,7 @@
   }
 
   function isFactorised(node, env) {
+    var visitor = new Visitor(new Ast);
     var prevLocation = Assert.location;
     if (node.location) {
       Assert.setLocation(node.location);
@@ -4596,6 +4647,7 @@
   }
 
   function scale(node) {
+    var visitor = new Visitor(new Ast);
     var prevLocation = Assert.location;
     if (node.location) {
       Assert.setLocation(node.location);
@@ -4730,7 +4782,7 @@
     }
     var vp1 = variablePart(n1b);
     var vp2 = variablePart(n2b);
-    if (!n1t && !n2t && vp1 && vp2 && Ast.intern(vp1) === Ast.intern(vp2)) {
+    if (!n1t && !n2t && vp1 && vp2 && ast.intern(vp1) === ast.intern(vp2)) {
       // The variable part is the same, so factor out of the comparison.
       n1b = constantPart(n1b);
       n2b = constantPart(n2b);
@@ -4740,8 +4792,8 @@
         return inverseResult ? !result : result;
       }
     }
-    var nid1 = Ast.intern(n1b);
-    var nid2 = Ast.intern(n2b);
+    var nid1 = ast.intern(n1b);
+    var nid2 = ast.intern(n2b);
     if (nid1 === nid2 && n1t === undefined && n2t === undefined &&
         (op === undefined || isEqualsComparison(op))) {
       result = true;
@@ -4884,11 +4936,15 @@
       n1 = [n1];
     }
     result = some(n1, function (n) {
-      options.is_normal = true;
-      var n1n = normalizeSyntax(n, n);
-      options.is_normal = false;
+      try {
+        options.is_normal = true;
+        var n1n = normalizeSyntax(n, n);
+        delete options.is_normal;
+      } catch (e) {
+        throw e;
+      }
       var n2n = normalizeSyntax(n2, n);
-      return Ast.intern(n1n) === Ast.intern(n2n);
+      return ast.intern(n1n) === ast.intern(n2n);
     });
     var input = "";
     delete options.is_normal;
@@ -4912,8 +4968,8 @@
       n1 = sort(n1);
       n2 = sort(n2);
     }
-    var nid1 = Ast.intern(n1);
-    var nid2 = Ast.intern(n2);
+    var nid1 = ast.intern(n1);
+    var nid2 = ast.intern(n2);
     var result = nid1 === nid2;
     return inverseResult ? !result : result;
   }
@@ -4922,6 +4978,22 @@
   // mathematically equivalent if they are literally equal after simplification
   // and normalization.
   Model.fn.equivSymbolic = function (n1, n2, resume) {
+    var result;
+    var inverseResult = option("inverseResult");
+    if (!inverseResult && !option("strict")) {   // If strict mode, take the slow path for better testing code coverage.
+      var ignoreOrder = option("ignoreOrder", true);
+      try {
+        var result = Model.fn.equivLiteral(n1, n2);
+        option("ignoreOrder", ignoreOrder);
+      } catch (e) {
+        option("ignoreOrder", ignoreOrder);
+        throw e;
+      }
+      if (result) {
+        // Got a match. We're done.
+        return true;
+      }
+    }
     if (option("compareSides") && isComparison(n1.op) && n1.op === n2.op) {
       var n1l = n1.args[0];
       var n1r = n1.args[1];
@@ -4929,21 +5001,20 @@
       var n2r = n2.args[1];
       n1l = scale(normalize(simplify(expand(normalize(n1l)))));
       n2l = scale(normalize(simplify(expand(normalize(n2l)))));
-      var nid1l = Ast.intern(n1l);
-      var nid2l = Ast.intern(n2l);
+      var nid1l = ast.intern(n1l);
+      var nid2l = ast.intern(n2l);
       n1r = scale(normalize(simplify(expand(normalize(n1r)))));
       n2r = scale(normalize(simplify(expand(normalize(n2r)))));
-      var nid1r = Ast.intern(n1r);
-      var nid2r = Ast.intern(n2r);
+      var nid1r = ast.intern(n1r);
+      var nid2r = ast.intern(n2r);
       var result = nid1l === nid2l && nid1r === nid2r;
     } else {
       n1 = scale(normalize(simplify(expand(normalize(n1)))));
       n2 = scale(normalize(simplify(expand(normalize(n2)))));
-      var nid1 = Ast.intern(n1);
-      var nid2 = Ast.intern(n2);
+      var nid1 = ast.intern(n1);
+      var nid2 = ast.intern(n2);
       var result = nid1 === nid2;
     }
-    var inverseResult = option("inverseResult");
     if (result) {
       return inverseResult ? false : true;
     }
@@ -5011,8 +5082,8 @@
     } else {
       n1 = normalize(node);
       n2 = normalizeExpanded(normalize(expand(normalize(node))));
-      nid1 = Ast.intern(n1);
-      nid2 = Ast.intern(n2);
+      nid1 = ast.intern(n1);
+      nid2 = ast.intern(n2);
       option("dontExpandPowers", dontExpandPowers);
       option("dontFactorDenominators", dontFactorDenominators);
       option("dontFactorTerms", dontFactorTerms);
@@ -5076,8 +5147,8 @@
     } else {
       n1 = normalize(node);
       n2 = normalize(simplify(expand(normalize(node))));
-      nid1 = Ast.intern(n1);
-      nid2 = Ast.intern(n2);
+      nid1 = ast.intern(n1);
+      nid2 = ast.intern(n2);
       result = nid1 === nid2;
     }
     option("dontExpandPowers", dontExpandPowers);
@@ -5155,6 +5226,7 @@
       case "dontFactorDenominators":
       case "dontFactorTerms":
       case "dontConvertDecimalToFraction":
+      case "strict":
         opt = undefined;
         break;
       default:
@@ -5175,4 +5247,4 @@
     (function () {
     })();
   }
-})();
+})(new Ast);
