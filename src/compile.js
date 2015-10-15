@@ -232,6 +232,7 @@ var transformer = function() {
             options: options,
             value: reference,
           }, response, function (err, val) {
+            delete options.strict;
             if (err && err.length) {
               errs = errs.concat(error(err, node.elts[0]));
             }
@@ -261,6 +262,7 @@ var transformer = function() {
             options: options,
             value: reference,
           }, response, function (err, val) {
+            delete options.strict;
             if (err && err.length) {
               errs = errs.concat(error(err, node.elts[0]));
             }
@@ -293,6 +295,7 @@ var transformer = function() {
             options: options,
             value: reference,
           }, response, function (err, val) {
+            delete options.strict;
             if (err && err.length) {
               errs = errs.concat(error(err, 0));
             }
@@ -324,6 +327,7 @@ var transformer = function() {
             options: options,
             value: reference,
           }, response, function (err, val) {
+            delete options.strict;
             if (err && err.length) {
               err = errs.concat(error(err, node.elts[0]));
             }
@@ -351,6 +355,7 @@ var transformer = function() {
           method: "isFactorised",
           options: options,
         }, response, function (err, val) {
+          delete options.strict;
           if (err && err.length) {
             err = errs.concat(error(err, node.elts[0]));
           }
@@ -375,6 +380,7 @@ var transformer = function() {
           method: "isSimplified",
           options: options,
         }, response, function (err, val) {
+          delete options.strict;
           if (err && err.length) {
             err = errs.concat(error(err, node.elts[0]));
           }
@@ -399,6 +405,7 @@ var transformer = function() {
           method: "isExpanded",
           options: options,
         }, response, function (err, val) {
+          delete options.strict;
           if (err && err.length) {
             err = errs.concat(error(err, node.elts[0]));
           }
@@ -423,6 +430,7 @@ var transformer = function() {
           method: "isTrue",
           options: options,
         }, response, function (err, val) {
+          delete options.strict;
           if (err && err.length) {
             err = errs.concat(error(err, node.elts[0]));
           }
@@ -447,6 +455,7 @@ var transformer = function() {
           method: "validSyntax",
           options: options,
         }, response, function (err, val) {
+          delete options.strict;
           if (err && err.length) {
             errs = errs.concat(error(err, node.elts[0]));
           }
@@ -475,6 +484,7 @@ var transformer = function() {
             options: options,
             value: reference,
           }, response, function (err, val) {
+            delete options.strict;
             if (err && err.length) {
               errs = errs.concat(error(err, node.elts[0]));
             }
