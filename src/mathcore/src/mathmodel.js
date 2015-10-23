@@ -112,26 +112,6 @@
     return toDecimal(Math.abs(n));
   }
 
-  function getRepetition(str) {
-    // 123123123123
-    var len = str.length;
-    // 12
-    var primes = primeFactors(len);
-    // 2, 3, 4, 6
-    var brk = some(primes, function (size) {
-      for (var i = 0; i < len; i += size) {
-        if (last !== next) {
-          return 0;
-        }
-      }
-      return size;
-    });
-    if (brk) {
-      return str.substring(0, brk);
-    }
-    return str;
-  }
-
   function numberNode(val, doScale, roundOnly, isRepeating) {
     assert(!(val instanceof Array));
     // doScale - scale n if true
@@ -197,7 +177,11 @@
       var args = n.args.slice(0); // copy
       return multiplyNode([negate(args.shift())].concat(args));
     } else if (n.op === Model.NUM) {
-      if (n.args[0] === "Infinity") {
+      if (n.args[0] === "1") {
+        return nodeMinusOne;
+      } else if (n.args[0] === "-1") {
+        return nodeOne;
+      } else if (n.args[0] === "Infinity") {
         return nodeMinusInfinity;
       } else if (n.args[0] === "-Infinity") {
         return nodeInfinity;
@@ -206,6 +190,8 @@
       } else {
         return numberNode("-" + n.args[0]);
       }
+    } else if (n.op === Model.POW && isMinusOne(n.args[1])) {
+      return binaryNode(Model.POW, [negate(n.args[0]), nodeMinusOne]);
     }
     return multiplyNode([nodeMinusOne, n]);
   }
@@ -1226,8 +1212,8 @@
               return;
             }
             if (args.length > 0 &&
-                ast.intern(n) === ast.intern(nodeMinusOne) &&
-                ast.intern(args[args.length-1]) === ast.intern(nodeMinusOne)) {
+                isMinusOne(n) &&
+                isMinusOne(args[args.length-1])) {
               // Double negative, so erase both.
               args.pop();
               return;
@@ -2352,6 +2338,13 @@
       return newNode(Model.COMMA, args);
     }
 
+    function isPolynomialDenominator(node) {
+      return node.op === Model.POW &&
+        isMinusOne(node.args[1]) &&
+        node.args[0].op === Model.ADD &&
+        variables(node.args[0]).length > 0;
+    }
+
     var simplifiedNodes = [];
     function simplify(root, env, resume) {
       if (!root || !root.args) {
@@ -2363,11 +2356,6 @@
       if (root.simplifyNid === nid) {
         return root;
       }
-//      var cachedNode;
-//      if ((cachedNode = simplifiedNodes[nid]) !== undefined) {
-//        return cachedNode;
-//      }
-//      var rootNid = nid;
       Assert.checkCounter();
       var node = Model.create(visit(root, {
         name: "simplify",
@@ -2681,6 +2669,14 @@
           // For each next value, pop last value and fold it with next value.
           forEach(args, function (n1, i) {
             n1 = simplify(n1);
+            if (n0.length > 1 &&
+                isMinusOne(n0[0]) &&
+                isPolynomialDenominator(n1)) {
+              // If we have a leading minus one, then propagate it to any
+              // expression that is a polynomial denominator.
+              n0.shift();
+              n1 = expand(negate(n1));
+            }
             n0 = n0.concat(fold(n0.pop(), n1));
           });
           if (n0.length < 2) {
@@ -2872,6 +2868,11 @@
             } else if (rdegr === 0 && isOne(rcoeffmv)) {
               return lnode;
             } else if (ldegr === 0) {
+              // If equality and LHS leading coefficient is negative, then multiply by -1
+              var c;
+              if (sign(lnode) < 0 && rnode.op === Model.POW && isMinusOne(rnode.args[1])) {
+                return [negate(lnode), expand(negate(rnode))];
+              }
               var v = mathValue(lnode);
               if (v !== null) {
                 node = [numberNode(v), rnode];
@@ -2907,6 +2908,10 @@
                 args.push(rbase);
               }
               node = binaryNode(Model.POW, [multiplyNode(args), lnode.args[1]]);
+            } else if (hasDenominator(rnode) && isNeg(leadingCoeff(lnode))) {
+              // Denominator is a polynomial and numerator is negative, then make
+              // numerator positive.
+              return [negate(lnode), expand(negate(rnode))];
             } else {
               node = [lnode, rnode];
             }
@@ -3121,26 +3126,6 @@
             }
           }
           return newNode(node.op, args);
-          function sign(node) {
-            var s = 0;
-            var tt = terms(node);
-            forEach(tt, function (n) {
-              var mv = mathValue(n);
-              if (isNeg(leadingCoeff(n))) {
-                s -= 1;
-              } else {
-                s += 1;
-              }
-            });
-            if (s === 0) {
-              if (isNeg((leadingCoeff(tt[0])))) {
-                s = -1;
-              } else {
-                s = 1;
-              }
-            }
-            return s;
-          }
         },
       }), root.location);
       // If the node has changed, simplify again
@@ -3151,6 +3136,27 @@
       node.simplifyNid = nid;
 //      simplifiedNodes[rootNid] = node;
       return node;
+    }
+
+    function sign(node) {
+      var s = 0;
+      var tt = terms(node);
+      forEach(tt, function (n) {
+        var mv = mathValue(n);
+        if (isNeg(leadingCoeff(n))) {
+          s -= 1;
+        } else {
+          s += 1;
+        }
+      });
+      if (s === 0) {
+        if (isNeg((leadingCoeff(tt[0])))) {
+          s = -1;
+        } else {
+          s = 1;
+        }
+      }
+      return s;
     }
 
     function base(node) {
@@ -3633,6 +3639,9 @@
           var n0 = [expand(args.shift())];
           // For each next value, pop last value and fold it with next value.
           forEach(args, function (n1, i) {
+            if (n1.op === Model.POW && isMinusOne(n1.args[0]) && isMinusOne(n1.args[1])) {
+              n1 = n1.args[0];  // Move minus to numerator.
+            }
             n1 = expand(n1);
             n0 = n0.concat(unfold(n0.pop(), n1));
           });
