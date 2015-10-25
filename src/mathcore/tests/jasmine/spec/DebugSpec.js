@@ -115,6 +115,33 @@ var forEach = function forEach(array, fun) {
 define(["mathcore"], function (MathCore) {
   describe("Math Core", function() {
     describe("Debug", function() {
+      describe("equivSymbolic", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivSymbolic",
+                value: v[0],
+                options: {
+                  strict: true
+                }
+              }, v[1])).toBe(true);
+            });
+          });
+        }
+        run([
+//          ["-\\frac{1}{(t+1)^2}\\text{i}+2(t+1)\\text{j}+\\frac{1}{2\\sqrt{t}}\\text{k}",
+//           "1",
+//          ],
+          ["\\frac{391t^2+0.112}{0.218t^4+0.991t^2+1}+\\frac{391(t-1)^2+0.112}{0.218(t-1)^4+0.991(t-1)^2+1}",
+           "\\frac{391t^2+0.112}{0.218t^4+0.991t^2+1}+\\frac{391(t-1)^2+0.112}{0.218(t-1)^4+0.991(t-1)^2+1}"],
+          ["x+2=8(x+12)", "\\frac{(x+2)}{(x+12)}=8"],
+          ["\\frac{-1}{-1(1-bx)}", "\\frac{1}{1-bx}"],
+          ["\\frac{-b-c}{1-bx}", "\\frac{-b-c}{1-bx}"],
+          ["\\frac{b+c}{bx-1}\\frac{b+c}{bx-1}", "\\frac{-b-c}{1-bx}\\frac{b+c}{bx-1}"],
+          ["\\frac{b+c}{bx-1}\\frac{b+c}{bx-1}", "\\frac{b+c}{bx-1}\\frac{-b-c}{1-bx}"],
+        ]);
+      });
     });
   });
 });

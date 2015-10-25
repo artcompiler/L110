@@ -218,6 +218,22 @@
     return false;
   }
 
+  function isE(n) {
+    if (n === null) {
+      return false;
+    } else if (n instanceof BigDecimal) {
+      return !bigE.compareTo(n);
+    } else if (typeof n === "number") {
+      return n === Math.E;
+    } else if (n.op === Model.NUM && +n.args[0] === Math.E) {
+      return true;
+    } else if (n.op === Model.VAR && n.args[0] === "e") {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
   function isZero(n) {
     if (n === null) {
       return false;
@@ -284,6 +300,7 @@
     var str;
     if (val === null ||
         isNaN(val) ||
+        isInfinity(val) ||
         typeof val === "string" && val.indexOf("Infinity") >= 0) {
       return null;
     } else if (val instanceof BigDecimal) {
@@ -3767,11 +3784,11 @@
           if (node2.op === Model.LOG) {
             var base = node2.args[0];
             var expo = node2.args[1];
-            if (base.op !== Model.VAR || base.args[0] !== "e") {
+            if (!isE(base)) {
               node2 = binaryNode(Model.MUL, [
-                binaryNode(Model.LOG, [variableNode("e"), expo]),
+                binaryNode(Model.LOG, [nodeE, expo]),
                 binaryNode(Model.POW, [
-                  binaryNode(Model.LOG, [variableNode("e"), base]),
+                  binaryNode(Model.LOG, [nodeE, base]),
                   nodeMinusOne
                 ])
               ]);
@@ -5023,6 +5040,17 @@
       var nid1 = ast.intern(n1);
       var nid2 = ast.intern(n2);
       var result = nid1 === nid2;
+      if (!result) {
+        if (!Model.fn.isExpanded(n1)) {
+          n1 = scale(normalize(simplify(expand(normalize(n1)))));
+        }
+        if (!Model.fn.isExpanded(n2)) {
+          n2 = scale(normalize(simplify(expand(normalize(n2)))));
+        }
+        var nid1 = ast.intern(n1);
+        var nid2 = ast.intern(n2);
+        var result = nid1 === nid2;
+      }
     }
     if (result) {
       return inverseResult ? false : true;
