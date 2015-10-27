@@ -43,6 +43,21 @@
   var nodeImaginary = binaryNode(Model.POW, [nodeMinusOne, nodeOneHalf]);
   var nodeE = variableNode("e");
 
+  // WARNING: for debugging only
+  function stripNids(node) {
+    forEach(keys(node), function (k) {
+      if (indexOf(k, "Nid") > 0) {
+        delete node[k];
+      }
+    });
+    if (node.args) {
+      forEach(node.args, function (n) {
+        stripNids(n);
+      });
+    }
+    return node;
+  }
+
   function hashCode(str) {
     var hash = 0, i, chr, len;
     if (str.length == 0) return hash;
@@ -1163,6 +1178,68 @@
       return node;
     }
 
+    function cancelFactors(node) {
+      if (node.op !== Model.MUL) {
+        return node;
+      }
+      var numers = {};
+      var denoms = {};
+      forEach(node.args, function(n, i) {
+        var isDenom = false;
+        var f;
+        if (isMinusOne(n)) {
+          // Move negatives to denom.
+          n = fractionNode(nodeOne, nodeMinusOne);
+        }
+        if (n.op === Model.POW && isMinusOne(n.args[1])) {
+          f = n.args[0];
+          isDenom = true;
+        } else {
+          f = n;
+        }
+        var mv = mathValue(f, true);
+        var key = mv !== null ? mv : "nid$" + ast.intern(f);
+        if (isDenom) {
+          if (!denoms[key]) {
+            denoms[key] = [];
+          }
+          denoms[key].push(n);
+        } else {
+          if (!numers[key]) {
+            numers[key] = [];
+          }
+          numers[key].push(n);
+        }
+      });
+      var nKeys = keys(numers);
+      var dKeys = keys(denoms);
+      if (nKeys.length === 0 || dKeys.length === 0) {
+        return node;
+      }
+      // Now do he canceling.
+      var args = [];
+      forEach(nKeys, function (k) {
+        var nn = numers[k];
+        var dd = denoms[k];
+        if (dd) {
+          var count = dd.length > nn.length ? nn.length : dd.length;
+          numers[k] = nn.slice(count);  // Slice off count items.
+          denoms[k] = dd.slice(count);
+        }
+      });
+      forEach(nKeys, function (k) {
+        args = args.concat(numers[k]);  // Save survivors.
+      });
+      forEach(dKeys, function (k) {
+        args = args.concat(denoms[k]);
+      });
+      if (args.length) {
+        return multiplyNode(args);
+      } else {
+        return nodeOne;
+      }
+    }
+
     // normalize() replaces subtraction with addition and division with
     // multiplication. It does not perform expansion or simplification so that
     // the basic structure of the expression is preserved. Also, flattens binary
@@ -1173,7 +1250,7 @@
         assert(false, "Should not get here. Illformed node.");
         return 0;
       }
-      var nid = ast.intern(root);      
+      var nid = ast.intern(root);
       if (root.normalizeNid === nid) {
         return root;
       }
@@ -1781,20 +1858,6 @@
       }
       node.normalizeExpandedNid = nid;
       return node;
-    }
-
-    function leadingCoeff(node) {
-      var tt, c;
-      switch (node.op) {
-      case Model.ADD:
-        tt = terms(node);
-        c = constantPart(tt[0]);
-        break;
-      default:
-        c = constantPart(node);
-        break;
-      }
-      return c;
     }
 
     function isAggregate(node) {
@@ -2686,14 +2749,6 @@
           // For each next value, pop last value and fold it with next value.
           forEach(args, function (n1, i) {
             n1 = simplify(n1);
-            if (n0.length > 1 &&
-                isMinusOne(n0[0]) &&
-                isPolynomialDenominator(n1)) {
-              // If we have a leading minus one, then propagate it to any
-              // expression that is a polynomial denominator.
-              n0.shift();
-              n1 = expand(negate(n1));
-            }
             n0 = n0.concat(fold(n0.pop(), n1));
           });
           if (n0.length < 2) {
@@ -2702,6 +2757,7 @@
             assert(n0.length);
             node = sort(flattenNestedNodes(multiplyNode(n0)));
           }
+          node = cancelFactors(node);
           return node;
           function fold(lnode, rnode) {
             if (isUndefined(lnode) || isUndefined(rnode)) {
@@ -2885,9 +2941,8 @@
             } else if (rdegr === 0 && isOne(rcoeffmv)) {
               return lnode;
             } else if (ldegr === 0) {
-              // If equality and LHS leading coefficient is negative, then multiply by -1
-              var c;
-              if (sign(lnode) < 0 && rnode.op === Model.POW && isMinusOne(rnode.args[1])) {
+              if (sign(lnode) < 0 && isPolynomialDenominator(rnode)) {
+                // If lnode is negative and rnode is a polynomial denominator, then invert
                 return [negate(lnode), expand(negate(rnode))];
               }
               var v = mathValue(lnode);
@@ -2925,10 +2980,6 @@
                 args.push(rbase);
               }
               node = binaryNode(Model.POW, [multiplyNode(args), lnode.args[1]]);
-            } else if (hasDenominator(rnode) && isNeg(leadingCoeff(lnode))) {
-              // Denominator is a polynomial and numerator is negative, then make
-              // numerator positive.
-              return [negate(lnode), expand(negate(rnode))];
             } else {
               node = [lnode, rnode];
             }
@@ -3153,6 +3204,20 @@
       node.simplifyNid = nid;
 //      simplifiedNodes[rootNid] = node;
       return node;
+    }
+
+    function leadingCoeff(node) {
+      var tt, c;
+      switch (node.op) {
+      case Model.ADD:
+        tt = terms(node);
+        c = constantPart(tt[0]);
+        break;
+      default:
+        c = constantPart(node);
+        break;
+      }
+      return c;
     }
 
     function sign(node) {
@@ -3656,9 +3721,6 @@
           var n0 = [expand(args.shift())];
           // For each next value, pop last value and fold it with next value.
           forEach(args, function (n1, i) {
-            if (n1.op === Model.POW && isMinusOne(n1.args[0]) && isMinusOne(n1.args[1])) {
-              n1 = n1.args[0];  // Move minus to numerator.
-            }
             n1 = expand(n1);
             n0 = n0.concat(unfold(n0.pop(), n1));
           });
@@ -5041,15 +5103,11 @@
       var nid2 = ast.intern(n2);
       var result = nid1 === nid2;
       if (!result) {
-        if (!Model.fn.isExpanded(n1)) {
-          n1 = scale(normalize(simplify(expand(normalize(n1)))));
-        }
-        if (!Model.fn.isExpanded(n2)) {
-          n2 = scale(normalize(simplify(expand(normalize(n2)))));
-        }
-        var nid1 = ast.intern(n1);
-        var nid2 = ast.intern(n2);
-        var result = nid1 === nid2;
+        n1 = scale(normalize(simplify(expand(normalize(n1)))));
+        n2 = scale(normalize(simplify(expand(normalize(n2)))));
+        nid1 = ast.intern(n1);
+        nid2 = ast.intern(n2);
+        result = nid1 === nid2;
       }
     }
     if (result) {

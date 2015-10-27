@@ -242,6 +242,9 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["x+2=8(x+12)", "\\frac{(x+2)}{(x+12)}=8"],
+          ["\\frac{b+c}{bx-1}\\frac{b+c}{bx-1}", "\\frac{-b-c}{1-bx}\\frac{b+c}{bx-1}"],
+          ["\\frac{b+c}{bx-1}\\frac{b+c}{bx-1}", "\\frac{b+c}{bx-1}\\frac{-b-c}{1-bx}"],
           ["-\\frac{-1(c+b)}{1(xb-1)}", "\\frac{-b-c}{1-bx}"],
           ["-\\frac{1(c+b)}{-1(xb-1)}", "\\frac{-b-c}{1-bx}"],
           ["\\frac{-1(c+b)}{-1(xb-1)}", "\\frac{-b-c}{1-bx}"],
