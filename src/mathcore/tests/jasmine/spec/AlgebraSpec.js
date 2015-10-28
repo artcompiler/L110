@@ -242,6 +242,10 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["\\frac{\\log_e\\left(\\frac{-c}{A}\\right)}{k}",
+           "\\frac{\\log_e\\left(\\frac{-c}{A}\\right)}{k}"],
+          ["4(2+3e^{3x})(2x+e^{3x})^3",
+           "4(2+3e^{3x})(2x+e^{3x})^3"],
           ["x+2=8(x+12)", "\\frac{(x+2)}{(x+12)}=8"],
           ["\\frac{b+c}{bx-1}\\frac{b+c}{bx-1}", "\\frac{-b-c}{1-bx}\\frac{b+c}{bx-1}"],
           ["\\frac{b+c}{bx-1}\\frac{b+c}{bx-1}", "\\frac{b+c}{bx-1}\\frac{-b-c}{1-bx}"],

@@ -158,7 +158,7 @@
       node = newNode(Model.NUM, [String(mv)]);
     } else {
       // Infinity and friends
-      node = newNode(Model.NUM, [val]);
+      node = newNode(Model.NUM, [String(val)]);
     }
     return node;
   }
@@ -225,7 +225,9 @@
   }
 
   function isInfinity(n) {
-    if (n.op === Model.NUM &&
+    if (n === Number.POSITIVE_INFINITY ||
+        n === Number.NEGATIVE_INFINITY ||
+        n.op === Model.NUM &&
         (n.args[0] === "Infinity" ||
          n.args[0] === "-Infinity")) {
       return true;
@@ -359,7 +361,11 @@
   }
 
   function logBase(b, v) {
-    return new BigDecimal(String(Math.log(toNumber(v)) / Math.log(toNumber(b))));
+    var n = Math.log(toNumber(v)) / Math.log(toNumber(b));
+    if (!isNaN(n)) {
+      return new BigDecimal(String(n));
+    }
+    return null;
   }
 
   // From http://stackoverflow.com/questions/3959211/fast-factorial-function-in-javascript
@@ -1189,7 +1195,7 @@
         var f;
         if (isMinusOne(n)) {
           // Move negatives to denom.
-          n = fractionNode(nodeOne, nodeMinusOne);
+          n = newNode(Model.POW, [nodeMinusOne, nodeMinusOne]);
         }
         if (n.op === Model.POW && isMinusOne(n.args[1])) {
           f = n.args[0];
@@ -1198,7 +1204,7 @@
           f = n;
         }
         var mv = mathValue(f, true);
-        var key = mv !== null ? mv : "nid$" + ast.intern(f);
+        var key = mv !== null ? String(mv) : "nid$" + ast.intern(f);
         if (isDenom) {
           if (!denoms[key]) {
             denoms[key] = [];
@@ -1213,7 +1219,9 @@
       });
       var nKeys = keys(numers);
       var dKeys = keys(denoms);
-      if (nKeys.length === 0 || dKeys.length === 0) {
+      if (nKeys.length === 0 || dKeys.length === 0 ||
+         dKeys.length === 1 && dKeys[0] === "-1") {
+        // One case is a sole synthetic -1 with not other denoms.
         return node;
       }
       // Now do he canceling.
@@ -2259,7 +2267,7 @@
             } else if (isOne(nd)) {
               args.push(v);
             } else {
-              args.push(simplify(binaryNode(Model.MUL, [nd, v])));
+              args.push(simplify(binaryNode(Model.MUL, [nd, v]), {dontGroup: true}));
             }
           } else if (nd) {
             if (nd.op === Model.NUM) {
@@ -2418,11 +2426,15 @@
       return newNode(Model.COMMA, args);
     }
 
-    function isPolynomialDenominator(node) {
+    function isPolynomialDenominatorWithNegativeTerm(node) {
       return node.op === Model.POW &&
         isMinusOne(node.args[1]) &&
         node.args[0].op === Model.ADD &&
-        variables(node.args[0]).length > 0;
+        variables(node.args[0]).length > 0 &&
+        some(node.args[0].args, function (n) {
+          // Limit the complexity allowed.
+          return isNeg(constantPart(n));
+        });
     }
 
     var simplifiedNodes = [];
@@ -2458,7 +2470,7 @@
           // Simplify kids
           var args = [];
           forEach(node.args, function (n, i) {
-            args = args.concat(simplify(n));
+            args = args.concat(simplify(n, env));
           });
           node = newNode(node.op, args);
           if (node.op === Model.PM) {
@@ -2484,10 +2496,10 @@
           }
           // Now fold other terms
           var args = node.args.slice(0);  // make a copy
-          var n0 = [simplify(args.shift())];
+          var n0 = [simplify(args.shift(), env)];
           // For each next value, pop last value and fold it with next value.
           forEach(args, function (n1, i) {
-            n1 = simplify(n1);
+            n1 = simplify(n1, env);
             n0 = n0.concat(fold(n0.pop(), n1));
           });
           if (n0.length < 2) {
@@ -2581,7 +2593,7 @@
             forEach(ff, function (n) {
               d0 = n.args[0];
               if (n.op === Model.POW && isNeg(mathValue(n.args[1], true))) {
-                dd.push(binaryNode(Model.POW, [d0, simplify(negate(n.args[1]))]));
+                dd.push(binaryNode(Model.POW, [d0, simplify(negate(n.args[1]), env)]));
               }
             });
             if (dd.length === 0) {
@@ -2698,7 +2710,7 @@
                 return multiplyNode([c, lvpart]);
               } else if (lnode.op === Model.LOG && rnode.op === Model.LOG &&
                          (ast.intern(lnode.args[0]) === ast.intern(rnode.args[0]))) {
-                return simplify(newNode(Model.LOG, [lnode.args[0], multiplyNode([lnode.args[1], rnode.args[1]])]));
+                return simplify(newNode(Model.LOG, [lnode.args[0], multiplyNode([lnode.args[1], rnode.args[1]])]), env);
               } else if (ldegr === 0 && rdegr === 0) {
                 // Have two constants
                 var mv1 = mathValue(lnode, true);
@@ -2741,14 +2753,14 @@
           }
           var nid = ast.intern(node);
           var args = node.args.slice(0);
-          var n0 = [simplify(args.shift())];
+          var n0 = [simplify(args.shift(), env)];
           if (n0[0].op === Model.MUL) {
             // flatten
             n0 = n0[0].args.slice(0);
           }
           // For each next value, pop last value and fold it with next value.
           forEach(args, function (n1, i) {
-            n1 = simplify(n1);
+            n1 = simplify(n1, env);
             n0 = n0.concat(fold(n0.pop(), n1));
           });
           if (n0.length < 2) {
@@ -2926,7 +2938,7 @@
               } else {
                 er = nodeOne;
               }
-              var e = simplify(binaryNode(Model.ADD, [el, er]));
+              var e = simplify(binaryNode(Model.ADD, [el, er]), env);
               if (isZero(e)) {
                 // x^0 = 1
                 node = nodeOne;
@@ -2941,7 +2953,7 @@
             } else if (rdegr === 0 && isOne(rcoeffmv)) {
               return lnode;
             } else if (ldegr === 0) {
-              if (sign(lnode) < 0 && isPolynomialDenominator(rnode)) {
+              if (sign(lnode) < 0 && isPolynomialDenominatorWithNegativeTerm(rnode)) {
                 // If lnode is negative and rnode is a polynomial denominator, then invert
                 return [negate(lnode), expand(negate(rnode))];
               }
@@ -3014,10 +3026,10 @@
             // Otherwise, don't simplify
             break;
           case Model.PM:
-            node = unaryNode(node.op, [simplify(node.args[0])]);
+            node = unaryNode(node.op, [simplify(node.args[0], env)]);
             break;
           default:
-            node = unaryNode(node.op, [simplify(node.args[0])]);
+            node = unaryNode(node.op, [simplify(node.args[0], env)]);
           }
           return node;
         },
@@ -3026,10 +3038,10 @@
           // Make a copy of and reverse args to work from right to left
           var nid = ast.intern(node);
           var args = node.args.slice(0).reverse();
-          var n0 = [simplify(args.shift())];
+          var n0 = [simplify(args.shift(), env)];
           // For each next value, pop last value and fold it with next value.
           forEach(args, function (n1, i) {
-            n1 = simplify(n1);
+            n1 = simplify(n1, env);
             n0 = n0.concat(fold(node.op, n0.pop(), n1));
           });
           if (n0.length === 1) {
@@ -3117,17 +3129,10 @@
                 }
               }
             } else if (op === Model.LOG) {
-              if (emv !== null) {
-                if (bmv !== null) {
-                  node = numberNode(logBase(bmv, emv));
-                } else if (base.op === Model.VAR && base.args[0] === "e") {
-                  var mv = toDecimal(Math.log(toNumber(emv)));
-                  if (isInteger(mv)) {
-                    node = numberNode(mv.toString());
-                  } else {
-                    node = binaryNode(Model.LOG, [base, expo]);
-                  }
-                  return node;
+              if (emv !== null && isE(base)) {
+                var mv = toDecimal(Math.log(toNumber(emv)));
+                if (isInteger(mv)) {
+                  return numberNode(mv);
                 }
               }
             }
@@ -3146,14 +3151,14 @@
         comma: function(node) {
           var args = [];
           forEach(node.args, function (n) {
-            args = args.concat(simplify(n));
+            args = args.concat(simplify(n, env));
           });
           return newNode(node.op, args);
         },
         equals: function(node) {
           var args = [];
           forEach(node.args, function (n) {
-            args = args.concat(simplify(n));
+            args = args.concat(simplify(n, env));
           });
           assert(args.length === 2);
           if (isZero(args[1])) {
@@ -4465,7 +4470,7 @@
     }
     function primeFactors(n) {  // n : Number
       var absN = Math.abs(n);
-      if (absN <= 1) {
+      if (absN <= 1 || isNaN(n) || isInfinity(n)) {
         return [];
       } else if (isPrime(absN)) {
         return [absN];
