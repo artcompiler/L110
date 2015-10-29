@@ -28,6 +28,7 @@ exports.globalLexicon = {
     "ignoreOrder" : { "tk": 0x01, "name": "IGNORE-ORDER", "cls": "function", "length": 1 },
     "ignoreText" : { "tk": 0x01, "name": "IGNORE-TEXT", "cls": "function", "length": 1 },
     "ignoreTrailingZeros" : { "tk": 0x01, "name": "IGNORE-TRAILING-ZEROS", "cls": "function", "length": 1 },
+    "ignoreCoefficientOne" : { "tk": 0x01, "name": "IGNORE-COEFFICIENT-ONE", "cls": "function", "length": 1 },
     "compareSides" : { "tk": 0x01, "name": "COMPARE-SIDES", "cls": "function", "length": 1 },
     "decimalPlaces" : { "tk": 0x01, "name": "DECIMAL-PLACES", "cls": "function", "length": 2 },
     "field" : { "tk": 0x01, "name": "FIELD", "cls": "function", "length": 2 },

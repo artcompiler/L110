@@ -32,6 +32,7 @@ var transformer = function() {
     "DECIMAL-PLACES": decimalPlaces,
     "ALLOW-DECIMAL": allowDecimal,
     "IGNORE-ORDER": ignoreOrder,
+    "IGNORE-COEFFICIENT-ONE": ignoreCoefficientOne,
     "COMPARE-SIDES": compareSides,
     "SET-DECIMAL-SEPARATOR": setDecimalSeparator,
     "SET-THOUSANDS-SEPARATOR": setThousandsSeparator,
@@ -532,6 +533,13 @@ var transformer = function() {
 
   function ignoreOrder(node, options, resume) {
     option(options, "ignoreOrder", true);
+    visit(node.elts[0], options, function (err, val) {
+      resume(err, val);
+    });
+  }
+
+  function ignoreCoefficientOne(node, options, resume) {
+    option(options, "ignoreCoefficientOne", true);
     visit(node.elts[0], options, function (err, val) {
       resume(err, val);
     });
