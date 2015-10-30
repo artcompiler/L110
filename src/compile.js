@@ -3,7 +3,7 @@
 /* Copyright (c) 2014, Art Compiler LLC */
 var _ = require("underscore");
 var mjAPI = require("./mj-single.js");
-import MathCore from "./mathcore/lib/mathcore";
+import MathCore from "./mathcore/lib/mathcore.js";
 
 var transformer = function() {
   function print(str) {

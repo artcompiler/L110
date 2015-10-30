@@ -4,7 +4,7 @@
   "description": "L106 compiler as a service",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node --harmony index.js"
   },
   "dependencies": {
     "express": "~3.4.x",
@@ -21,6 +21,10 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/artcompiler/L106"
+  },
+  "devDependencies": {
+    "babel": "^5.8.21",
+    "browserify": "latest"
   },
   "keywords": [
     "node",
