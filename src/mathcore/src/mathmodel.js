@@ -3168,6 +3168,10 @@
               return newNode(node.op, args);
             }
             var ff = factors(args[0], {}, true, true, true);
+            if (isMinusOne(ff[0])) {
+              // Drop the leading negative one.
+              ff.shift();
+            }
             var args0 = [];
             var foundZero = false;
             forEach(ff, function (n) {

@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - aeb0ada
+ * Mathcore unversioned - 1cd0b23
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -6979,6 +6979,9 @@ var BigDecimal = function(MathContext) {
             return newNode(node.op, args)
           }
           var ff = factors(args[0], {}, true, true, true);
+          if(isMinusOne(ff[0])) {
+            ff.shift()
+          }
           var args0 = [];
           var foundZero = false;
           forEach(ff, function(n) {

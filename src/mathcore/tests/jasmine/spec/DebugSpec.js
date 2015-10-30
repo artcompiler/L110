@@ -115,45 +115,6 @@ var forEach = function forEach(array, fun) {
 define(["mathcore"], function (MathCore) {
   describe("Math Core", function() {
     describe("Debug", function() {
-      describe("equivSymbolic", function() {
-        function run(tests) {
-          forEach(tests, function (v, i) {
-            it(v[0] + " | " + v[1], function() {
-              expect(MathCore.evaluate({
-                method: "equivSymbolic",
-                value: v[0],
-                options: {
-                  strict: true
-                }
-              }, v[1])).toBe(true);
-            });
-          });
-        }
-        run([
-          ["\\frac{\\log_e\\left(\\frac{-c}{A}\\right)}{k}",
-           "\\frac{\\log_e\\left(\\frac{-c}{A}\\right)}{k}"],
-          ["4(2+3e^{3x})(2x+e^{3x})^3",
-           "4(2+3e^{3x})(2x+e^{3x})^3"],
-          ["5-\\frac{2}{x+3}", "5-\\frac{2}{x+3}"],
-          ["x+2=8(x+12)", "\\frac{(x+2)}{(x+12)}=8"],
-          ["\\frac{b+c}{bx-1}\\frac{b+c}{bx-1}", "\\frac{-b-c}{1-bx}\\frac{b+c}{bx-1}"],
-          ["\\frac{b+c}{bx-1}\\frac{b+c}{bx-1}", "\\frac{b+c}{bx-1}\\frac{-b-c}{1-bx}"],
-          ["-\\frac{-1(c+b)}{1(xb-1)}", "\\frac{-b-c}{1-bx}"],
-          ["-\\frac{1(c+b)}{-1(xb-1)}", "\\frac{-b-c}{1-bx}"],
-          ["\\frac{-1(c+b)}{-1(xb-1)}", "\\frac{-b-c}{1-bx}"],
-          ["-\\frac{-1(c+b)}{1(xb-1)}", "\\frac{b+c}{bx-1}"],
-          ["-\\frac{1(c+b)}{-1(xb-1)}", "\\frac{b+c}{bx-1}"],
-          ["\\frac{-1(c+b)}{-1(xb-1)}", "\\frac{b+c}{bx-1}"],
-          ["\\frac{-1}{-1(1-bx)}", "\\frac{1}{1-bx}"],
-          ["\\frac{-b-c}{1-bx}", "\\frac{-b-c}{1-bx}"],
-          ["\\frac{b+c}{bx-1}", "\\frac{-b-c}{1-bx}"],
-          ["\\frac{5}{2x-3}", "-\\frac{5}{3-2x}"],
-          ["\\frac{5}{2x-3}", "\\frac{-5}{3-2x}"],
-          ["\\frac{5}{2x-3}", "\\frac{5}{-(3-2x)}"],
-          ["\\frac{391t^2+0.112}{0.218t^4+0.991t^2+1}+\\frac{391\\left(t-1\\right)^2+0.112}{0.218\\left(t-1\\right)^4+0.991\\left(t-1\\right)^2+1}",
-           "\\frac{391t^2+0.112}{0.218t^4+0.991t^2+1}+\\frac{391\\left(t-1\\right)^2+0.112}{0.218\\left(t-1\\right)^4+0.991\\left(t-1\\right)^2+1}"],
-        ]);
-      });
     });
   });
 });
