@@ -450,12 +450,13 @@
       case Model.ION:
       case Model.POW:
       case Model.SUBSCRIPT:
+        node = visit.unary(node, resume);
       case Model.OVERLINE:
       case Model.OVERSET:
       case Model.UNDERSET:
       case Model.NONE:
       case Model.DEGREE:
-        node = visit.unary(node, resume);
+        node = visit.unary(node);
         break;
       case Model.COMMA:
       case Model.MATRIX:

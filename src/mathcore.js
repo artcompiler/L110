@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 58ab8d8
+ * Mathcore unversioned - d5a9c72
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -4530,7 +4530,7 @@ var BigDecimal = function(MathContext) {
         case Model.POW:
         ;
         case Model.SUBSCRIPT:
-        ;
+          node = visit.unary(node, resume);
         case Model.OVERLINE:
         ;
         case Model.OVERSET:
@@ -4540,7 +4540,7 @@ var BigDecimal = function(MathContext) {
         case Model.NONE:
         ;
         case Model.DEGREE:
-          node = visit.unary(node, resume);
+          node = visit.unary(node);
           break;
         case Model.COMMA:
         ;
