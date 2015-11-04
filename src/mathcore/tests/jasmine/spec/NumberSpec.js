@@ -135,6 +135,9 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["2(3)", "6"],
+          ["(2)(3)", "6"],
+          ["(2)3", "6"],
           ["\\abs{-3}", "\\left|-3\\right|"],
           ["\\abs{-3}", "\\left|3\\right|"],
           ["\\left|-3\\right|", "\\abs{3}"],

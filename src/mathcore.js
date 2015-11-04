@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 1cd0b23
+ * Mathcore unversioned - 58ab8d8
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -1452,7 +1452,7 @@ var Model = function() {
         if(t === TK_DIV) {
           expr = newNode(Model.POW, [expr, nodeMinusOne])
         }
-        assert(explicitOperator || (args.length === 0 || (expr.lbrk || (args[args.length - 1].op !== Model.NUM || expr.op !== Model.NUM))), message(1010));
+        assert(explicitOperator || (args.length === 0 || (expr.lbrk || (args[args.length - 1].op !== Model.NUM || (args[args.length - 1].lbrk || expr.op !== Model.NUM)))), message(1010));
         if(isChemCore() && (t === TK_LEFTPAREN && isVar(args[args.length - 1], "M"))) {
           args.pop();
           expr = unaryNode(Model.M, [expr])
