@@ -480,10 +480,6 @@
         break;
       case Model.FORMAT:
         // Only supported by normalizeSyntax
-        node = visit.format(node, resume);
-        break;
-      case Model.FORMAT:
-        // Only supported by normalizeSyntax
         node = visit.format(node);
         break;
       default:
