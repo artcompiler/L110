@@ -1818,7 +1818,7 @@
             args.push(normalizeExpanded(n));
           });
           node.args = args;
-          return groupLikes(node);
+          return flattenNestedNodes(groupLikes(node));
         },
         unary: function(node) {
           var args = [];
@@ -2098,6 +2098,9 @@
 
     function flattenNestedNodes(node, doSimplify) {
       var args = [];
+      if (node.op === Model.NUM || node.op === Model.VAR) {
+        return node;
+      }
       forEach(node.args, function (n) {
         if (doSimplify) {
           n = simplify(n);
@@ -5168,19 +5171,20 @@
 
   Model.fn.isExpanded = function isExpanded(node) {
     var n1, n2, nid1, nid2, result;
-    var dontExpandPowers = option("dontExpandPowers", true);
-    var dontFactorDenominators = option("dontFactorDenominators", true);
-    var dontFactorTerms = option("dontFactorTerms", true);
-    var dontConvertDecimalToFraction = option("dontConvertDecimalToFraction", true);
-    var dontSimplifyImaginary = option("dontSimplifyImaginary", true);
-    var inverseResult = option("inverseResult");
     if (node.op === Model.COMMA) {
       result = every(node.args, function (n) {
         return isExpanded(n);
       });
     } else if (isComparison(node.op)) {
+      var inverseResult = option("inverseResult", false);
       result = isExpanded(node.args[0]) && isExpanded(node.args[1]);
+      option("inverseResult", inverseResult);
     } else {
+      var dontExpandPowers = option("dontExpandPowers", true);
+      var dontFactorDenominators = option("dontFactorDenominators", true);
+      var dontFactorTerms = option("dontFactorTerms", true);
+      var dontConvertDecimalToFraction = option("dontConvertDecimalToFraction", true);
+      var dontSimplifyImaginary = option("dontSimplifyImaginary", true);
       n1 = normalize(node);
       n2 = normalizeExpanded(normalize(expand(normalize(node))));
       nid1 = ast.intern(n1);
@@ -5189,7 +5193,7 @@
       option("dontFactorDenominators", dontFactorDenominators);
       option("dontFactorTerms", dontFactorTerms);
       option("dontConvertDecimalToFraction", dontConvertDecimalToFraction);
-      var inverseResult = option("inverseResult");
+      option("dontSimplifyImaginary", dontSimplifyImaginary);
       if (nid1 === nid2 && !hasLikeFactors(n1)) {
         // hasLikeFactors: x*x != x^2
         result = true;
@@ -5197,6 +5201,7 @@
         result = false;
       }
     }
+    var inverseResult = option("inverseResult");
     return inverseResult ? !result : result;
   }
 

@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - d5a9c72
+ * Mathcore unversioned - 3e78d32
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -4577,9 +4577,6 @@ var BigDecimal = function(MathContext) {
           node = visit.equals(node, resume);
           break;
         case Model.FORMAT:
-          node = visit.format(node, resume);
-          break;
-        case Model.FORMAT:
           node = visit.format(node);
           break;
         default:
@@ -5750,7 +5747,7 @@ var BigDecimal = function(MathContext) {
           args.push(normalizeExpanded(n))
         });
         node.args = args;
-        return groupLikes(node)
+        return flattenNestedNodes(groupLikes(node))
       }, unary:function(node) {
         var args = [];
         forEach(node.args, function(n) {
@@ -5990,6 +5987,9 @@ var BigDecimal = function(MathContext) {
     }
     function flattenNestedNodes(node, doSimplify) {
       var args = [];
+      if(node.op === Model.NUM || node.op === Model.VAR) {
+        return node
+      }
       forEach(node.args, function(n) {
         if(doSimplify) {
           n = simplify(n)
@@ -8710,20 +8710,21 @@ var BigDecimal = function(MathContext) {
   };
   Model.fn.isExpanded = function isExpanded(node) {
     var n1, n2, nid1, nid2, result;
-    var dontExpandPowers = option("dontExpandPowers", true);
-    var dontFactorDenominators = option("dontFactorDenominators", true);
-    var dontFactorTerms = option("dontFactorTerms", true);
-    var dontConvertDecimalToFraction = option("dontConvertDecimalToFraction", true);
-    var dontSimplifyImaginary = option("dontSimplifyImaginary", true);
-    var inverseResult = option("inverseResult");
     if(node.op === Model.COMMA) {
       result = every(node.args, function(n) {
         return isExpanded(n)
       })
     }else {
       if(isComparison(node.op)) {
-        result = isExpanded(node.args[0]) && isExpanded(node.args[1])
+        var inverseResult = option("inverseResult", false);
+        result = isExpanded(node.args[0]) && isExpanded(node.args[1]);
+        option("inverseResult", inverseResult)
       }else {
+        var dontExpandPowers = option("dontExpandPowers", true);
+        var dontFactorDenominators = option("dontFactorDenominators", true);
+        var dontFactorTerms = option("dontFactorTerms", true);
+        var dontConvertDecimalToFraction = option("dontConvertDecimalToFraction", true);
+        var dontSimplifyImaginary = option("dontSimplifyImaginary", true);
         n1 = normalize(node);
         n2 = normalizeExpanded(normalize(expand(normalize(node))));
         nid1 = ast.intern(n1);
@@ -8732,7 +8733,7 @@ var BigDecimal = function(MathContext) {
         option("dontFactorDenominators", dontFactorDenominators);
         option("dontFactorTerms", dontFactorTerms);
         option("dontConvertDecimalToFraction", dontConvertDecimalToFraction);
-        var inverseResult = option("inverseResult");
+        option("dontSimplifyImaginary", dontSimplifyImaginary);
         if(nid1 === nid2 && !hasLikeFactors(n1)) {
           result = true
         }else {
@@ -8740,6 +8741,7 @@ var BigDecimal = function(MathContext) {
         }
       }
     }
+    var inverseResult = option("inverseResult");
     return inverseResult ? !result : result
   };
   function hasDenominator(node) {
