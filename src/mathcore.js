@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 3e78d32
+ * Mathcore unversioned - f0075f4
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -1569,8 +1569,12 @@ var Model = function() {
         return-n
       }else {
         if(n.op === Model.MUL) {
-          n.args.unshift(negate(n.args.shift()));
-          return n
+          var args = n.args.slice(0);
+          return multiplyNode([negate(args.shift())].concat(args))
+        }else {
+          if(n.op === Model.POW && isMinusOne(n.args[1])) {
+            return binaryNode(Model.POW, [negate(n.args[0]), nodeMinusOne])
+          }
         }
       }
       return unaryNode(Model.SUB, [n])
@@ -5540,13 +5544,11 @@ var BigDecimal = function(MathContext) {
                       node.args[i + 1] = n0
                     }
                   }else {
-                    if(v0.length === v1.length && v0.length > 0) {
-                      if(v0[0] < v1[0]) {
-                        node.args[i] = n1;
-                        node.args[i + 1] = n0
-                      }
+                    if(v0.length === v1.length && (v0.length > 0 && v0[0] < v1[0])) {
+                      node.args[i] = n1;
+                      node.args[i + 1] = n0
                     }else {
-                      if(isLessThan(constantPart(n0), constantPart(n1))) {
+                      if(isLessThan(leadingCoeff(n0), leadingCoeff(n1))) {
                         node.args[i] = n1;
                         node.args[i + 1] = n0
                       }
@@ -5662,8 +5664,11 @@ var BigDecimal = function(MathContext) {
         forEach(node.args, function(n) {
           args.push(normalizeLiteral(n))
         });
-        node.args = args;
-        return node
+        if(Model.option("ignoreOrder") && node.op === Model.SUB) {
+          assert(args.length === 2);
+          return binaryNode(Model.ADD, [args[0], negate(args[1])])
+        }
+        return binaryNode(node.op, args)
       }, multiplicative:function(node) {
         var equivLiteralDivAndFrac = false;
         var args = [];
@@ -5673,15 +5678,17 @@ var BigDecimal = function(MathContext) {
         if(equivLiteralDivAndFrac && node.op === Model.FRAC) {
           return newNode(Model.MUL, [args[0], newNode(Model.POW, [args[1], nodeMinusOne])])
         }
-        node.args = args;
-        return node
+        return binaryNode(node.op, args, true)
       }, unary:function(node) {
         var args = [];
         forEach(node.args, function(n) {
           args.push(normalizeLiteral(n))
         });
-        node.args = args;
-        return node
+        if(Model.option("ignoreOrder") && node.op === Model.SUB) {
+          assert(args.length === 1);
+          return negate(args[0])
+        }
+        return newNode(node.op, args)
       }, exponential:function(node) {
         var args = [];
         forEach(node.args, function(n) {
@@ -7019,8 +7026,7 @@ var BigDecimal = function(MathContext) {
       var tt, c;
       switch(node.op) {
         case Model.ADD:
-          tt = terms(node);
-          c = constantPart(tt[0]);
+          c = constantPart(node.args[0]);
           break;
         default:
           c = constantPart(node);
@@ -8614,6 +8620,9 @@ var BigDecimal = function(MathContext) {
     return inverseResult ? !result : result
   };
   Model.fn.equivLiteral = function equivLiteral(n1, n2) {
+    if(terms(n1).length !== terms(n2).length) {
+      return false
+    }
     var ignoreOrder = option("ignoreOrder");
     var inverseResult = option("inverseResult");
     n1 = normalizeLiteral(n1);

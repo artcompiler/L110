@@ -115,6 +115,27 @@ var forEach = function forEach(array, fun) {
 define(["mathcore"], function (MathCore) {
   describe("Math Core", function() {
     describe("Debug", function() {
+      describe("equivLiteral", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivLiteral",
+                value: v[0],
+                options: {
+                  ignoreOrder: true,
+                },
+              }, v[1])).toBe(true);
+            });
+          });
+        }
+        run([
+          ["-3x+2", "2-3x"],
+          ["3+\\sqrt{6}i", "3+i\\sqrt{6}"],
+          ["-3-\\sqrt{6}i", "-3-i\\sqrt{6}"],
+          ["(3x+4)(x-2)", "(x-2)(3x+4)"],
+        ]);
+      });
     });
   });
 });

@@ -1354,7 +1354,6 @@
             break;
           case Model.PM:
             if (isNeg(mathValue(arg0, true))) {
-//              node.args[0] = multiplyNode([nodeMinusOne, arg0], true);
               var args = node.args.slice(0);
               node = newNode(node.op, [negate(args.shift())].concat(args));
             }
@@ -1582,13 +1581,11 @@
                   node.args[i] = n1;
                   node.args[i + 1] = n0;
                 }
-              } else if(v0.length === v1.length && v0.length > 0) {
-                if (v0[0] < v1[0]) {
-                  // Swap adjacent elements
-                  node.args[i] = n1;
-                  node.args[i + 1] = n0;
-                }
-              } else if (isLessThan(constantPart(n0), constantPart(n1))) {
+              } else if(v0.length === v1.length && v0.length > 0 && v0[0] < v1[0]) {
+                // Swap adjacent elements
+                node.args[i] = n1;
+                node.args[i + 1] = n0;
+              } else if (isLessThan(leadingCoeff(n0), leadingCoeff(n1))) {
                 // Keep last
                 node.args[i] = n1;
                 node.args[i + 1] = n0;
@@ -1717,8 +1714,11 @@
           forEach(node.args, function (n) {
             args.push(normalizeLiteral(n));
           });
-          node.args = args;
-          return node;
+          if (Model.option("ignoreOrder") && node.op === Model.SUB) {
+            assert(args.length === 2);
+            return binaryNode(Model.ADD, [args[0], negate(args[1])]);
+          }
+          return binaryNode(node.op, args);
         },
         multiplicative: function (node) {
           var equivLiteralDivAndFrac = false;
@@ -1729,16 +1729,18 @@
           if (equivLiteralDivAndFrac && node.op === Model.FRAC) {
             return newNode(Model.MUL, [args[0], newNode(Model.POW, [args[1], nodeMinusOne])]);
           }
-          node.args = args;
-          return node;
+          return binaryNode(node.op, args, true);
         },
         unary: function(node) {
           var args = [];
           forEach(node.args, function (n) {
             args.push(normalizeLiteral(n));
           });
-          node.args = args;
-          return node;
+          if (Model.option("ignoreOrder") && node.op === Model.SUB) {
+            assert(args.length === 1);
+            return negate(args[0]);
+          }
+          return newNode(node.op, args);
         },
         exponential: function (node) {
           var args = [];
@@ -3219,8 +3221,7 @@
       var tt, c;
       switch (node.op) {
       case Model.ADD:
-        tt = terms(node);
-        c = constantPart(tt[0]);
+        c = constantPart(node.args[0]);
         break;
       default:
         c = constantPart(node);
@@ -5057,6 +5058,11 @@
   // literally equivalent if and only if they have the same AST. ASTs with the
   // same structure intern to the same pool index.
   Model.fn.equivLiteral = function equivLiteral(n1, n2) {
+    if (terms(n1).length !== terms(n2).length) {
+      // Fail fast. No way these are equivLiteral if they have different
+      // number of terms.
+      return false;
+    }
     var ignoreOrder = option("ignoreOrder");
     var inverseResult = option("inverseResult");
     n1 = normalizeLiteral(n1);
