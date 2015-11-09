@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - f0075f4
+ * Mathcore unversioned - dc3548d
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -834,7 +834,7 @@ var Model = function() {
       }
       for(i = 0;i < n1.length;i++) {
         if(matchThousandsSeparator(ch = n1.charAt(i))) {
-          if(separatorCount && lastSeparatorIndex !== i - 4 || !separatorCount && i > 4) {
+          if(separatorCount && lastSeparatorIndex !== i - 4 || !separatorCount && i > 3) {
             assert(false, message(1005))
           }
           lastSeparatorIndex = i;
