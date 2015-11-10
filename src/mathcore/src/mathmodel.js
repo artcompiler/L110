@@ -3180,7 +3180,8 @@
               var mv = mathValue(n, true);
               if (foundZero ||
                   mv !== null && !isZero(mv) && ff.length > 1 ||
-                  (n.op === Model.VAR || n.op === Model.POW) && ff.length > 1 ||  // $, cm, s^2
+                  n.op === Model.VAR && units(n).length > 0 && ff.length > 1 ||  // $, cm, s^2
+                  n.op === Model.POW && units(n.args[0]).length > 0 && mathValue(n.args[0]) !== null && ff.length > 1 ||  // $, cm, s^2
                   n.op === Model.POW && isNeg(mathValue(n.args[1]))) {
                 // Ignore constant factors including units, unless they are alone.
               } else if (isZero(mv)) {
