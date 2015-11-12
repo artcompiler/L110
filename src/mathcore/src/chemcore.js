@@ -17,6 +17,7 @@ var ChemCore = (function () {
   messages[4003] = "No Chem Core spec value provided.";
   messages[4004] = "Invalid Chem Core spec method '%1'.";
   messages[4005] = "Operation taking too long.";
+  messages[4006] = "Internal error: %1";
 
   var u = 1;
   var k = 1000;
@@ -211,6 +212,14 @@ var ChemCore = (function () {
       var result, errorCode = 0, msg = "Normal completion", stack, location;
       result = evaluator.evaluate(solution);
     } catch (e) {
+      if (!e.message) {
+        try {
+          // Internal error.
+          assert(false, message(4006, [e]));
+        } catch (x) {
+          e = x;
+        }
+      }
       result = undefined;
       errorCode = parseErrorCode(e.message);
       msg = parseMessage(e.message);

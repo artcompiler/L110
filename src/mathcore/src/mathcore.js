@@ -17,6 +17,7 @@ var MathCore = (function () {
   messages[3005] = "Operation taking too long.";
   messages[3006] = "Invalid option name '%1'.";
   messages[3007] = "Invalid option value '%2' for option '%1'.";
+  messages[3008] = "Internal error: %1";
 
   var u = 1;
   var k = 1000;
@@ -119,6 +120,15 @@ var MathCore = (function () {
         });
       });
     } catch (e) {
+      if (!e.message) {
+        try {
+          // Internal error.
+          assert(false, message(3008, [e]));
+        } catch (x) {
+          e = x;
+        }
+      }
+      result = undefined;
       errorCode = parseErrorCode(e.message);
       msg = parseMessage(e.message);
       stack = e.stack;
