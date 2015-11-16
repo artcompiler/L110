@@ -247,6 +247,12 @@ define(["mathcore"], function (MathCore) {
         run([
           ["0=x", "-8=2x-8"],
           ["2x=0", "x=0"],
+          ["x<3/4", "4x<3"],
+          ["3/4<x", "3<4x"],
+          ["3/4\\approx x", "3\\approx4x"],
+          ["3/4=x", "3=4x"],
+          ["3/4>x", "3>4x"],
+          ["3/4>x", "15>20x"],
           ["x=2x", "x=0"],
           ["2x=3x", "x=0"],
           ["\\frac{\\log_e\\left(\\frac{-c}{A}\\right)}{k}",

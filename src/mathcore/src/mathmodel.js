@@ -3182,7 +3182,11 @@
                   mv !== null && !isZero(mv) && ff.length > 1 ||
                   n.op === Model.VAR && units(n).length > 0 && ff.length > 1 ||  // $, cm, s^2
                   n.op === Model.POW && units(n.args[0]).length > 0 && mathValue(n.args[0]) !== null && ff.length > 1 ||  // $, cm, s^2
-                  n.op === Model.POW && isNeg(mathValue(n.args[1]))) {
+                  n.op === Model.POW && isNeg(n.args[1])) {
+                if (node.op !== Model.EQL && node.op !== Model.APPROX && isNeg(n)) {
+                  // We are erasing a negative so multiply by -1 to preserve inequality.
+                  args0.push(expand(multiplyNode([nodeMinusOne, args0.pop()])));
+                }
                 // Ignore constant factors including units, unless they are alone.
               } else if (isZero(mv)) {
                 // Result is zero.
@@ -3201,7 +3205,7 @@
             }
             // If equality and LHS leading coefficient is negative, then multiply by -1
             var c;
-            if (node.op === Model.EQL && sign(args[0]) < 0) {
+            if ((node.op === Model.EQL || node.op === Model.APPROX) && sign(args[0]) < 0) {
               args[0] = expand(multiplyNode([nodeMinusOne, args[0]]));
             }
           }
@@ -5119,8 +5123,14 @@
       var nid2 = ast.intern(n2);
       var result = nid1 === nid2;
       if (!result) {
-        n1 = scale(normalize(simplify(expand(normalize(n1)))));
-        n2 = scale(normalize(simplify(expand(normalize(n2)))));
+        if (isComparison(n1) && n1.op === n2.op) {
+          assert(isZero(n1.args[1]) && isZero(n2.args[1]));
+          n1 = scale(normalize(simplify(expand(normalize(n1.args[0])))));
+          n2 = scale(normalize(simplify(expand(normalize(n2.args[0])))));
+        } else {
+          n1 = scale(normalize(simplify(expand(normalize(n1)))));
+          n2 = scale(normalize(simplify(expand(normalize(n2)))));
+        }
         nid1 = ast.intern(n1);
         nid2 = ast.intern(n2);
         result = nid1 === nid2;
