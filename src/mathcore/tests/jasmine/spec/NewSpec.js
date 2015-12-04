@@ -46,7 +46,7 @@ if (TEST_LIB) {
       'bigdecimal': '../lib/BigDecimal',
       'mathmodel': 'mathmodel',
       'mathcore': 'mathcore',
-      'chemcore': 'chemcore',
+      'chemcore': 'chemcore'
     },
     shim: {
       'backward': {
@@ -120,5 +120,20 @@ var forEach = function forEach(array, fun) {
     }
   }
 };
+
+// ES5 9.9
+// http://es5.github.com/#x9.9
+var toObject = function (o) {
+  if (o == null) { // this matches both null and undefined
+    throw new TypeError("can't convert "+o+" to object");
+  }
+  return Object(o);
+};
+
+var prototypeOfObject = Object.prototype;
+
+// Having a toString local variable name breaks in Opera so use _toString.
+var _toString = function (val) { return prototypeOfObject.toString.apply(val); }; //call.bind(prototypeOfObject.toString);
+
 define(["mathcore"], function (MathCore) {
 });

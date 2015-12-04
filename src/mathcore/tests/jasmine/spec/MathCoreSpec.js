@@ -35,7 +35,7 @@ if (TEST_LIB) {
       'bigdecimal': '../lib/BigDecimal',
       'mathmodel': 'mathmodel',
       'mathcore': 'mathcore',
-      'chemcore': 'chemcore',
+      'chemcore': 'chemcore'
     },
     shim: {
       'backward': {
@@ -106,6 +106,20 @@ var forEach = function forEach(array, fun) {
   }
 };
 
+// ES5 9.9
+// http://es5.github.com/#x9.9
+var toObject = function (o) {
+  if (o == null) { // this matches both null and undefined
+    throw new TypeError("can't convert "+o+" to object");
+  }
+  return Object(o);
+};
+
+var prototypeOfObject = Object.prototype;
+
+// Having a toString local variable name breaks in Opera so use _toString.
+var _toString = function (val) { return prototypeOfObject.toString.apply(val); }; //call.bind(prototypeOfObject.toString);
+
 define(["mathcore"], function (MathCore) {
   describe("Math Core", function() {
     describe("inequalities with operands equivLiteral", function() {
@@ -114,7 +128,7 @@ define(["mathcore"], function (MathCore) {
           it(v[0] + " | " + v[1], function() {
             expect(MathCore.evaluate({
               method: "equivLiteral",
-              value: v[0],
+              value: v[0]
             }, v[1])).toBe(true);
           });
         });
@@ -136,7 +150,7 @@ define(["mathcore"], function (MathCore) {
           it(v[0] + " | " + v[1], function() {
             expect(MathCore.evaluate({
               method: "equivSymbolic",
-              value: v[0],
+              value: v[0]
             }, v[1])).toBe(true);
           });
         });
@@ -174,7 +188,7 @@ define(["mathcore"], function (MathCore) {
           it(v[0] + " | " + v[1], function() {
             expect(MathCore.evaluate({
               method: "equivValue",
-              value: v[0],
+              value: v[0]
             }, v[1])).toBe(true);
           });
         });
@@ -224,7 +238,7 @@ define(["mathcore"], function (MathCore) {
           it(v[0] + " | " + v[1], function() {
             expect(MathCore.evaluate({
               method: "equivLiteral",
-              value: v[0],
+              value: v[0]
             }, v[1])).toBe(false);
           });
         });
@@ -246,7 +260,7 @@ define(["mathcore"], function (MathCore) {
           it(v[0] + " | " + v[1], function() {
             expect(MathCore.evaluate({
               method: "equivSymbolic",
-              value: v[0],
+              value: v[0]
             }, v[1])).toBe(false);
           });
         });
@@ -276,7 +290,7 @@ define(["mathcore"], function (MathCore) {
           it(v[0] + " | " + v[1], function() {
             expect(MathCore.evaluate({
               method: "equivValue",
-              value: v[0],
+              value: v[0]
             }, v[1])).toBe(false);
           });
         });
@@ -295,7 +309,7 @@ define(["mathcore"], function (MathCore) {
             it(v[0] + " | " + v[1], function() {
               expect(MathCore.evaluate({
                 method: "equivSymbolic",
-                value: v[0],
+                value: v[0]
               }, v[1])).toBe(true);
             });
           });
@@ -327,7 +341,7 @@ define(["mathcore"], function (MathCore) {
               expect(MathCore.evaluate({
                 method: "equivLiteral",
                 options: {ignoreText: true},
-                value: v[0],
+                value: v[0]
               }, v[1])).toBe(true);
             });
           });
@@ -418,9 +432,9 @@ define(["mathcore"], function (MathCore) {
                 method: "equivSymbolic",
                 options: {
                   allowDecimal: true,
-                  decimalPlaces: 10,
+                  decimalPlaces: 10
                 },
-                value: v[0],
+                value: v[0]
               }, v[1])).toBe(true);
             });
           });
@@ -570,7 +584,7 @@ define(["mathcore"], function (MathCore) {
             it(v[0] + " | " + v[1], function() {
               expect(MathCore.evaluate({
                 method: "equivSymbolic",
-                value: v[0],
+                value: v[0]
               }, v[1])).toBe(false);
             });
           });
@@ -589,7 +603,7 @@ define(["mathcore"], function (MathCore) {
                 method: "equivValue",
                 value: v[0],
                 options: {
-                  allowInterval: true,
+                  allowInterval: true
                 }
               }, v[1])).toBe(true);
             });
@@ -613,9 +627,9 @@ define(["mathcore"], function (MathCore) {
               expect(MathCore.evaluate({
                 method: "equivLiteral",
                 options: {
-                  allowInterval: true,
+                  allowInterval: true
                 },
-                value: v[0],
+                value: v[0]
               }, v[1])).toBe(false);
             });
           });
@@ -640,8 +654,8 @@ define(["mathcore"], function (MathCore) {
                 method: "equivSymbolic",
                 value: v[0],
                 options: {
-                  allowInterval: true,
-                },
+                  allowInterval: true
+                }
               }, v[1])).toBe(true);
             });
           });
@@ -661,8 +675,8 @@ define(["mathcore"], function (MathCore) {
                 method: "equivValue",
                 value: v[0],
                 options: {
-                  allowInterval: true,
-                },
+                  allowInterval: true
+                }
               }, v[1])).toBe(true);
             });
           });
@@ -678,8 +692,8 @@ define(["mathcore"], function (MathCore) {
                 method: "equivValue",
                 value: v[0],
                 options: {
-                  allowInterval: true,
-                },
+                  allowInterval: true
+                }
               }, v[1])).toBe(false);
             });
           });
@@ -697,7 +711,7 @@ define(["mathcore"], function (MathCore) {
                 options: {
                   decimalPlaces: v[2],
                   options: {
-                    allowInterval: true,
+                    allowInterval: true
                   }
                 }
               }, v[1])).toBe(true);
@@ -717,7 +731,7 @@ define(["mathcore"], function (MathCore) {
                 options: {
                   decimalPlaces: v[2],
                   options: {
-                    allowInterval: true,
+                    allowInterval: true
                   }
                 }
               }, v[1])).toBe(false);
@@ -735,7 +749,7 @@ define(["mathcore"], function (MathCore) {
                 method: "equivSymbolic",
                 value: v[0],
                 options: {
-                  allowInterval: true,
+                  allowInterval: true
                 }
               }, v[1])).toBe(true);
             });
@@ -830,8 +844,8 @@ define(["mathcore"], function (MathCore) {
                 method: "equivValue",
                 value: v[0],
                 options: {
-                  decimalPlaces: 3,
-                },
+                  decimalPlaces: 3
+                }
               }, v[1])).toBe(true);
             });
           });

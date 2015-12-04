@@ -105,6 +105,20 @@ var forEach = function forEach(array, fun) {
   }
 };
 
+// ES5 9.9
+// http://es5.github.com/#x9.9
+var toObject = function (o) {
+  if (o == null) { // this matches both null and undefined
+    throw new TypeError("can't convert "+o+" to object");
+  }
+  return Object(o);
+};
+
+var prototypeOfObject = Object.prototype;
+
+// Having a toString local variable name breaks in Opera so use _toString.
+var _toString = function (val) { return prototypeOfObject.toString.apply(val); }; //call.bind(prototypeOfObject.toString);
+
 define(["mathcore"], function (MathCore) {
   describe("Math Core", function() {
     describe("Errors", function() {
@@ -122,7 +136,6 @@ define(["mathcore"], function (MathCore) {
         }
         describe("various", function() {
           var tests = [
-            ["equivLiteral", ["1000,000", "1000000"], {allowThousandsSeparator:true}, 1005],
             ["equivLiteral", ["2 3", "2 3"], {}, 1010],
             ["equivValue", ["3 \\gt x \\ge 2", "2 \\le x \\lt 3"], {}, 2005],
             ["equivLiteral", [".", "."], {}, 1004],
@@ -133,17 +146,17 @@ define(["mathcore"], function (MathCore) {
             ["equivLiteral", ["10", "10..."], {}, 1007],
             ["equivLiteral", ["1.000", "10,00"], {
               allowThousandsSeparator: true,
-              setThousandsSeparator: ['.'],
+              setThousandsSeparator: ['.']
             }, 1008],
             ["equivLiteral", ["1,000", "1000"], {
               allowThousandsSeparator: true,
               setThousandsSeparator: [','],
-              setDecimalSeparator: ',',
+              setDecimalSeparator: ','
             }, 1008],
             ["equivLiteral", ["1,000", "1000"], {
               allowThousandsSeparator: true,
               setThousandsSeparator: [','],
-              setDecimalSeparator: [',', '.'],
+              setDecimalSeparator: [',', '.']
             }, 1008],
             ["isFactorised", [undefined, "3xy(x^2-3y^2+4xy)"], {field: "integer"}, 2001],          
             ["equivLiteral", ["(1+2]", "(1+2)"], {}, 1001],

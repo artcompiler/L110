@@ -35,7 +35,7 @@ if (TEST_LIB) {
       'bigdecimal': '../lib/BigDecimal',
       'mathmodel': 'mathmodel',
       'mathcore': 'mathcore',
-      'chemcore': 'chemcore',
+      'chemcore': 'chemcore'
     },
     shim: {
       'backward': {
@@ -105,6 +105,21 @@ var forEach = function forEach(array, fun) {
     }
   }
 };
+
+// ES5 9.9
+// http://es5.github.com/#x9.9
+var toObject = function (o) {
+  if (o == null) { // this matches both null and undefined
+    throw new TypeError("can't convert "+o+" to object");
+  }
+  return Object(o);
+};
+
+var prototypeOfObject = Object.prototype;
+
+// Having a toString local variable name breaks in Opera so use _toString.
+var _toString = function (val) { return prototypeOfObject.toString.apply(val); }; //call.bind(prototypeOfObject.toString);
+
 define(["mathcore"], function (MathCore) {
   describe("Math Core", function() {
     describe("Numbers", function() {
@@ -114,7 +129,7 @@ define(["mathcore"], function (MathCore) {
             it(v[0] + " | " + v[1], function() {
               expect(MathCore.evaluate({
                 method: "equivSymbolic",
-                value: v[0],
+                value: v[0]
               }, v[1])).toBe(false);
             });
           });
@@ -129,12 +144,16 @@ define(["mathcore"], function (MathCore) {
             it(v[0] + " | " + v[1], function() {
               expect(MathCore.evaluate({
                 method: "equivSymbolic",
-                value: v[0],
+                value: v[0]
               }, v[1])).toBe(true);
             });
           });
         }
         run([
+          ["3^2^2^2", "43046721"],
+          ["2^3^2", "512"],
+          ["-3^{9}\\times-3^{5}", "3^{9+5}"],
+          ["3^{9}\\times3^{5}", "3^{9+5}"],
           ["2(3)", "6"],
           ["(2)(3)", "6"],
           ["(2)3", "6"],
@@ -152,7 +171,7 @@ define(["mathcore"], function (MathCore) {
             it(v[0] + " | " + v[1], function() {
               expect(MathCore.evaluate({
                 method: "equivValue",
-                value: v[0],
+                value: v[0]
               }, v[1])).not.toBe(true);
             });
           });
@@ -168,7 +187,7 @@ define(["mathcore"], function (MathCore) {
             it(v[0] + " | " + v[1], function() {
               expect(MathCore.evaluate({
                 method: "equivValue",
-                value: v[0],
+                value: v[0]
               }, v[1])).toBe(true);
             });
           });
@@ -184,7 +203,7 @@ define(["mathcore"], function (MathCore) {
             it(v[0] + " | " + v[1], function() {
               expect(MathCore.evaluate({
                 method: "equivLiteral",
-                value: v[0],
+                value: v[0]
               }, v[1])).toBe(false);
             });
           });
@@ -199,7 +218,7 @@ define(["mathcore"], function (MathCore) {
             it(v[0] + " | " + v[1], function() {
               expect(MathCore.evaluate({
                 method: "equivLiteral",
-                value: v[0],
+                value: v[0]
               }, v[1])).toBe(true);
             });
           });
@@ -207,6 +226,24 @@ define(["mathcore"], function (MathCore) {
         run([
           ["0", "0"],
           ["", ""]
+        ]);
+      });
+      describe("equivLiteral inverseResult=true", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivLiteral",
+                options: {
+                  inverseResult: true
+                },
+                value: v[0]
+              }, v[1])).toBe(true);
+            });
+          });
+        }
+        run([
+          ["4/6 + 3/6", "7/6"],
         ]);
       });
       describe("isSimplified", function() {
@@ -221,7 +258,7 @@ define(["mathcore"], function (MathCore) {
         };
         run([
           ["0.2"],
-          ["\\frac{1}{2}"],
+          ["\\frac{1}{2}"]
         ]);
       });
       describe("NOT isSimplified", function() {
@@ -236,7 +273,7 @@ define(["mathcore"], function (MathCore) {
         };
         run([
           ["\\frac{2}{2}"],
-          ["\\frac{2}{4}"],
+          ["\\frac{2}{4}"]
         ]);
       });
       describe("isExpanded", function() {
@@ -252,7 +289,7 @@ define(["mathcore"], function (MathCore) {
         run([
           ["0.2"],
           ["\\frac{1}{2}"],
-          ["\\frac{2}{4}"],
+          ["\\frac{2}{4}"]
         ]);
       });
       describe("NOT isExpanded", function() {
@@ -266,7 +303,7 @@ define(["mathcore"], function (MathCore) {
           });
         };
         run([
-          ["\\frac{2}{2}"],
+          ["\\frac{2}{2}"]
         ]);
       });
       describe("equivLiteral", function() {
@@ -275,7 +312,7 @@ define(["mathcore"], function (MathCore) {
             it(v[0] + " | " + v[1], function() {
               expect(MathCore.evaluate({
                 method: "equivLiteral",
-                value: v[0],
+                value: v[0]
               }, v[1])).toBe(true);
             });
           });
@@ -298,7 +335,7 @@ define(["mathcore"], function (MathCore) {
           ["\\vert-3\\vert", "\\vert-3\\vert"],
           ["\\lvert-3\\rvert", "\\lvert-3\\rvert"],
           ["\\mid-3\\mid", "\\mid-3\\mid"],
-          ["A_{\\text{r}}\\text{(O)}=\\frac{15.995 \\times1+1 \\times0.04+17.999 \\times0.20}{100}", "A_{\\text{r}}\\text{(O)}=\\frac{15.995 \\times1+1 \\times0.04+17.999 \\times0.20}{100}"],
+          ["A_{\\text{r}}\\text{(O)}=\\frac{15.995 \\times1+1 \\times0.04+17.999 \\times0.20}{100}", "A_{\\text{r}}\\text{(O)}=\\frac{15.995 \\times1+1 \\times0.04+17.999 \\times0.20}{100}"]
         ]);
       });
       describe("equivLiteral ignoreTrailingZeros", function() {
@@ -310,8 +347,8 @@ define(["mathcore"], function (MathCore) {
                 value: v[0],
                 options: {
                   ignoreTrailingZeros: true,
-                  allowThousandsSeparator: true,
-                },
+                  allowThousandsSeparator: true
+                }
               }, v[1])).toBe(true);
             });
           });
@@ -323,7 +360,7 @@ define(["mathcore"], function (MathCore) {
           ["1,445.1300000", "1445.1300000"],
           ["2.0", "2"],
           [".12", ".120"],
-          [".12", "0.120000"],
+          [".12", "0.120000"]
         ]);
       });
       describe("NOT equivLiteral", function() {
@@ -332,7 +369,7 @@ define(["mathcore"], function (MathCore) {
             it(v[0] + " | " + v[1], function() {
               expect(MathCore.evaluate({
                 method: "equivLiteral",
-                value: v[0],
+                value: v[0]
               }, v[1])).not.toBe(true);
             });
           });
@@ -368,7 +405,7 @@ define(["mathcore"], function (MathCore) {
           ["1,000", "1000"],
           ["1000", "1,000"],
           ["1,000,000", "1000000"],
-          ["1,234,567", "1234567"],
+          ["1,234,567", "1234567"]
         ]);
       });
       describe("NOT equivLiteral allowThousandsSeparator=false", function() {
@@ -389,7 +426,7 @@ define(["mathcore"], function (MathCore) {
           ["1,000", "1000"],
           ["1000", "1,000"],
           ["1,000,000", "1000000"],
-          ["1,234,567", "1234567"],
+          ["1,234,567", "1234567"]
         ]);
       });
       describe("equivLiteral setThousandsSeparator=[' '] setDecimalSeparator=[',']", function() {
@@ -402,7 +439,7 @@ define(["mathcore"], function (MathCore) {
                 options: {
                   allowThousandsSeparator: true,
                   setThousandsSeparator: [' '],
-                  setDecimalSeparator: ',',
+                  setDecimalSeparator: ','
                 }
               }, v[1])).toBe(true);
             });
@@ -425,7 +462,7 @@ define(["mathcore"], function (MathCore) {
                 options: {
                   allowThousandsSeparator: true,
                   setThousandsSeparator: [' '],
-                  setDecimalSeparator: [',', '.'],
+                  setDecimalSeparator: [',', '.']
                 }
               }, v[1])).toBe(true);
             });
@@ -447,7 +484,7 @@ define(["mathcore"], function (MathCore) {
                 value: v[0],
                 options: {
                   allowThousandsSeparator: true,
-                  setThousandsSeparator: [' ', '\''],
+                  setThousandsSeparator: [' ', '\'']
                 }
               }, v[1])).not.toBe(true);
             });
@@ -456,7 +493,7 @@ define(["mathcore"], function (MathCore) {
         run([
           ["1,000", "1000"],
           ["1 000'000", "1000000"],
-          ["1 000 000.00", "1000000,00"],
+          ["1 000 000.00", "1000000,00"]
         ]);
       });
       describe("NOT equivLiteral allowThousandsSeparator=['.'] setDecimalSeparator=undefined", function() {
@@ -468,14 +505,14 @@ define(["mathcore"], function (MathCore) {
                 value: v[0],
                 options: {
                   allowThousandsSeparator: true,
-                  setThousandsSeparator: [' ', '\''],
+                  setThousandsSeparator: [' ', '\'']
                 }
               }, v[1])).not.toBe(true);
             });
           });
         }
         run([
-          ["1.000.0", "1000"],
+          ["1.000.0", "1000"]
         ]);
       });
       describe("equivSymbolic", function() {
@@ -484,7 +521,7 @@ define(["mathcore"], function (MathCore) {
             it(v[0] + " | " + v[1], function() {
               expect(MathCore.evaluate({
                 method: "equivSymbolic",
-                value: v[0],
+                value: v[0]
               }, v[1])).toBe(true);
             });
           });
@@ -537,7 +574,7 @@ define(["mathcore"], function (MathCore) {
           ["|-10|", "10"],
           ["\\left|-10\\right|", "10"],
           ["3.06\\div3=1.02", "3.06\\div3=1.02"],
-          ["2.5", "\\frac{5}{2}"],
+          ["2.5", "\\frac{5}{2}"]
         ]);
       });
       describe("NOT equivSymbolic", function() {
@@ -546,7 +583,7 @@ define(["mathcore"], function (MathCore) {
             it(v[0] + " | " + v[1], function() {
               expect(MathCore.evaluate({
                 method: "equivSymbolic",
-                value: v[0],
+                value: v[0]
               }, v[1])).toBe(false);
             });
           });
@@ -564,7 +601,7 @@ define(["mathcore"], function (MathCore) {
           ["3.06\\div3=1.02", "3.06\\div3=5"],
           ["3.06\\div3=5", "3.06\\div3=1.02"],
           ["3.06\\div3=1.9", "3.06\\div3=1.02"],
-          ["2\\div1=2", "2\\div1=5"],
+          ["2\\div1=2", "2\\div1=5"]
         ]);
       });
       describe("NOT equivSymbolic allowDecimal=true", function() {
@@ -574,7 +611,7 @@ define(["mathcore"], function (MathCore) {
               expect(MathCore.evaluate({
                 method: "equivSymbolic",
                 options: {
-                  allowDecimal: true,
+                  allowDecimal: true
                 },
                 value: v[0]
               }, v[1])).not.toBe(true);
@@ -583,7 +620,7 @@ define(["mathcore"], function (MathCore) {
         }
         run([
           ["\\frac{1}{2}=\\frac{1}{6}", "\\frac{1}{2}=1"],
-          ["\\frac{1}{2}\\div3=\\frac{1}{6}", "\\frac{1}{2}\\div3=16"],
+          ["\\frac{1}{2}\\div3=\\frac{1}{6}", "\\frac{1}{2}\\div3=16"]
         ]);
       });
       describe("equivSymbolic allowThousandsSeparator allowDecimal", function() {
@@ -603,7 +640,7 @@ define(["mathcore"], function (MathCore) {
         }
         run([
           ["1234\\frac{1}{2}", "1234.5"],
-          ["1234\\frac{1}{2}", "1,234.5"],
+          ["1234\\frac{1}{2}", "1,234.5"]
         ]);
       });
       describe("NOT equivSymbolic allowThousandsSeparator", function() {
@@ -666,7 +703,7 @@ define(["mathcore"], function (MathCore) {
           ["0.6x", "\\frac{6x}{10}"],
           ["0.2", "0.20"],
           ["0.2", "20\\%"],
-          ["A_{\\text{r}}\\text{(O)}=\\frac{15.995 \\times1+1 \\times0.04+17.999 \\times0.20}{100}", "A_{\\text{r}}\\text{(O)}=\\frac{15.995 \\times1+1 \\times0.04+17.999 \\times0.20}{100}"],
+          ["A_{\\text{r}}\\text{(O)}=\\frac{15.995 \\times1+1 \\times0.04+17.999 \\times0.20}{100}", "A_{\\text{r}}\\text{(O)}=\\frac{15.995 \\times1+1 \\times0.04+17.999 \\times0.20}{100}"]
         ]);
       });
       describe("equivValue", function() {
@@ -675,7 +712,7 @@ define(["mathcore"], function (MathCore) {
             it(v[0] + " | " + v[1], function() {
               expect(MathCore.evaluate({
                 method: "equivValue",
-                value: v[0],
+                value: v[0]
               }, v[1])).toBe(true);
             });
           });
@@ -702,7 +739,7 @@ define(["mathcore"], function (MathCore) {
           ["0\\degree\\text{F}", "-17.8\\degree\\text{C}"],
           ["0\\degree\\text{F}", "255.372\\degree\\text{K}"],
           ["0\\degree\\text{K}", "-273.15\\degree\\text{C}"],
-          ["0\\degree\\text{K}", "-459.67\\degree\\text{F}"],
+          ["0\\degree\\text{K}", "-459.67\\degree\\text{F}"]
         ]);
       });
       describe("equivValue", function() {
@@ -843,7 +880,7 @@ define(["mathcore"], function (MathCore) {
           ["\\sqrt{9}", "3.0"],
           ["1^{10}", "1"],
           ["x^0", "1"],
-          ["10^-1", ".1"],
+          ["10^-1", ".1"]
         ]);
       });
       describe("NOT equivValue", function() {
@@ -869,7 +906,7 @@ define(["mathcore"], function (MathCore) {
           ["4.225\\pm0.025", "4.199"],
           ["4.225\\pm0.025", "4.251"],
           ["-4.225\\pm0.025", "-4.199"],
-          ["-4.225\\pm0.025", "-4.251"],
+          ["-4.225\\pm0.025", "-4.251"]
         ]);
       });
       describe("NOT equivValue", function() {
@@ -888,7 +925,7 @@ define(["mathcore"], function (MathCore) {
         }
         run([
           ["10^(1/2)", "3.0"],
-          ["10 \\pm 2", "13"],
+          ["10 \\pm 2", "13"]
         ]);
       });
       describe("equivValue inverseResult", function() {
@@ -907,7 +944,7 @@ define(["mathcore"], function (MathCore) {
         }
         run([
           ["10^(1/2)", "3.0"],
-          ["10 \\pm 2", "13"],
+          ["10 \\pm 2", "13"]
         ]);
       });
       describe("equivValue decimalPlaces", function() {
@@ -941,7 +978,7 @@ define(["mathcore"], function (MathCore) {
           ["100gal", "378.541L", "0"],
           ["378.541L", "100gal", "0"],
           ["1/7", "0.142857142857", "12"],
-          ["(245.367+543.789)/37.35+45.782^2", "2117.120199", "5"],
+          ["(245.367+543.789)/37.35+45.782^2", "2117.120199", "5"]
         ]);
       });
       describe("NOT equivValue decimalPlaces", function() {
@@ -961,7 +998,7 @@ define(["mathcore"], function (MathCore) {
         run([
           [".33", "1/3", "3"],
           [".38", "1/3", "3"],
-          ["100gal", "378.541L", "2"],
+          ["100gal", "378.541L", "2"]
         ]);
       });
       describe("equivLiteral allowThousandsSeparator", function() {
@@ -1040,7 +1077,7 @@ define(["mathcore"], function (MathCore) {
           ["1:100000", "1:100000"],
           ["1:100000", "1:100,000"],
           ["1:100000", "1:100 000"],
-          ["1:100000", "1:100\\ 000"],
+          ["1:100000", "1:100\\ 000"]
         ]);
       });
       describe("equivSymbolic allowThousandsSeparator", function() {
@@ -1119,7 +1156,7 @@ define(["mathcore"], function (MathCore) {
           ["1:100000", "1:100000"],
           ["1:100000", "1:100,000"],
           ["1:100000", "1:100 000"],
-          ["1:100000", "1:100\\ 000"],
+          ["1:100000", "1:100\\ 000"]
         ]);
       });
       describe("equivValue allowThousandsSeparator", function() {
@@ -1137,7 +1174,7 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
-          ["10,000", "5,000 + 5,000"],
+          ["10,000", "5,000 + 5,000"]
         ]);
       });
       describe("isTrue", function() {
@@ -1145,7 +1182,7 @@ define(["mathcore"], function (MathCore) {
           forEach(tests, function (v, i) {
             it(v[0], function() {
               expect(MathCore.evaluate({
-                method: "isTrue",
+                method: "isTrue"
               }, v[0])).toBe(true);
             });
           });
@@ -1206,7 +1243,7 @@ define(["mathcore"], function (MathCore) {
           ["\\sqrt{9}>=3.0"],
           ["1^10<1.1"],
           ["x^0=1"],
-          ["10^-1=.1"],
+          ["10^-1=.1"]
         ]);
       });
       describe("NOT isTrue", function() {
@@ -1214,14 +1251,14 @@ define(["mathcore"], function (MathCore) {
           forEach(tests, function (v, i) {
             it(v[0], function() {
               expect(MathCore.evaluate({
-                method: "isTrue",
+                method: "isTrue"
               }, v[0])).toBe(false);
             });
           });
         }
         run([
           ["\\frac{1}{2}\\div3=16"],
-          ["16=12"],
+          ["16=12"]
         ]);
       });
       describe("isUnit", function() {
@@ -1241,7 +1278,7 @@ define(["mathcore"], function (MathCore) {
           ["in", "10in"],
           ["cm", "10cm"],
           ["cm, m, ns", "10cm"],
-          ["cm, m, g, kg, ns, s", "(1cm, 2m, 3g)"],
+          ["cm, m, g, kg, ns, s", "(1cm, 2m, 3g)"]
         ]);
       });
       describe("NOT isUnit", function() {
@@ -1264,7 +1301,7 @@ define(["mathcore"], function (MathCore) {
           ["m, ns", "10cm"],
           ["cm, m, kg, ns, s", "(1cm, 2m, 3g)"],
           ["cm", "10m"],
-          ["(cm, mm, ns)", "10m"],
+          ["(cm, mm, ns)", "10m"]
         ]);
       });
     });  // END Numbers

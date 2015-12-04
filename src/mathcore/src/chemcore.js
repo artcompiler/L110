@@ -237,7 +237,7 @@ var ChemCore = (function () {
       }
     }
     function parseErrorCode(e) {
-      var code = +e.slice(0, e.indexOf(":"));
+      var code = +e.slice(0, indexOf(e, ":"));
       if (!isNaN(code)) {
         return code;
       }
@@ -246,7 +246,7 @@ var ChemCore = (function () {
     function parseMessage(e) {
       var code = parseErrorCode(e);
       if (code) {
-        return e.slice(e.indexOf(":")+2);
+        return e.slice(indexOf(e, ":")+2);
       }
       return e;
     }

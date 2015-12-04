@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 1f8cf7f
+ * Mathcore unversioned - 3192bce
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -23,7 +23,7 @@ Except as contained in this notice, the name of a copyright holder shall not be 
 'use strict';var boxedString = Object("a"), splitString = boxedString[0] != "a" || !(0 in boxedString);
 var forEach = function forEach(array, fun) {
   var thisp = arguments[2];
-  if(Array.prototype.forEach) {
+  if(Array.prototype.indexOf) {
     return array.forEach(fun)
   }
   var object = toObject(array), self = splitString && _toString(object) == "[object String]" ? object.split("") : object, i = -1, length = self.length >>> 0;
@@ -89,7 +89,7 @@ var some = function some(array, fun) {
 };
 var indexOf = function indexOf(array, sought) {
   var fromIndex = arguments[2];
-  if(Array.prototype.indexOf) {
+  if(Array.prototype.indexOf || typeof array === "string") {
     return array.indexOf(sought, fromIndex)
   }
   var self = splitString && _toString(array) == "[object String]" ? array.split("") : toObject(array), length = self.length >>> 0;
@@ -160,6 +160,59 @@ var create = function create(o) {
   F.prototype = o;
   return new F
 };
+if(typeof window === "object" && !window.JSON) {
+  window.JSON = {parse:function(sJSON) {
+    return eval("(" + sJSON + ")")
+  }, stringify:function() {
+    var toString = Object.prototype.toString;
+    var isArray = Array.isArray || function(a) {
+      return toString.call(a) === "[object Array]"
+    };
+    var escMap = {'"':'\\"', "\\":"\\\\", "\b":"\\b", "\f":"\\f", "\n":"\\n", "\r":"\\r", "\t":"\\t"};
+    var escFunc = function(m) {
+      return escMap[m] || "\\u" + (m.charCodeAt(0) + 65536).toString(16).substr(1)
+    };
+    var escRE = /[\\"\u0000-\u001F\u2028\u2029]/g;
+    return function stringify(value) {
+      if(value == null) {
+        return"null"
+      }else {
+        if(typeof value === "number") {
+          return isFinite(value) ? value.toString() : "null"
+        }else {
+          if(typeof value === "boolean") {
+            return value.toString()
+          }else {
+            if(typeof value === "object") {
+              if(typeof value.toJSON === "function") {
+                return stringify(value.toJSON())
+              }else {
+                if(isArray(value)) {
+                  var res = "[";
+                  for(var i = 0;i < value.length;i++) {
+                    res += (i ? ", " : "") + stringify(value[i])
+                  }
+                  return res + "]"
+                }else {
+                  if(toString.call(value) === "[object Object]") {
+                    var tmp = [];
+                    for(var k in value) {
+                      if(value.hasOwnProperty(k)) {
+                        tmp.push(stringify(k) + ": " + stringify(value[k]))
+                      }
+                    }
+                    return"{" + tmp.join(", ") + "}"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      return'"' + value.toString().replace(escRE, escFunc) + '"'
+    }
+  }()}
+}
 var ASSERT = true;
 var assert = function() {
   return!ASSERT ? function() {
@@ -786,7 +839,7 @@ var Model = function() {
         if(!separators) {
           return ch === "," ? ch : ""
         }else {
-          if(ch === last || !last && separators.indexOf(ch) >= 0) {
+          if(ch === last || !last && indexOf(separators, ch) >= 0) {
             return ch
           }else {
             return""
@@ -801,20 +854,20 @@ var Model = function() {
       if(typeof decimalSeparator === "string") {
         assert(decimalSeparator.length === 1, message(1002));
         var separator = decimalSeparator;
-        if(thousandsSeparators instanceof Array && thousandsSeparators.indexOf(separator) >= 0) {
+        if(thousandsSeparators instanceof Array && indexOf(thousandsSeparators, separator) >= 0) {
           assert(false, message(1008, [separator]))
         }
         return ch === separator
       }
       if(decimalSeparator instanceof Array) {
         forEach(decimalSeparator, function(separator) {
-          if(thousandsSeparators instanceof Array && thousandsSeparators.indexOf(separator) >= 0) {
+          if(thousandsSeparators instanceof Array && indexOf(thousandsSeparators, separator) >= 0) {
             assert(false, message(1008, [separator]))
           }
         });
         return indexOf(decimalSeparator, ch) >= 0
       }
-      if(thousandsSeparators instanceof Array && thousandsSeparators.indexOf(".") >= 0) {
+      if(thousandsSeparators instanceof Array && indexOf(thousandsSeparators, ".") >= 0) {
         assert(false, message(1008));
         return false
       }
@@ -834,7 +887,7 @@ var Model = function() {
       }
       for(i = 0;i < n1.length;i++) {
         if(matchThousandsSeparator(ch = n1.charAt(i))) {
-          if(separatorCount && lastSeparatorIndex !== i - 4 || !separatorCount && i > 3) {
+          if(separatorCount && lastSeparatorIndex !== i - 4 || !separatorCount && i > 4) {
             assert(false, message(1005))
           }
           lastSeparatorIndex = i;
@@ -994,7 +1047,7 @@ var Model = function() {
           var tbl = matrixExpr();
           eat(TK_END);
           braceExpr();
-          if(figure.args[0].indexOf("matrix") >= 0) {
+          if(indexOf(figure.args[0], "matrix") >= 0) {
             e = newNode(Model.MATRIX, [tbl])
           }else {
             assert(false, "Unrecognized LaTeX name")
@@ -1271,7 +1324,11 @@ var Model = function() {
         }
       }
       if(args.length > 1) {
-        return newNode(Model.POW, args)
+        var expo = args.pop();
+        forEach(args.reverse(), function(base) {
+          expo = newNode(Model.POW, [base, expo])
+        });
+        return expo
       }else {
         return args[0]
       }
@@ -1334,7 +1391,8 @@ var Model = function() {
             expr = unaryExpr()
           }
           expr = newNode(op, [expr]);
-          if(hd() === TK_CARET) {
+          if((t = hd()) === TK_CARET) {
+            var args = [expr];
             var op = tokenToOperator[t];
             next({oneCharToken:true});
             if((t = hd()) === TK_ADD || t === TK_SUB) {
@@ -1343,7 +1401,8 @@ var Model = function() {
             }else {
               expr = unaryExpr()
             }
-            expr = newNode(op, [expr])
+            args.push(expr);
+            expr = newNode(op, args)
           }
           break;
         case TK_CARET:
@@ -1376,7 +1435,7 @@ var Model = function() {
       var t, args = [unaryExpr()];
       if((t = hd()) === TK_UNDERSCORE) {
         next({oneCharToken:true});
-        args.push(unaryExpr());
+        args.push(exponentialExpr());
         if(isChemCore()) {
           if(hd() === TK_LEFTBRACE) {
             eat(TK_LEFTBRACE);
@@ -1480,8 +1539,8 @@ var Model = function() {
                 var n1 = expr.args[0];
                 n1 = numberNode("." + n1.args[0]);
                 n1.isRepeating = true;
-                if(n0.args[0].indexOf(".") >= 0) {
-                  var decimalPlaces = n0.args[0].length - n0.args[0].indexOf(".") - 1;
+                if(indexOf(n0.args[0], ".") >= 0) {
+                  var decimalPlaces = n0.args[0].length - indexOf(n0.args[0], ".") - 1;
                   n1 = multiplyNode([n1, binaryNode(Model.POW, [numberNode("10"), numberNode("-" + decimalPlaces)])])
                 }
                 expr = binaryNode(Model.ADD, [n0, n1]);
@@ -1535,7 +1594,7 @@ var Model = function() {
     }
     function isScientific(args) {
       if(args.length === 1) {
-        if(args[0].op === Model.NUM && (args[0].args[0].length === 1 || args[0].args[0].indexOf(".") === 1)) {
+        if(args[0].op === Model.NUM && (args[0].args[0].length === 1 || indexOf(args[0].args[0], ".") === 1)) {
           return true
         }else {
           if(args[0].op === Model.POW && (args[0].args[0].op === Model.NUM && (args[0].args[0].args[0] === "10" && args[0].args[1].numberFormat === "integer"))) {
@@ -1547,7 +1606,7 @@ var Model = function() {
         if(args.length === 2) {
           var a = args[0];
           var e = args[1];
-          if(a.op === Model.NUM && ((a.args[0].length === 1 || a.args[0].indexOf(".") === 1) && (e.op === Model.POW && (e.args[0].op === Model.NUM && (e.args[0].args[0] === "10" && e.args[1].numberFormat === "integer"))))) {
+          if(a.op === Model.NUM && ((a.args[0].length === 1 || indexOf(a.args[0], ".") === 1) && (e.op === Model.POW && (e.args[0].op === Model.NUM && (e.args[0].args[0] === "10" && e.args[1].numberFormat === "integer"))))) {
             return true
           }
           return false
@@ -1599,7 +1658,8 @@ var Model = function() {
             expr = binaryNode(Model.PM, [expr, expr2]);
             break;
           case TK_SUB:
-            expr2 = negate(expr2);
+            expr = binaryNode(Model.SUB, [expr, expr2]);
+            break;
           default:
             expr = binaryNode(Model.ADD, [expr, expr2], true);
             break
@@ -1723,7 +1783,7 @@ var Model = function() {
             case 13:
               continue;
             case 38:
-              if(src.substring(curIndex).indexOf("nbsp;") === 0) {
+              if(indexOf(src.substring(curIndex), "nbsp;") === 0) {
                 curIndex += 5;
                 continue
               }
@@ -1850,7 +1910,7 @@ var Model = function() {
           var ch = String.fromCharCode(c);
           var prefix = lexeme + ch;
           var match = some(identifiers, function(u) {
-            return u.indexOf(prefix) === 0
+            return indexOf(u, prefix) === 0
           });
           if(!match) {
             break
@@ -1873,7 +1933,7 @@ var Model = function() {
           if(c === "%".charCodeAt(0)) {
             lexeme += String.fromCharCode(c)
           }else {
-            if([" ".charCodeAt(0), ":".charCodeAt(0), ";".charCodeAt(0), ",".charCodeAt(0), "!".charCodeAt(0)].indexOf(c) >= 0) {
+            if(indexOf([" ".charCodeAt(0), ":".charCodeAt(0), ";".charCodeAt(0), ",".charCodeAt(0), "!".charCodeAt(0)], c) >= 0) {
               lexeme = "\\ "
             }else {
               while(isAlphaCharCode(c)) {
@@ -1897,7 +1957,7 @@ var Model = function() {
             var c = src.charCodeAt(curIndex++);
             while(c && c !== "}".charCodeAt(0)) {
               var ch = String.fromCharCode(c);
-              if(ch === "&" && src.substring(curIndex).indexOf("nbsp;") === 0) {
+              if(ch === "&" && indexOf(src.substring(curIndex), "nbsp;") === 0) {
                 curIndex += 5
               }else {
                 if(ch === " " || ch === "\t") {
@@ -4380,7 +4440,7 @@ var BigDecimal = function(MathContext) {
   }
   function toDecimal(val) {
     var str;
-    if(val === null || (isNaN(val) || (isInfinity(val) || typeof val === "string" && val.indexOf("Infinity") >= 0))) {
+    if(val === null || (isNaN(val) || (isInfinity(val) || typeof val === "string" && indexOf(val, "Infinity") >= 0))) {
       return null
     }else {
       if(val instanceof BigDecimal) {
@@ -4983,7 +5043,7 @@ var BigDecimal = function(MathContext) {
               }
             }
             if(node.numberFormat === "decimal") {
-              if(length === undefined || (length === 0 && node.args[0].indexOf(".") === -1 || length === node.args[0].substring(node.args[0].indexOf(".") + 1).length)) {
+              if(length === undefined || (length === 0 && indexOf(node.args[0], ".") === -1 || length === node.args[0].substring(indexOf(node.args[0], ".") + 1).length)) {
                 return true
               }
             }
@@ -4997,7 +5057,7 @@ var BigDecimal = function(MathContext) {
               }
             }
             if(node.numberFormat === "integer" || node.numberFormat === "decimal") {
-              var brk = node.args[0].indexOf(".");
+              var brk = indexOf(node.args[0], ".");
               if(length === undefined || (length === 0 && brk === -1 || brk >= 0 && length === node.args[0].substring(brk + 1).length)) {
                 return true
               }
@@ -5006,7 +5066,7 @@ var BigDecimal = function(MathContext) {
           case "\\scientific":
             if(node.isScientific) {
               var coeff = node.args[0].args[0];
-              if(length === undefined || (length === 0 && coeff.indexOf(".") === -1 || length === coeff.substring(coeff.indexOf(".") + 1).length)) {
+              if(length === undefined || (length === 0 && indexOf(coeff, ".") === -1 || length === coeff.substring(indexOf(coeff, ".") + 1).length)) {
                 return true
               }
             }
@@ -5274,7 +5334,7 @@ var BigDecimal = function(MathContext) {
       }, additive:function(node) {
         if(node.op === Model.SUB) {
           assert(node.args.length === 2);
-          node = binaryNode(Model.ADD, [node.args[0], negate(node.args[1])])
+          node = binaryNode(Model.ADD, [node.args[0], negate(node.args[1])], true)
         }else {
           if(node.op === Model.PM) {
             assert(node.args.length === 2, "Operator pm can only be used on binary nodes");
@@ -5516,6 +5576,7 @@ var BigDecimal = function(MathContext) {
         var n0, n1;
         var v0, v1;
         for(var i = 0;i < node.args.length - 1;i++) {
+          var s0, s1;
           n0 = node.args[i];
           n1 = node.args[i + 1];
           d0 = Math.abs(degree(n0));
@@ -5547,9 +5608,11 @@ var BigDecimal = function(MathContext) {
                       node.args[i + 1] = n0
                     }
                   }else {
-                    if(v0.length === v1.length && (v0.length > 0 && v0[0] < v1[0])) {
-                      node.args[i] = n1;
-                      node.args[i + 1] = n0
+                    if(v0.length > 0 && (v0.length === v1.length && (s0 = v0.join(",")) !== (s1 = v1.join(",")))) {
+                      if(s0 < s1) {
+                        node.args[i] = n1;
+                        node.args[i + 1] = n0
+                      }
                     }else {
                       if(isLessThan(leadingCoeff(n0), leadingCoeff(n1))) {
                         node.args[i] = n1;
@@ -5847,7 +5910,7 @@ var BigDecimal = function(MathContext) {
       if(s.length === 0) {
         return p
       }
-      if(s.indexOf(p) === 0) {
+      if(indexOf(s, p) === 0) {
         x += p;
         s = s.substring(p.length);
         return findRepeatingPattern(s, p, x)
@@ -5864,7 +5927,7 @@ var BigDecimal = function(MathContext) {
       if(str.charAt(0) === "0") {
         str = str.slice(1)
       }
-      var pos = str.indexOf(".");
+      var pos = indexOf(str, ".");
       var integerPart = str.slice(0, pos);
       var decimalPart = findRepeatingPattern(str.slice(pos + 1));
       var decimalPlaces = decimalPart.length;
@@ -5881,7 +5944,7 @@ var BigDecimal = function(MathContext) {
       if(str.charAt(0) === "0") {
         str = str.slice(1)
       }
-      var pos = str.indexOf(".");
+      var pos = indexOf(str, ".");
       var decimalPlaces = str.length - pos - 1;
       var numer = numberNode(str.slice(0, pos) + str.slice(pos + 1));
       var denom = binaryNode(Model.POW, [numberNode("10"), negate(numberNode(decimalPlaces))]);
@@ -6118,7 +6181,7 @@ var BigDecimal = function(MathContext) {
             vp.push(c)
           }
         });
-        if(cp.indexOf(null) >= 0) {
+        if(indexOf(cp, null) >= 0) {
           return node
         }
         if(node.op === Model.ADD) {
@@ -6910,7 +6973,7 @@ var BigDecimal = function(MathContext) {
                       }else {
                         if(!option("dontExpandPowers") && base.op === Model.MUL) {
                           var args = [];
-                          base.args.forEach(function(n) {
+                          forEach(base.args, function(n) {
                             if(n.op === Model.POW) {
                               args.push(binaryNode(Model.POW, [n.args[0], multiplyNode([n.args[1], expo])]))
                             }else {
@@ -6997,7 +7060,7 @@ var BigDecimal = function(MathContext) {
           forEach(ff, function(n) {
             var mv = mathValue(n, true);
             if(foundZero || (mv !== null && (!isZero(mv) && ff.length > 1) || (n.op === Model.VAR && (units(n).length > 0 && ff.length > 1) || (n.op === Model.POW && (units(n.args[0]).length > 0 && (mathValue(n.args[0]) !== null && ff.length > 1)) || n.op === Model.POW && isNeg(n.args[1]))))) {
-              if(node.op !== Model.EQL && (node.op !== Model.APPROX && isNeg(n))) {
+              if(args0.length > 0 && (node.op !== Model.EQL && (node.op !== Model.APPROX && isNeg(n)))) {
                 args0.push(expand(multiplyNode([nodeMinusOne, args0.pop()])))
               }
             }else {
@@ -8626,11 +8689,11 @@ var BigDecimal = function(MathContext) {
     return inverseResult ? !result : result
   };
   Model.fn.equivLiteral = function equivLiteral(n1, n2) {
+    var inverseResult = option("inverseResult");
     if(terms(n1).length !== terms(n2).length) {
-      return false
+      return inverseResult ? true : false
     }
     var ignoreOrder = option("ignoreOrder");
-    var inverseResult = option("inverseResult");
     n1 = normalizeLiteral(n1);
     n2 = normalizeLiteral(n2);
     if(ignoreOrder) {
@@ -8958,7 +9021,7 @@ var MathCore = function() {
       resume([e.stack], undefined)
     }
     function parseErrorCode(e) {
-      var code = +e.slice(0, e.indexOf(":"));
+      var code = +e.slice(0, indexOf(e, ":"));
       if(!isNaN(code)) {
         return code
       }
@@ -8967,7 +9030,7 @@ var MathCore = function() {
     function parseMessage(e) {
       var code = parseErrorCode(e);
       if(code) {
-        return e.slice(e.indexOf(":") + 2)
+        return e.slice(indexOf(e, ":") + 2)
       }
       return e
     }

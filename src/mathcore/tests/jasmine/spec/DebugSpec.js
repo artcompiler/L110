@@ -115,43 +115,20 @@ var forEach = function forEach(array, fun) {
 define(["mathcore"], function (MathCore) {
   describe("Math Core", function() {
     describe("Debug", function() {
-      describe("NOT equivSymbolic", function() {
+      describe("equivLiteral", function() {
         function run(tests) {
           forEach(tests, function (v, i) {
             it(v[0] + " | " + v[1], function() {
               expect(MathCore.evaluate({
-                method: "equivSymbolic",
+                method: "equivLiteral",
                 value: v[0]
-              }, v[1])).toBe(false);
+              }, v[1])).not.toBe(true);
             });
           });
         }
         run([
-          ["1<2<3<4<5", "6>4>3>2>1"],
-          ["20>2+d", "2+d<=20"],
-          ["8=8", "16=12"],
-          ["x \\ge 10", "10 \\ge x"],
-          ["3+6=6", "\\frac{5}{2}+\\frac{5}{2}=5"],
-        ]);
-      });
-      describe("equivSymbolic", function() {
-        function run(tests) {
-          forEach(tests, function (v, i) {
-            it(v[0] + " | " + v[1], function() {
-              expect(MathCore.evaluate({
-                method: "equivSymbolic",
-                value: v[0]
-              }, v[1])).toBe(true);
-            });
-          });
-        }
-        run([
-          ["3/4\\approx x", "3\\approx4x"],
-          ["3/4=x", "3=4x"],
-          ["x<3/4", "4x<3"],
-          ["3/4<x", "3<4x"],
-          ["3/4>x", "3>4x"],
-          ["3/4>x", "15>20x"],
+          ["1-1", "1+-1"],
+          ["1-1", "1+(-1)"],
         ]);
       });
     });

@@ -318,7 +318,7 @@
     if (val === null ||
         isNaN(val) ||
         isInfinity(val) ||
-        typeof val === "string" && val.indexOf("Infinity") >= 0) {
+        typeof val === "string" && indexOf(val, "Infinity") >= 0) {
       return null;
     } else if (val instanceof BigDecimal) {
       return val;
@@ -607,7 +607,7 @@
             }
           });
           return d;
-        },
+        }
       });
     }
 
@@ -689,7 +689,7 @@
         },
         equals: function(node) {
           return null;
-        },
+        }
       });
     }
 
@@ -766,7 +766,7 @@
             val = val.concat(variables(n));
           });
           return val;
-        },
+        }
       });
     }
 
@@ -833,7 +833,7 @@
         },
         equals: function(node) {
           return null;
-        },
+        }
       });
     }
 
@@ -880,7 +880,7 @@
             vals = vals.concat(terms(n));
           });
           return vals;
-        },
+        }
       });
     }
 
@@ -890,7 +890,7 @@
       switch (fmt.op) {
       case Model.VAR:
         list.push({
-          code: fmt.args[0],
+          code: fmt.args[0]
         });
         break;
       case Model.MUL:
@@ -905,7 +905,7 @@
         });
         list.push({
           code: code,
-          length: length,
+          length: length
         });
         break;
       case Model.COMMA:
@@ -943,8 +943,8 @@
           }
           if (node.numberFormat === "decimal") {
             if (length === undefined ||
-                length === 0 && node.args[0].indexOf(".") === -1 ||
-                length === node.args[0].substring(node.args[0].indexOf(".") + 1).length) {
+                length === 0 && indexOf(node.args[0], ".") === -1 ||
+                length === node.args[0].substring(indexOf(node.args[0], ".") + 1).length) {
               // If there is no size or if the size matches the value...
               return true;
             }
@@ -962,7 +962,7 @@
           }
           if (node.numberFormat === "integer" ||
               node.numberFormat === "decimal") {
-            var brk = node.args[0].indexOf(".");
+            var brk = indexOf(node.args[0], ".");
             if (length === undefined ||
                 length === 0 && brk === -1 ||
                 brk >= 0 && length === node.args[0].substring(brk + 1).length) {
@@ -975,8 +975,8 @@
           if (node.isScientific) {
             var coeff = node.args[0].args[0];
             if (length === undefined ||
-                length === 0 && coeff.indexOf(".") === -1 ||
-                length === coeff.substring(coeff.indexOf(".") + 1).length) {
+                length === 0 && indexOf(coeff, ".") === -1 ||
+                length === coeff.substring(indexOf(coeff, ".") + 1).length) {
               // If there is no size or if the size matches the value...
               return true;
             }
@@ -1176,7 +1176,7 @@
             args.push(n);
           });
           return binaryNode(node.op, args);
-        },
+        }
       }), root.location);
       return node;
     }
@@ -1278,7 +1278,7 @@
         additive: function (node) {
           if (node.op === Model.SUB) {
             assert(node.args.length === 2);
-            node = binaryNode(Model.ADD, [node.args[0], negate(node.args[1])]);
+            node = binaryNode(Model.ADD, [node.args[0], negate(node.args[1])], true /*flatten*/);
           } else if (node.op === Model.PM) {
             assert(node.args.length === 2, "Operator \pm can only be used on binary nodes");
             node = binaryNode(Model.ADD, [
@@ -1444,7 +1444,7 @@
             node = node.args[0];
           }
           return node;
-        },
+        }
       }), root.location);
       // If the node has changed, simplify again
       while (nid !== ast.intern(node)) {
@@ -1553,6 +1553,7 @@
           var n0, n1;
           var v0, v1;
           for (var i = 0; i < node.args.length - 1; i++) {
+            var s0, s1;
             n0 = node.args[i];
             n1 = node.args[i + 1];
             d0 = Math.abs(degree(n0));
@@ -1581,10 +1582,14 @@
                   node.args[i] = n1;
                   node.args[i + 1] = n0;
                 }
-              } else if(v0.length === v1.length && v0.length > 0 && v0[0] < v1[0]) {
-                // Swap adjacent elements
-                node.args[i] = n1;
-                node.args[i + 1] = n0;
+              } else if(v0.length > 0 &&
+                        v0.length === v1.length &&
+                        (s0=v0.join(",")) !== (s1=v1.join(","))) {
+                if (s0 < s1) {
+                  // Swap adjacent elements
+                  node.args[i] = n1;
+                  node.args[i + 1] = n0;
+                }
               } else if (isLessThan(leadingCoeff(n0), leadingCoeff(n1))) {
                 // Keep last
                 node.args[i] = n1;
@@ -1683,7 +1688,7 @@
             }
           }
           return node;
-        },
+        }
       });
       // If the node has changed, sort again
       while (nid !== ast.intern(node)) {
@@ -1780,7 +1785,7 @@
             node.args = args;
           }
           return node;
-        },
+        }
       });
       // If the node has changed, normalizeLiteral again
       while (nid !== ast.intern(node)) {
@@ -1856,7 +1861,7 @@
           });
           node.args = args;
           return node;
-        },
+        }
       });
       // If the node has changed, normalizeExpanded again
       while (nid !== ast.intern(node)) {
@@ -1931,7 +1936,7 @@
       if (s.length === 0) {
         return p;
       }
-      if (s.indexOf(p) === 0) {
+      if (indexOf(s, p) === 0) {
         // p is a prefix of s, so continue checking
         x += p;
         s = s.substring(p.length);
@@ -1951,7 +1956,7 @@
       if (str.charAt(0) === "0") {
         str = str.slice(1);  // Trim off leading zero.
       }
-      var pos = str.indexOf(".");
+      var pos = indexOf(str, ".");
       var integerPart = str.slice(0, pos);
       var decimalPart = findRepeatingPattern(str.slice(pos+1));
       var decimalPlaces = decimalPart.length;
@@ -1975,7 +1980,7 @@
       if (str.charAt(0) === "0") {
         str = str.slice(1);  // Trim off leading zero.
       }
-      var pos = str.indexOf(".");
+      var pos = indexOf(str, ".");
       var decimalPlaces = str.length - pos - 1;
       var numer = numberNode(str.slice(0, pos) + str.slice(pos+1));
       var denom = binaryNode(Model.POW, [numberNode("10"), negate(numberNode(decimalPlaces))]);
@@ -2158,7 +2163,7 @@
         },
         equals: function(node) {
           return Model.EQL;
-        },
+        }
       });
     }
 
@@ -2243,7 +2248,7 @@
             vp.push(c);
           }
         });
-        if (cp.indexOf(null) >= 0) {
+        if (indexOf(cp, null) >= 0) {
           // We've got some strange equation, so just return it as is.
           return node;
         }
@@ -3099,7 +3104,7 @@
               } else if (!option("dontExpandPowers") && base.op === Model.MUL) {
                 // Expand factors
                 var args = [];
-                base.args.forEach(function (n) {
+                forEach(base.args, function (n) {
                   if (n.op === Model.POW) {
                     // flatten
                     args.push(binaryNode(Model.POW, [n.args[0], multiplyNode([n.args[1], expo])]));
@@ -3183,7 +3188,7 @@
                   n.op === Model.VAR && units(n).length > 0 && ff.length > 1 ||  // $, cm, s^2
                   n.op === Model.POW && units(n.args[0]).length > 0 && mathValue(n.args[0]) !== null && ff.length > 1 ||  // $, cm, s^2
                   n.op === Model.POW && isNeg(n.args[1])) {
-                if (node.op !== Model.EQL && node.op !== Model.APPROX && isNeg(n)) {
+                if (args0.length > 0 && node.op !== Model.EQL && node.op !== Model.APPROX && isNeg(n)) {
                   // We are erasing a negative so multiply by -1 to preserve inequality.
                   args0.push(expand(multiplyNode([nodeMinusOne, args0.pop()])));
                 }
@@ -3210,7 +3215,7 @@
             }
           }
           return newNode(node.op, args);
-        },
+        }
       }), root.location);
       // If the node has changed, simplify again
       while (nid !== ast.intern(node)) {
@@ -3444,7 +3449,7 @@
         },
         equals: function(node) {
           return null;
-        },
+        }
       });
       function exponent(node) {
         // FIXME this is brittle. need way to handle general exponents
@@ -3515,7 +3520,7 @@
             uu = uu.concat(units(n, env));
           });
           return uu;
-        },
+        }
       }));
     }
 
@@ -3986,7 +3991,7 @@
           });
           // For each term, for each factor, if denom
           return newNode(node.op, args);
-        },
+        }
       }), root.location);
       // If the node has changed, simplify again
       while (nid !== ast.intern(node)) {
@@ -4095,7 +4100,7 @@
         },
         equals: function(node) {
           return [node];
-        },
+        }
       });
     }
 
@@ -4269,7 +4274,7 @@
             args.push(scale(n));
           });
           return newNode(node.op, args);
-        },
+        }
       }), root.location);
       return node;
     }
@@ -4381,7 +4386,7 @@
             return args.concat(isFactorised(n));
           });
           return result;
-        },
+        }
       });
     }
 
@@ -5012,7 +5017,7 @@
         "\\degree C/\\degree F" : function (v) { return v.subtract(toDecimal("32")).multiply(toDecimal("5")).divide(toDecimal("9")) },
         "\\degree F/\\degree C" : function (v) { return v.multiply(toDecimal("9")).divide(toDecimal("5")).add(toDecimal("32")) },
         "\\degree K/\\degree F" : function (v) { return v.add(toDecimal("459.67")).multiply(toDecimal("5")).divide(toDecimal("9")) },
-        "\\degree F/\\degree K" : function (v) { return v.multiply(toDecimal("9")).divide(toDecimal("5")).subtract(toDecimal("459.67")) },
+        "\\degree F/\\degree K" : function (v) { return v.multiply(toDecimal("9")).divide(toDecimal("5")).subtract(toDecimal("459.67")) }
       };
       var bu1 = baseUnit(u1);
       var bu2 = baseUnit(u2);
@@ -5063,13 +5068,13 @@
   // literally equivalent if and only if they have the same AST. ASTs with the
   // same structure intern to the same pool index.
   Model.fn.equivLiteral = function equivLiteral(n1, n2) {
+    var inverseResult = option("inverseResult");
     if (terms(n1).length !== terms(n2).length) {
       // Fail fast. No way these are equivLiteral if they have different
       // number of terms.
-      return false;
+      return inverseResult ? true : false;
     }
     var ignoreOrder = option("ignoreOrder");
-    var inverseResult = option("inverseResult");
     n1 = normalizeLiteral(n1);
     n2 = normalizeLiteral(n2);
     if (ignoreOrder) {

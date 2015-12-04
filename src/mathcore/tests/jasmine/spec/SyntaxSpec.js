@@ -35,7 +35,7 @@ if (TEST_LIB) {
       'bigdecimal': '../lib/BigDecimal',
       'mathmodel': 'mathmodel',
       'mathcore': 'mathcore',
-      'chemcore': 'chemcore',
+      'chemcore': 'chemcore'
     },
     shim: {
       'backward': {
@@ -106,6 +106,20 @@ var forEach = function forEach(array, fun) {
   }
 };
 
+// ES5 9.9
+// http://es5.github.com/#x9.9
+var toObject = function (o) {
+  if (o == null) { // this matches both null and undefined
+    throw new TypeError("can't convert "+o+" to object");
+  }
+  return Object(o);
+};
+
+var prototypeOfObject = Object.prototype;
+
+// Having a toString local variable name breaks in Opera so use _toString.
+var _toString = function (val) { return prototypeOfObject.toString.apply(val); }; //call.bind(prototypeOfObject.toString);
+
 define(["mathcore"], function (MathCore) {
   describe("Math Core", function() {
     it("spec is being changed when typing -1 and validating on any keypress", function() {
@@ -131,7 +145,7 @@ define(["mathcore"], function (MathCore) {
           it(v[0] + " | " + v[1], function() {
             expect(MathCore.evaluate({
               method: "equivLiteral",
-              value: v[0],
+              value: v[0]
             }, v[1])).toBe(true);
           });
         });
@@ -153,7 +167,7 @@ define(["mathcore"], function (MathCore) {
           it(v[0] + " | " + v[1], function() {
             expect(MathCore.evaluate({
               method: "equivSymbolic",
-              value: v[0],
+              value: v[0]
             }, v[1])).toBe(true);
           });
         });
@@ -175,7 +189,7 @@ define(["mathcore"], function (MathCore) {
           it(v[0] + " | " + v[1], function() {
             expect(MathCore.evaluate({
               method: "equivValue",
-              value: v[0],
+              value: v[0]
             }, v[1])).toBe(true);
           });
         });
@@ -197,7 +211,7 @@ define(["mathcore"], function (MathCore) {
           forEach(tests, function (v, i) {
             it(v[0], function() {
               expect(MathCore.evaluate({
-                method: "validSyntax",
+                method: "validSyntax"
               }, v[0])).toBe(true);
             });
           });
@@ -276,7 +290,7 @@ define(["mathcore"], function (MathCore) {
               expect(MathCore.evaluate({
                 method: "equivLiteral",
                 options: {
-                  allowInterval: true,
+                  allowInterval: true
                 },
                 value: v[0]
               }, v[1])).toBe(true);
@@ -296,7 +310,7 @@ define(["mathcore"], function (MathCore) {
               expect(MathCore.evaluate({
                 method: "equivLiteral",
                 options: {
-                  allowInterval: true,
+                  allowInterval: true
                 },
                 value: v[0]
               }, v[1])).toBe(false);
@@ -360,7 +374,7 @@ define(["mathcore"], function (MathCore) {
                 options: {
                   "ignoreText": true
                 },
-                value: v[0],
+                value: v[0]
               }, v[1])).toBe(true);
             });
           });
@@ -375,7 +389,9 @@ define(["mathcore"], function (MathCore) {
             it(v[0] + " | " + v[1], function() {
               expect(MathCore.evaluate({
                 method: "equivSyntax",
-                value: v[0],
+                options: {
+                },
+                value: v[0]
               }, v[1])).toBe(true);
             });
           });
@@ -468,7 +484,7 @@ define(["mathcore"], function (MathCore) {
                 method: "equivSyntax",
                 options: {
                 },
-                value: v[0],
+                value: v[0]
               }, v[1])).toBe(false);
             });
           });
@@ -518,9 +534,9 @@ define(["mathcore"], function (MathCore) {
               expect(MathCore.evaluate({
                 method: "equivSyntax",
                 options: {
-                  allowThousandsSeparator: true,
+                  allowThousandsSeparator: true
                 },
-                value: v[0],
+                value: v[0]
               }, v[1])).toBe(true);
             });
           });
