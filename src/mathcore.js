@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 3192bce
+ * Mathcore unversioned - bc66c41
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -5507,6 +5507,8 @@ var BigDecimal = function(MathContext) {
         var d0, d1;
         var n0, n1;
         var v0, v1;
+        var c0, c1;
+        var s0, s1;
         var cp0, cp1;
         for(var i = 0;i < node.args.length - 1;i++) {
           n0 = node.args[i];
@@ -5526,33 +5528,33 @@ var BigDecimal = function(MathContext) {
                   node.args[i + 1] = n0
                 }
               }else {
-                if(v0.length > 0) {
-                  if(v0.join("") !== v1.join("")) {
-                    if(v0.join("") < v1.join("")) {
+                if(v0.length > 0 && (v0.length === v1.length && (s0 = v0.join(",")) !== (s1 = v1.join(",")))) {
+                  if(s0 < s1) {
+                    node.args[i] = n1;
+                    node.args[i + 1] = n0
+                  }
+                }else {
+                  if((c0 = isPolynomial(n0)) && ((c1 = isPolynomial(n1)) && (s0 = c0.join(",")) !== (s1 = c1.join(",")))) {
+                    if(s0 < s1) {
                       node.args[i] = n1;
                       node.args[i + 1] = n0
                     }
                   }else {
-                    if(isLessThan(constantPart(n0), constantPart(n1))) {
-                      node.args[i] = n1;
-                      node.args[i + 1] = n0
-                    }
-                  }
-                }else {
-                  if(d0 === 0) {
-                    if(exponent(n0) !== exponent(n1)) {
-                      if(exponent(n0) < exponent(n1)) {
-                        node.args[i] = n1;
-                        node.args[i + 1] = n0
-                      }
-                    }else {
-                      if(isLessThan(cp0 = abs(constantPart(n0)), cp1 = abs(constantPart(n1)))) {
-                        node.args[i] = n1;
-                        node.args[i + 1] = n0
-                      }else {
-                        if(!cp0 && cp1) {
+                    if(d0 === 0) {
+                      if(exponent(n0) !== exponent(n1)) {
+                        if(exponent(n0) < exponent(n1)) {
                           node.args[i] = n1;
                           node.args[i + 1] = n0
+                        }
+                      }else {
+                        if(isLessThan(cp0 = abs(constantPart(n0)), cp1 = abs(constantPart(n1)))) {
+                          node.args[i] = n1;
+                          node.args[i + 1] = n0
+                        }else {
+                          if(!cp0 && cp1) {
+                            node.args[i] = n1;
+                            node.args[i + 1] = n0
+                          }
                         }
                       }
                     }
@@ -5575,6 +5577,7 @@ var BigDecimal = function(MathContext) {
         var d0, d1;
         var n0, n1;
         var v0, v1;
+        var c0, c1;
         for(var i = 0;i < node.args.length - 1;i++) {
           var s0, s1;
           n0 = node.args[i];
@@ -5614,9 +5617,16 @@ var BigDecimal = function(MathContext) {
                         node.args[i + 1] = n0
                       }
                     }else {
-                      if(isLessThan(leadingCoeff(n0), leadingCoeff(n1))) {
-                        node.args[i] = n1;
-                        node.args[i + 1] = n0
+                      if((c0 = isPolynomial(n0)) && ((c1 = isPolynomial(n1)) && (s0 = c0.join(",")) !== (s1 = c1.join(",")))) {
+                        if(s0 < s1) {
+                          node.args[i] = n1;
+                          node.args[i + 1] = n0
+                        }
+                      }else {
+                        if(isLessThan(leadingCoeff(n0), leadingCoeff(n1))) {
+                          node.args[i] = n1;
+                          node.args[i + 1] = n0
+                        }
                       }
                     }
                   }
