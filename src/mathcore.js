@@ -160,7 +160,7 @@ var create = function create(o) {
   F.prototype = o;
   return new F
 };
-if(typeof window === "object" && !window.JSON) {
+if(typeof window !== "undefined" && !window.JSON) {
   window.JSON = {parse:function(sJSON) {
     return eval("(" + sJSON + ")")
   }, stringify:function() {
@@ -905,11 +905,13 @@ var Model = function() {
             if(n2 === "0") {
               hasLeadingZero = true
             }
-            lastSignificantIndex = i - 1
+            lastSignificantIndex = n2.length;
+            lastSeparatorIndex = i;
+            separatorCount++
           }else {
             if(numberFormat === "decimal") {
               if(ch !== "0") {
-                lastSignificantIndex = i
+                lastSignificantIndex = n2.length
               }
             }
           }
@@ -924,8 +926,8 @@ var Model = function() {
           hasTrailingZero = true
         }
         if(ignoreTrailingZeros) {
-          n2 = n2.substring(0, lastSignificantIndex + 1 - separatorCount);
-          if(n2 === "") {
+          n2 = n2.substring(0, lastSignificantIndex + 1);
+          if(n2 === ".") {
             n2 = "0"
           }
         }
@@ -1888,7 +1890,7 @@ var Model = function() {
       }
       var lastSeparator;
       function number(c) {
-        while(isNumberCharCode(c) || (matchDecimalSeparator(String.fromCharCode(c)) || (lastSeparator = matchThousandsSeparator(String.fromCharCode(c), lastSeparator)) && isNumberCharCode(src.charCodeAt(curIndex + 1)))) {
+        while(isNumberCharCode(c) || (matchDecimalSeparator(String.fromCharCode(c)) || (lastSeparator = matchThousandsSeparator(String.fromCharCode(c), lastSeparator)) && isNumberCharCode(src.charCodeAt(curIndex)))) {
           lexeme += String.fromCharCode(c);
           c = src.charCodeAt(curIndex++);
           if(c === 92 && src.charCodeAt(curIndex) === 32) {
@@ -4134,6 +4136,7 @@ var BigDecimal = function(MathContext) {
   messages[2013] = "Invalid matrix multiplication.";
   messages[2014] = "Incomplete expression found.";
   messages[2015] = "Invalid format name '%1'.";
+  messages[2016] = "Exponents should be wrapped in braces.";
   var bigZero = new BigDecimal("0");
   var bigOne = new BigDecimal("1");
   var bigTwo = new BigDecimal("2");
@@ -4506,6 +4509,14 @@ var BigDecimal = function(MathContext) {
   function reset() {
     varMap = {};
     varNames = []
+  }
+  function hint(val, node, str) {
+    if(!val) {
+      if(!node.hints) {
+        node.hints = []
+      }
+      node.hints.push(str)
+    }
   }
   function Visitor(ast) {
     var normalNumber = numberNode("298230487121230434902874");
@@ -4884,25 +4895,118 @@ var BigDecimal = function(MathContext) {
         });
         return val
       }, unary:function(node) {
-        return variables(node.args[0])
+        var args = [];
+        forEach(node.args, function(n) {
+          args = args.concat(variables(n))
+        });
+        return args
       }, numeric:function(node) {
         return[]
       }, variable:function(node) {
+        if(node.args[0] === "0") {
+          return[]
+        }
         return[node.args[0]]
       }, comma:function(node) {
         var args = node.args;
         var val = [];
         forEach(args, function(n) {
-          val = val.concat(variables(n))
+          var vars = variables(n);
+          forEach(vars, function(v) {
+            if(indexOf(val, v) < 0) {
+              val.push(v)
+            }
+          })
         });
         return val
       }, equals:function(node) {
         var args = node.args;
         var val = [];
         forEach(args, function(n) {
-          val = val.concat(variables(n))
+          var vars = variables(n);
+          forEach(vars, function(v) {
+            if(indexOf(val, v) < 0) {
+              val.push(v)
+            }
+          })
         });
         return val
+      }})
+    }
+    function hint(root) {
+      if(!root || !root.args) {
+        assert(false, "Should not get here. Illformed node.");
+        return 0
+      }
+      return visit(root, {name:"hints", exponential:function(node) {
+        var hints = [];
+        if(node.hints instanceof Array) {
+          hints = hints.concat(node.hints)
+        }
+        forEach(node.args, function(n) {
+          hints = hints.concat(hint(n))
+        });
+        if(!node.args[1].lbrk) {
+          hints.push(message(2016))
+        }
+        return hints
+      }, multiplicative:function(node) {
+        var hints = [];
+        if(node.hints instanceof Array) {
+          hints = hints.concat(node.hints)
+        }
+        forEach(node.args, function(n) {
+          hints = hints.concat(hint(n))
+        });
+        return hints
+      }, additive:function(node) {
+        var hints = [];
+        if(node.hints instanceof Array) {
+          hints = hints.concat(node.hints)
+        }
+        forEach(node.args, function(n) {
+          hints = hints.concat(hint(n))
+        });
+        return hints
+      }, unary:function(node) {
+        var hints = [];
+        if(node.hints instanceof Array) {
+          hints = hints.concat(node.hints)
+        }
+        forEach(node.args, function(n) {
+          hints = hints.concat(hint(n))
+        });
+        return hints
+      }, numeric:function(node) {
+        var hints = [];
+        if(node.hints instanceof Array) {
+          hints = hints.concat(node.hints)
+        }
+        return hints
+      }, variable:function(node) {
+        var hints = [];
+        if(node.hints instanceof Array) {
+          hints = hints.concat(node.hints)
+        }
+        return hints
+      }, comma:function(node) {
+        var hints = [];
+        if(node.hints instanceof Array) {
+          hints = hints.concat(node.hints)
+        }
+        forEach(node.args, function(n) {
+          hints = hints.concat(hint(n))
+        });
+        return hints
+      }, equals:function(node) {
+        var hints = [];
+        if(node.hints instanceof Array) {
+          hints = hints.concat(node.hints)
+        }
+        forEach(node.args, function(n) {
+          hints = hints.concat(hint(n))
+        });
+        return hints
       }})
     }
     function variablePart(root) {
@@ -5388,30 +5492,33 @@ var BigDecimal = function(MathContext) {
         }
         return node
       }, unary:function(node) {
-        var arg0 = normalize(node.args[0]);
+        var args = [];
+        forEach(node.args, function(n) {
+          args = args.concat(normalize(n))
+        });
+        node = newNode(node.op, args);
         switch(node.op) {
           case Model.SUB:
-            node = negate(arg0);
+            node = negate(args[0]);
             break;
           case Model.PERCENT:
-            node = multiplyNode([binaryNode(Model.POW, [numberNode("100"), nodeMinusOne]), arg0]);
+            node = multiplyNode([binaryNode(Model.POW, [numberNode("100"), nodeMinusOne]), args[0]]);
             break;
           case Model.PM:
-            if(isNeg(mathValue(arg0, true))) {
+            if(isNeg(mathValue(args[0], true))) {
               var args = node.args.slice(0);
               node = newNode(node.op, [negate(args.shift())].concat(args))
             }
             break;
           case Model.FACT:
-            var mv = mathValue(arg0);
+            var mv = mathValue(args[0]);
             if(mv) {
               node = numberNode(factorial(mv))
             }else {
-              node = unaryNode(node.op, [arg0])
+              node = unaryNode(node.op, [args[0]])
             }
             break;
           default:
-            node = unaryNode(node.op, [arg0]);
             break
         }
         return node
@@ -5528,33 +5635,40 @@ var BigDecimal = function(MathContext) {
                   node.args[i + 1] = n0
                 }
               }else {
-                if(v0.length > 0 && (v0.length === v1.length && (s0 = v0.join(",")) !== (s1 = v1.join(",")))) {
-                  if(s0 < s1) {
-                    node.args[i] = n1;
-                    node.args[i + 1] = n0
-                  }
-                }else {
-                  if((c0 = isPolynomial(n0)) && ((c1 = isPolynomial(n1)) && (s0 = c0.join(",")) !== (s1 = c1.join(",")))) {
+                if(v0.length > 0) {
+                  if((s0 = v0.join(",")) !== (s1 = v1.join(","))) {
                     if(s0 < s1) {
                       node.args[i] = n1;
                       node.args[i + 1] = n0
                     }
                   }else {
-                    if(d0 === 0) {
-                      if(exponent(n0) !== exponent(n1)) {
-                        if(exponent(n0) < exponent(n1)) {
-                          node.args[i] = n1;
-                          node.args[i + 1] = n0
-                        }
+                    if((c0 = isPolynomial(n0)) && ((c1 = isPolynomial(n1)) && (s0 = c0.join(",")) !== (s1 = c1.join(",")))) {
+                      if(s0 < s1) {
+                        node.args[i] = n1;
+                        node.args[i + 1] = n0
+                      }
+                    }else {
+                      if(isLessThan(constantPart(n0), constantPart(n1))) {
+                        node.args[i] = n1;
+                        node.args[i + 1] = n0
+                      }
+                    }
+                  }
+                }else {
+                  if(d0 === 0) {
+                    if(exponent(n0) !== exponent(n1)) {
+                      if(exponent(n0) < exponent(n1)) {
+                        node.args[i] = n1;
+                        node.args[i + 1] = n0
+                      }
+                    }else {
+                      if(isLessThan(cp0 = abs(constantPart(n0)), cp1 = abs(constantPart(n1)))) {
+                        node.args[i] = n1;
+                        node.args[i + 1] = n0
                       }else {
-                        if(isLessThan(cp0 = abs(constantPart(n0)), cp1 = abs(constantPart(n1)))) {
+                        if(!cp0 && cp1) {
                           node.args[i] = n1;
                           node.args[i + 1] = n0
-                        }else {
-                          if(!cp0 && cp1) {
-                            node.args[i] = n1;
-                            node.args[i + 1] = n0
-                          }
                         }
                       }
                     }
@@ -5611,22 +5725,29 @@ var BigDecimal = function(MathContext) {
                       node.args[i + 1] = n0
                     }
                   }else {
-                    if(v0.length > 0 && (v0.length === v1.length && (s0 = v0.join(",")) !== (s1 = v1.join(",")))) {
-                      if(s0 < s1) {
-                        node.args[i] = n1;
-                        node.args[i + 1] = n0
-                      }
-                    }else {
-                      if((c0 = isPolynomial(n0)) && ((c1 = isPolynomial(n1)) && (s0 = c0.join(",")) !== (s1 = c1.join(",")))) {
+                    if(v0.length > 0) {
+                      if((s0 = v0.join(",")) !== (s1 = v1.join(","))) {
                         if(s0 < s1) {
                           node.args[i] = n1;
                           node.args[i + 1] = n0
                         }
                       }else {
-                        if(isLessThan(leadingCoeff(n0), leadingCoeff(n1))) {
-                          node.args[i] = n1;
-                          node.args[i + 1] = n0
+                        if((c0 = isPolynomial(n0)) && ((c1 = isPolynomial(n1)) && (s0 = c0.join(",")) !== (s1 = c1.join(",")))) {
+                          if(s0 < s1) {
+                            node.args[i] = n1;
+                            node.args[i + 1] = n0
+                          }
+                        }else {
+                          if(isLessThan(constantPart(n0), constantPart(n1))) {
+                            node.args[i] = n1;
+                            node.args[i + 1] = n0
+                          }
                         }
+                      }
+                    }else {
+                      if(isLessThan(leadingCoeff(n0), leadingCoeff(n1))) {
+                        node.args[i] = n1;
+                        node.args[i + 1] = n0
                       }
                     }
                   }
@@ -5637,7 +5758,11 @@ var BigDecimal = function(MathContext) {
         }
         return node
       }, unary:function(node) {
-        return unaryNode(node.op, [sort(node.args[0])])
+        var args = [];
+        forEach(node.args, function(n) {
+          args = args.concat(sort(n))
+        });
+        return newNode(node.op, args)
       }, exponential:function(node) {
         var args = [];
         forEach(node.args, function(n, i) {
@@ -7089,7 +7214,7 @@ var BigDecimal = function(MathContext) {
           }
           var c;
           if((node.op === Model.EQL || node.op === Model.APPROX) && sign(args[0]) < 0) {
-            args[0] = expand(multiplyNode([nodeMinusOne, args[0]]))
+            args[0] = negate(args[0])
           }
         }
         return newNode(node.op, args)
@@ -7293,6 +7418,8 @@ var BigDecimal = function(MathContext) {
         if(env && (val = env[node.args[0]])) {
           switch(val.type) {
             case "unit":
+            ;
+            case "const":
               n = val.value;
               break;
             default:
@@ -8084,12 +8211,12 @@ var BigDecimal = function(MathContext) {
         return true
       }, comma:function(node) {
         var result = every(node.args, function(n) {
-          return args.concat(isFactorised(n))
+          return isFactorised(n)
         });
         return result
       }, equals:function(node) {
         var result = every(node.args, function(n) {
-          return args.concat(isFactorised(n))
+          return isFactorised(n)
         });
         return result
       }})
@@ -8250,7 +8377,8 @@ var BigDecimal = function(MathContext) {
     this.units = units;
     this.scale = scale;
     this.hasLikeFactors = hasLikeFactors;
-    this.factorGroupingKey = factorGroupingKey
+    this.factorGroupingKey = factorGroupingKey;
+    this.hint = hint
   }
   var visitor = new Visitor(new Ast);
   function degree(node, notAbsolute) {
@@ -8264,6 +8392,10 @@ var BigDecimal = function(MathContext) {
   function variables(node) {
     var visitor = new Visitor(new Ast);
     return visitor.variables(node)
+  }
+  function hint(node) {
+    var visitor = new Visitor(new Ast);
+    return visitor.hint(node)
   }
   function variablePart(node) {
     var visitor = new Visitor(new Ast);
@@ -8751,15 +8883,9 @@ var BigDecimal = function(MathContext) {
       var nid1 = ast.intern(n1);
       var nid2 = ast.intern(n2);
       var result = nid1 === nid2;
-      if(!result) {
-        if(isComparison(n1) && n1.op === n2.op) {
-          assert(isZero(n1.args[1]) && isZero(n2.args[1]));
-          n1 = scale(normalize(simplify(expand(normalize(n1.args[0])))));
-          n2 = scale(normalize(simplify(expand(normalize(n2.args[0])))))
-        }else {
-          n1 = scale(normalize(simplify(expand(normalize(n1)))));
-          n2 = scale(normalize(simplify(expand(normalize(n2)))))
-        }
+      if(!result && isComparison(n1.op)) {
+        n1 = scale(normalize(simplify(expand(normalize(n1)))));
+        n2 = scale(normalize(simplify(expand(normalize(n2)))));
         nid1 = ast.intern(n1);
         nid2 = ast.intern(n2);
         result = nid1 === nid2
@@ -8919,6 +9045,58 @@ var BigDecimal = function(MathContext) {
     }
     return inverseResult ? !result : result
   };
+  function getRE(re) {
+    if(typeof re === "string") {
+      if(re === "latex") {
+        re = /^[\\]/
+      }else {
+        if(re === "not latex") {
+          re = /^[^\\]/
+        }else {
+          assert(false, "Expecting 'latex' or 'not latex'")
+        }
+      }
+    }
+    return re
+  }
+  Model.fn.variables = function(n1, pattern) {
+    var names = variables(n1);
+    var filtered = [];
+    var re = getRE(pattern);
+    forEach(names, function(n) {
+      if(!re || re.test(n)) {
+        filtered.push(n)
+      }
+    });
+    return filtered
+  };
+  Model.fn.known = function(n1, pattern) {
+    var env = n1.env ? n1.env : [];
+    var names = variables(n1);
+    var re = getRE(pattern);
+    var filtered = [];
+    forEach(names, function(n) {
+      if(env[n] && (!re || re.test(n))) {
+        filtered.push(n)
+      }
+    });
+    return filtered
+  };
+  Model.fn.unknown = function(n1, pattern) {
+    var env = n1.env ? n1.env : [];
+    var names = variables(n1);
+    var re = getRE(pattern);
+    var filtered = [];
+    forEach(names, function(n) {
+      if(!env[n] && (!re || re.test(n))) {
+        filtered.push(n)
+      }
+    });
+    return filtered
+  };
+  Model.fn.hint = function(n1) {
+    return hint(n1)
+  };
   var option = Model.option = function option(p, v) {
     var options = Model.options;
     var opt = options && options[p];
@@ -8984,10 +9162,11 @@ var MathCore = function() {
   var mu = new BigDecimal("1E-6");
   var n = new BigDecimal("1E-9");
   var env = {"g":{type:"unit", value:u, base:"g"}, "s":{type:"unit", value:u, base:"s"}, "m":{type:"unit", value:u, base:"m"}, "L":{type:"unit", value:u, base:"L"}, "kg":{type:"unit", value:k, base:"g"}, "km":{type:"unit", value:k, base:"m"}, "ks":{type:"unit", value:k, base:"s"}, "kL":{type:"unit", value:k, base:"L"}, "cg":{type:"unit", value:c, base:"g"}, "cm":{type:"unit", value:c, base:"m"}, "cs":{type:"unit", value:c, base:"s"}, "cL":{type:"unit", value:c, base:"L"}, "mg":{type:"unit", value:m, 
-  base:"g"}, "mm":{type:"unit", value:m, base:"m"}, "ms":{type:"unit", value:m, base:"s"}, "mL":{type:"unit", value:m, base:"L"}, "\\mu":mu, "\\mug":{type:"unit", value:mu, base:"g"}, "\\mus":{type:"unit", value:mu, base:"s"}, "\\mum":{type:"unit", value:mu, base:"m"}, "\\muL":{type:"unit", value:mu, base:"L"}, "ng":{type:"unit", value:n, base:"g"}, "nm":{type:"unit", value:n, base:"m"}, "ns":{type:"unit", value:n, base:"s"}, "nL":{type:"unit", value:n, base:"L"}, "in":{type:"unit", value:1 / 12, 
-  base:"ft"}, "ft":{type:"unit", value:u, base:"ft"}, "yd":{type:"unit", value:3, base:"ft"}, "mi":{type:"unit", value:5280, base:"ft"}, "fl":{type:"unit", value:1, base:"fl"}, "cup":{type:"unit", value:8, base:"fl"}, "pt":{type:"unit", value:16, base:"fl"}, "qt":{type:"unit", value:32, base:"fl"}, "gal":{type:"unit", value:128, base:"fl"}, "oz":{type:"unit", value:1 / 16, base:"lb"}, "lb":{type:"unit", value:1, base:"lb"}, "st":{type:"unit", value:1 / 1614, base:"lb"}, "qtr":{type:"unit", value:28, 
-  base:"lb"}, "cwt":{type:"unit", value:112, base:"lb"}, "t":{type:"unit", value:2240, base:"lb"}, "$":{type:"unit", value:u, base:"$"}, "i":{type:"unit", value:null, base:"i"}, "min":{type:"unit", value:60, base:"s"}, "hr":{type:"unit", value:3600, base:"s"}, "day":{type:"unit", value:24 * 3600, base:"s"}, "\\radian":{type:"unit", value:u, base:"radian"}, "\\degree":{type:"unit", value:Math.PI / 180, base:"radian"}, "\\degree K":{type:"unit", value:u, base:"\\degree K"}, "\\degree C":{type:"unit", 
-  value:u, base:"\\degree C"}, "\\degree F":{type:"unit", value:u, base:"\\degree F"}, "\\pi":Math.PI, "R":{name:"reals"}, "matrix":{}, "pmatrix":{}, "bmatrix":{}, "Bmatrix":{}, "vmatrix":{}, "Vmatrix":{}, "array":{}};
+  base:"g"}, "mm":{type:"unit", value:m, base:"m"}, "ms":{type:"unit", value:m, base:"s"}, "mL":{type:"unit", value:m, base:"L"}, "\\mug":{type:"unit", value:mu, base:"g"}, "\\mus":{type:"unit", value:mu, base:"s"}, "\\mum":{type:"unit", value:mu, base:"m"}, "\\muL":{type:"unit", value:mu, base:"L"}, "ng":{type:"unit", value:n, base:"g"}, "nm":{type:"unit", value:n, base:"m"}, "ns":{type:"unit", value:n, base:"s"}, "nL":{type:"unit", value:n, base:"L"}, "in":{type:"unit", value:1 / 12, base:"ft"}, 
+  "ft":{type:"unit", value:u, base:"ft"}, "yd":{type:"unit", value:3, base:"ft"}, "mi":{type:"unit", value:5280, base:"ft"}, "fl":{type:"unit", value:1, base:"fl"}, "cup":{type:"unit", value:8, base:"fl"}, "pt":{type:"unit", value:16, base:"fl"}, "qt":{type:"unit", value:32, base:"fl"}, "gal":{type:"unit", value:128, base:"fl"}, "oz":{type:"unit", value:1 / 16, base:"lb"}, "lb":{type:"unit", value:1, base:"lb"}, "st":{type:"unit", value:1 / 1614, base:"lb"}, "qtr":{type:"unit", value:28, base:"lb"}, 
+  "cwt":{type:"unit", value:112, base:"lb"}, "t":{type:"unit", value:2240, base:"lb"}, "$":{type:"unit", value:u, base:"$"}, "i":{type:"unit", value:null, base:"i"}, "min":{type:"unit", value:60, base:"s"}, "hr":{type:"unit", value:3600, base:"s"}, "day":{type:"unit", value:24 * 3600, base:"s"}, "\\radian":{type:"unit", value:u, base:"radian"}, "\\degree":{type:"unit", value:Math.PI / 180, base:"radian"}, "\\degree K":{type:"unit", value:u, base:"\\degree K"}, "\\degree C":{type:"unit", value:u, 
+  base:"\\degree C"}, "\\degree F":{type:"unit", value:u, base:"\\degree F"}, "R":{name:"reals"}, "matrix":{}, "pmatrix":{}, "bmatrix":{}, "Bmatrix":{}, "vmatrix":{}, "Vmatrix":{}, "array":{}, "\\alpha":{type:"var"}, "\\beta":{type:"var"}, "\\gamma":{type:"var"}, "\\delta":{type:"var"}, "\\epsilon":{type:"var"}, "\\zeta":{type:"var"}, "\\eta":{type:"var"}, "\\theta":{type:"var"}, "\\iota":{type:"var"}, "\\kappa":{type:"var"}, "\\lambda":{type:"var"}, "\\mu":{type:"const", value:mu}, "\\nu":{type:"var"}, 
+  "\\xi":{type:"var"}, "\\pi":{type:"const", value:Math.PI}, "\\rho":{type:"var"}, "\\sigma":{type:"var"}, "\\tau":{type:"var"}, "\\upsilon":{type:"var"}, "\\phi":{type:"var"}, "\\chi":{type:"var"}, "\\psi":{type:"var"}, "\\omega":{type:"var"}};
   function evaluate(spec, solution, resume) {
     try {
       assert(spec, message(3001, [spec]));
@@ -9003,12 +9182,14 @@ var MathCore = function() {
     }
   }
   function evaluateVerbose(spec, solution, resume) {
+    var model;
     try {
       assert(spec, message(3001, [spec]));
       Assert.setCounter(1E6, message(3005));
       var evaluator = makeEvaluator(spec);
       var errorCode = 0, msg = "Normal completion", stack, location;
       evaluator.evaluate(solution, function(err, val) {
+        model = evaluator.model;
         console.log("evaluateVerbose() val=" + val);
         resume([], {result:val, errorCode:errorCode, message:msg, stack:stack, location:location, toString:function() {
           return this.errorCode + ": (" + location + ") " + msg + "\n" + this.stack
@@ -9137,12 +9318,19 @@ var MathCore = function() {
     validateOptions(options);
     Model.pushEnv(env);
     var valueNode = value != undefined ? Model.create(value, "spec") : undefined;
+    if(valueNode) {
+      valueNode.env = env
+    }
     Model.popEnv();
     var evaluate = function evaluate(solution, resume) {
       Assert.setLocation("user");
       assert(solution != undefined, message(3002));
       Model.pushEnv(env);
       var solutionNode = Model.create(solution, "user");
+      if(!outerResult.model) {
+        solutionNode.env = env;
+        outerResult.model = solutionNode
+      }
       Assert.setLocation("spec");
       var result;
       switch(method) {
@@ -9193,7 +9381,8 @@ var MathCore = function() {
       console.log("evaluate() result=" + JSON.stringify(result));
       resume(null, result)
     };
-    return{evaluate:evaluate, evaluateVerbose:evaluateVerbose}
+    var outerResult = {evaluate:evaluate, model:valueNode};
+    return outerResult
   }
   return{evaluate:evaluate, evaluateVerbose:evaluateVerbose, makeEvaluator:makeEvaluator, Model:Model, Ast:Ast}
 }();

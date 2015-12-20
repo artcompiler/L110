@@ -205,6 +205,126 @@ define(["mathcore"], function (MathCore) {
             run(tests);
           });
         });
+        describe("validSyntax variables()", function() {
+          function run(tests) {
+            forEach(tests, function (v, i) {
+              it(v[0], function() {
+                expect(MathCore.evaluateVerbose({
+                  method: "validSyntax"
+                }, v[0]).model.variables()).toEqual(v[1]);
+              });
+            });
+          }
+          run([
+            ["\\ne", []],
+            ["\\approx", []],
+            ["mg", ["mg"]],
+            ["\\pi", ["\\pi"]],
+            ["\\forall x \\in X, \\exists y \\lt \\epsilon", ["x", "X", "y", "\\epsilon"]],
+            ["x \\times \\cos (2\\theta) = x \\times (\\cos^2 \\theta - \\sin^2 \\theta)", ["x", "\\theta"]],
+          ]);
+        });
+        describe("validSyntax unknown()", function() {
+          function run(tests) {
+            forEach(tests, function (v, i) {
+              it(v[0], function() {
+                expect(MathCore.evaluateVerbose({
+                  method: "validSyntax"
+                }, v[0]).model.unknown()).toEqual(v[1]);
+              });
+            });
+          }
+          run([
+            ["\\ne", []],
+            ["\\approx", []],
+            ["mg", []],
+            ["\\pi", []],
+            ["\\pix \\foo \\bar x", ["\\pix", "\\foo", "\\bar", "x"]],
+            ["\\pix \\foo \\bar", ["\\pix", "\\foo", "\\bar"]],
+            ["\\forall x \\in X, \\exists y \\lt \\epsilon", ["x", "X", "y"]],
+            ["x \\times \\cos (2\\theta) = x \\times (\\cos^2 \\theta - \\sin^2 \\theta)", ["x"]],
+          ]);
+        });
+        describe("validSyntax unknown('latex')", function() {
+          function run(tests) {
+            forEach(tests, function (v, i) {
+              it(v[0], function() {
+                expect(MathCore.evaluateVerbose({
+                  method: "validSyntax"
+                }, v[0]).model.unknown('latex')).toEqual(v[1]);
+              });
+            });
+          }
+          run([
+            ["\\ne", []],
+            ["\\approx", []],
+            ["mg", []],
+            ["\\pi", []],
+            ["\\pix \\foo \\bar x", ["\\pix", "\\foo", "\\bar"]],
+            ["\\pix \\foo \\bar", ["\\pix", "\\foo", "\\bar"]],
+            ["\\forall x \\in X, \\exists y \\lt \\epsilon", []],
+            ["x \\times \\cosx (2\\theta) = x \\times (\\cos^2 \\theta - \\sin^2 \\theta)", ["\\cosx"]],
+          ]);
+        });
+        describe("validSyntax known()", function() {
+          function run(tests) {
+            forEach(tests, function (v, i) {
+              it(v[0], function() {
+                expect(MathCore.evaluateVerbose({
+                  method: "validSyntax"
+                }, v[0]).model.known()).toEqual(v[1]);
+              });
+            });
+          }
+          run([
+            ["\\ne", []],
+            ["\\approx", []],
+            ["mg", ["mg"]],
+            ["\\pi", ["\\pi"]],
+            ["\\pix \\foo \\bar x", []],
+            ["\\pix \\foo \\bar", []],
+            ["\\forall x \\in X, \\exists y \\lt \\epsilon", ["\\epsilon"]],
+            ["x \\times \\cos (2\\theta) = x \\times (\\cos^2 \\theta - \\sin^2 \\theta)", ["\\theta"]],
+          ]);
+        });
+        describe("validSyntax known('latex')", function() {
+          function run(tests) {
+            forEach(tests, function (v, i) {
+              it(v[0], function() {
+                expect(MathCore.evaluateVerbose({
+                  method: "validSyntax"
+                }, v[0]).model.known('latex')).toEqual(v[1]);
+              });
+            });
+          }
+          run([
+            ["\\ne", []],
+            ["\\approx", []],
+            ["mg", []],
+            ["\\pi", ["\\pi"]],
+            ["\\pix \\foo \\bar x", []],
+            ["\\pix \\foo \\bar", []],
+            ["\\forall x \\in X, \\exists y \\lt \\epsilon", ["\\epsilon"]],
+            ["x \\times \\cos (2\\theta) = x \\times (\\cos^2 \\theta - \\sin^2 \\theta)", ["\\theta"]],
+          ]);
+        });
+        describe("evaluateVerbose() hint()", function() {
+          function run(tests) {
+            forEach(tests, function (v, i) {
+              it(v[0] + " | " + v[1], function() {
+                expect(MathCore.evaluateVerbose({
+                  method: v[0],
+                  value: v[1][0]
+                }, v[1][1]).model.hint()).toEqual(v[2]);
+              });
+            });
+          }
+          var tests = [
+            ["validSyntax", [undefined, "x^23"], ["2016: Exponents should be wrapped in braces."]],
+            ["equivValue", ["x=10", "x=10"], ["2005: Non-numeric expressions cannot be compared with equivValue."]],
+          ];
+          run(tests);
+        });
       });
     });
   });

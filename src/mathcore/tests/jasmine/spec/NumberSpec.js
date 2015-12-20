@@ -358,9 +358,32 @@ define(["mathcore"], function (MathCore) {
           ["1,000.0", "1000"],
           ["1,445,000.0", "1445000"],
           ["1,445.1300000", "1445.1300000"],
+          ["1,445.130,000,0", "1445.1300000"],
           ["2.0", "2"],
           [".12", ".120"],
           [".12", "0.120000"]
+        ]);
+      });
+      describe("equivLiteral allowThousandsSeparator", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivLiteral",
+                value: v[0],
+                options: {
+                  allowThousandsSeparator: true
+                }
+              }, v[1])).toBe(true);
+            });
+          });
+        }
+        run([
+          ["1,000.0", "1000.0"],
+          ["1,445,000.0", "1445000.0"],
+          ["1,445.1300000", "1445.1300000"],
+          ["1,445.130,000,0", "1445.1300000"],
+          [".120000", "0.120,000"]
         ]);
       });
       describe("NOT equivLiteral", function() {
@@ -375,6 +398,8 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["1-1", "1+-1"],
+          ["1-1", "1+(-1)"],
           ["5", "----5"],
           ["5", "-(-5)"],
           ["1 \\div 2", "\\frac{1}{2}"],
@@ -446,6 +471,7 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["1,000 000 1", "1,0000001"],
           ["1 000", "1000"],
           ["1 000 000", "1000000"],
           ["1 000 000,00", "1000000,00"],
@@ -999,6 +1025,27 @@ define(["mathcore"], function (MathCore) {
           [".33", "1/3", "3"],
           [".38", "1/3", "3"],
           ["100gal", "378.541L", "2"]
+        ]);
+      });
+      describe("equivLiteral setDecimalSeparator setThousandsSeparator", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivLiteral",
+                options: {
+                  setThousandsSeparator: ["."],
+                  setDecimalSeparator: [","],
+                },
+                value: v[0]
+              }, v[1])).toBe(true);
+            });
+          });
+        }
+        run([
+          ["1.000,000", "1.000,000"],
+          ["1,000.000", "1,000000"],
+          ["1.000,000.000", "1000,000000"],
         ]);
       });
       describe("equivLiteral allowThousandsSeparator", function() {

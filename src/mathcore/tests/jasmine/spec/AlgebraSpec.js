@@ -265,6 +265,7 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["\\cos^2(3x)-\\sin^2(3x)=\\cos2(3x)", "\\cos^2(3x)-\\sin^2(3x)-\\cos2(3x)=0"],
           ["\\frac{y-6}{4+r}", "\\frac{y-6}{4+r}"],
           ["\\frac{y-6}{4+r}", "\\frac{y-2*3}{4+r}"],
           ["0=x", "-8=2x-8"],
@@ -583,6 +584,7 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["-\\frac{\\pi}{6}+2n\\pi", "\\frac{\\pi}{6}+2n\\pi"],
           ["x=y", "Ax=Ay"],
           ["Ax=Ay", "\$x=\$y"],
           ["x=0", "x=1/(2/0)"],
@@ -792,6 +794,7 @@ define(["mathcore"], function (MathCore) {
           });
         };
         run([
+          ["0=(x-3)(x-5)"],
           ["x^2+4y-4"],
           ["xy\\left(x-y\\right)"],
           ["3xy(x-3y^2+4xy)"],
@@ -841,6 +844,7 @@ define(["mathcore"], function (MathCore) {
           });
         };
         run([
+          ["0=x^2-8x+15"],
           ["3y+4xy"],
           ["x(x-3)+2"],
           ["(x+2)x+3x+6"],

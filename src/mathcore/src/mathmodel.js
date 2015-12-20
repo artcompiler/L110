@@ -27,6 +27,7 @@
   messages[2013] = "Invalid matrix multiplication.";
   messages[2014] = "Incomplete expression found.";
   messages[2015] = "Invalid format name '%1'.";
+  messages[2016] = "Exponents should be wrapped in braces.";
 
   var bigZero = new BigDecimal("0");
   var bigOne = new BigDecimal("1");
@@ -43,7 +44,7 @@
   var nodeImaginary = binaryNode(Model.POW, [nodeMinusOne, nodeOneHalf]);
   var nodeE = variableNode("e");
 
-  // WARNING: for debugging only
+  // NOTE for debugging only
   function stripNids(node) {
     forEach(keys(node), function (k) {
       if (indexOf(k, "Nid") > 0) {
@@ -388,6 +389,16 @@
   function reset() {
     varMap = {};
     varNames = [];
+  }
+
+  function hint(val, node, str) {
+    // If val is false, then annotate the node.
+    if (!val) {
+      if (!node.hints) {
+        node.hints = [];
+      }
+      node.hints.push(str);
+    }
   }
 
   // The outer Visitor function provides a global scope for all visitors,
@@ -741,12 +752,20 @@
           return val;
         },
         unary: function(node) {
-          return variables(node.args[0]);
+          var args = [];
+          forEach(node.args, function (n) {
+            args = args.concat(variables(n));
+          });
+          return args;
         },
         numeric: function(node) {
           return [];
         },
         variable: function(node) {
+          if (node.args[0] === "0") {
+            // Is synthetic.
+            return [];
+          }
           return [node.args[0]];
         },
         comma: function(node) {
@@ -755,7 +774,12 @@
           // FIXME should this be a list of strings or a list of arrays of
           // strings?
           forEach(args, function (n) {
-            val = val.concat(variables(n));
+            var vars = variables(n);
+            forEach(vars, function (v) {
+              if (indexOf(val, v) < 0) {
+                val.push(v);
+              }
+            });
           });
           return val;
         },
@@ -763,9 +787,102 @@
           var args = node.args;
           var val = [];
           forEach(args, function (n) {
-            val = val.concat(variables(n));
+            var vars = variables(n);
+            forEach(vars, function (v) {
+              if (indexOf(val, v) < 0) {
+                val.push(v);
+              }
+            });
           });
           return val;
+        }
+      });
+    }
+
+    function hint(root) {
+      // Collect all of the hints attached to this node.
+      if (!root || !root.args) {
+        assert(false, "Should not get here. Illformed node.");
+        return 0;
+      }
+      return visit(root, {
+        name: "hints",
+        exponential: function(node) {
+          var hints = [];
+          if (node.hints instanceof Array) {
+              hints = hints.concat(node.hints);
+          }
+          forEach(node.args, function (n) {
+            hints = hints.concat(hint(n));
+          });
+          if (!node.args[1].lbrk) {
+            hints.push(message(2016));
+          }
+          return hints;
+        },
+        multiplicative: function(node) {
+          var hints = [];
+          if (node.hints instanceof Array) {
+              hints = hints.concat(node.hints);
+          }
+          forEach(node.args, function (n) {
+            hints = hints.concat(hint(n));
+          });
+          return hints;
+        },
+        additive: function(node) {
+          var hints = [];
+          if (node.hints instanceof Array) {
+              hints = hints.concat(node.hints);
+          }
+          forEach(node.args, function (n) {
+            hints = hints.concat(hint(n));
+          });
+          return hints;
+        },
+        unary: function(node) {
+          var hints = [];
+          if (node.hints instanceof Array) {
+              hints = hints.concat(node.hints);
+          }
+          forEach(node.args, function (n) {
+            hints = hints.concat(hint(n));
+          });
+          return hints;
+        },
+        numeric: function(node) {
+          var hints = [];
+          if (node.hints instanceof Array) {
+              hints = hints.concat(node.hints);
+          }
+          return hints;
+        },
+        variable: function(node) {
+          var hints = [];
+          if (node.hints instanceof Array) {
+              hints = hints.concat(node.hints);
+          }
+          return hints;
+        },
+        comma: function(node) {
+          var hints = [];
+          if (node.hints instanceof Array) {
+              hints = hints.concat(node.hints);
+          }
+          forEach(node.args, function (n) {
+            hints = hints.concat(hint(n));
+          });
+          return hints;
+        },
+        equals: function(node) {
+          var hints = [];
+          if (node.hints instanceof Array) {
+              hints = hints.concat(node.hints);
+          }
+          forEach(node.args, function (n) {
+            hints = hints.concat(hint(n));
+          });
+          return hints;
         }
       });
     }
@@ -1340,34 +1457,38 @@
           return node;
         },
         unary: function(node) {
-          var arg0 = normalize(node.args[0]);
+          var args = [];
+          forEach(node.args, function (n) {
+            args = args.concat(normalize(n));
+          });
+          node = newNode(node.op, args);
           switch (node.op) {
           case Model.SUB:
-            node = negate(arg0);
+            node = negate(args[0]);
             break;
           case Model.PERCENT:
             node = multiplyNode([
               binaryNode(Model.POW, [
                 numberNode("100"),
                 nodeMinusOne
-              ]), arg0]);
+              ]), args[0]]);
             break;
           case Model.PM:
-            if (isNeg(mathValue(arg0, true))) {
+            if (isNeg(mathValue(args[0], true))) {
               var args = node.args.slice(0);
               node = newNode(node.op, [negate(args.shift())].concat(args));
             }
             break;
           case Model.FACT:
-            var mv = mathValue(arg0);
+            var mv = mathValue(args[0]);
             if (mv) {
               node = numberNode(factorial(mv));
             } else {
-              node = unaryNode(node.op, [arg0]);
+              node = unaryNode(node.op, [args[0]]);
             }
             break;
           default:
-            node = unaryNode(node.op, [arg0]);
+            // Do nothing.
             break;
           }
           return node;
@@ -1512,17 +1633,20 @@
                   node.args[i] = n1;
                   node.args[i + 1] = n0;
                 }
-              } else if(v0.length > 0 &&
-                        v0.length === v1.length &&
-                        (s0=v0.join(",")) !== (s1=v1.join(","))) {
-                if (s0 < s1) {
-                  // Swap adjacent elements
-                  node.args[i] = n1;
-                  node.args[i + 1] = n0;
-                }
-              } else if ((c0 = isPolynomial(n0)) && (c1 = isPolynomial(n1)) &&
-                        (s0=c0.join(",")) !== (s1=c1.join(","))) {
-                if (s0 < s1) {
+              } else if(v0.length > 0) {
+                if ((s0=v0.join(",")) !== (s1=v1.join(","))) {
+                  if (s0 < s1) {
+                    // Swap adjacent elements
+                    node.args[i] = n1;
+                    node.args[i + 1] = n0;
+                  }
+                } else if ((c0 = isPolynomial(n0)) && (c1 = isPolynomial(n1)) &&
+                           (s0=c0.join(",")) !== (s1=c1.join(","))) {
+                  if (s0 < s1) {
+                    node.args[i] = n1;
+                    node.args[i + 1] = n0;
+                  }
+                } else if (isLessThan(constantPart(n0), constantPart(n1))) {
                   node.args[i] = n1;
                   node.args[i + 1] = n0;
                 }
@@ -1589,17 +1713,20 @@
                   node.args[i] = n1;
                   node.args[i + 1] = n0;
                 }
-              } else if(v0.length > 0 &&
-                        v0.length === v1.length &&
-                        (s0=v0.join(",")) !== (s1=v1.join(","))) {
-                if (s0 < s1) {
-                  // Swap adjacent elements
-                  node.args[i] = n1;
-                  node.args[i + 1] = n0;
-                }
-              } else if ((c0 = isPolynomial(n0)) && (c1 = isPolynomial(n1)) &&
-                        (s0=c0.join(",")) !== (s1=c1.join(","))) {
-                if (s0 < s1) {
+              } else if(v0.length > 0) {
+                if ((s0=v0.join(",")) !== (s1=v1.join(","))) {
+                  if (s0 < s1) {
+                    // Swap adjacent elements
+                    node.args[i] = n1;
+                    node.args[i + 1] = n0;
+                  }
+                } else if ((c0 = isPolynomial(n0)) && (c1 = isPolynomial(n1)) &&
+                           (s0=c0.join(",")) !== (s1=c1.join(","))) {
+                  if (s0 < s1) {
+                    node.args[i] = n1;
+                    node.args[i + 1] = n0;
+                  }
+                } else if (isLessThan(constantPart(n0), constantPart(n1))) {
                   node.args[i] = n1;
                   node.args[i + 1] = n0;
                 }
@@ -1613,7 +1740,11 @@
           return node;
         },
         unary: function(node) {
-          return unaryNode(node.op, [sort(node.args[0])]);
+          var args = [];
+          forEach(node.args, function (n) {
+            args = args.concat(sort(n));
+          });
+          return newNode(node.op, args);
         },
         exponential: function (node) {
           var args = [];
@@ -3224,7 +3355,7 @@
             // If equality and LHS leading coefficient is negative, then multiply by -1
             var c;
             if ((node.op === Model.EQL || node.op === Model.APPROX) && sign(args[0]) < 0) {
-              args[0] = expand(multiplyNode([nodeMinusOne, args[0]]));
+              args[0] = negate(args[0]);
             }
           }
           return newNode(node.op, args);
@@ -3447,6 +3578,7 @@
           if (env && (val = env[node.args[0]])) {
             switch (val.type) {
             case "unit":
+            case "const":
               n = val.value;
               break;
             default:
@@ -4390,13 +4522,13 @@
         },
         comma: function(node) {
           var result = every(node.args, function (n) {
-            return args.concat(isFactorised(n));
+            return isFactorised(n);
           });
           return result;
         },
         equals: function(node) {
           var result = every(node.args, function (n) {
-            return args.concat(isFactorised(n));
+            return isFactorised(n);
           });
           return result;
         }
@@ -4579,6 +4711,7 @@
     this.scale = scale;
     this.hasLikeFactors = hasLikeFactors;
     this.factorGroupingKey = factorGroupingKey;
+    this.hint = hint;
   }
 
   var visitor = new Visitor(new Ast);
@@ -4595,6 +4728,11 @@
   function variables(node) {
     var visitor = new Visitor(new Ast);
     return visitor.variables(node);
+  }
+
+  function hint(node) {
+    var visitor = new Visitor(new Ast);
+    return visitor.hint(node);
   }
 
   function variablePart(node) {
@@ -5140,15 +5278,9 @@
       var nid1 = ast.intern(n1);
       var nid2 = ast.intern(n2);
       var result = nid1 === nid2;
-      if (!result) {
-        if (isComparison(n1) && n1.op === n2.op) {
-          assert(isZero(n1.args[1]) && isZero(n2.args[1]));
-          n1 = scale(normalize(simplify(expand(normalize(n1.args[0])))));
-          n2 = scale(normalize(simplify(expand(normalize(n2.args[0])))));
-        } else {
-          n1 = scale(normalize(simplify(expand(normalize(n1)))));
-          n2 = scale(normalize(simplify(expand(normalize(n2)))));
-        }
+      if (!result && isComparison(n1.op)) {
+        n1 = scale(normalize(simplify(expand(normalize(n1)))));
+        n2 = scale(normalize(simplify(expand(normalize(n2)))));
         nid1 = ast.intern(n1);
         nid2 = ast.intern(n2);
         result = nid1 === nid2;
@@ -5343,6 +5475,61 @@
       });
     }
     return inverseResult ? !result : result;
+  }
+
+  function getRE(re) {
+    if (typeof re === "string") {
+      if (re === "latex") {
+        re = /^[\\]/;
+      } else if (re === "not latex") {
+        re = /^[^\\]/;
+      } else {
+        assert(false, "Expecting 'latex' or 'not latex'");
+      }
+    }
+    return re;
+  }
+
+  Model.fn.variables = function (n1, pattern) {
+    var names = variables(n1);
+    var filtered = [];
+    var re = getRE(pattern);
+    forEach(names, function (n) {
+      if (!re || re.test(n)) {
+        filtered.push(n);
+      }
+    });
+    return filtered;
+  }
+
+  Model.fn.known = function (n1, pattern) {
+    var env = n1.env ? n1.env : [];
+    var names = variables(n1);
+    var re = getRE(pattern);
+    var filtered = [];
+    forEach(names, function (n) {
+      if (env[n] && (!re || re.test(n))) {
+        filtered.push(n);
+      }
+    });
+    return filtered;
+  }
+
+  Model.fn.unknown = function (n1, pattern) {
+    var env = n1.env ? n1.env : [];
+    var names = variables(n1);
+    var re = getRE(pattern);
+    var filtered = [];
+    forEach(names, function (n) {
+      if (!env[n] && (!re || re.test(n))) {
+        filtered.push(n);
+      }
+    });
+    return filtered;
+  }
+
+  Model.fn.hint = function (n1) {
+    return hint(n1);
   }
 
   var option = Model.option = function option(p, v) {

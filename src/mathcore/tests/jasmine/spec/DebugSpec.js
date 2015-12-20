@@ -115,22 +115,6 @@ var forEach = function forEach(array, fun) {
 define(["mathcore"], function (MathCore) {
   describe("Math Core", function() {
     describe("Debug", function() {
-      describe("equivLiteral", function() {
-        function run(tests) {
-          forEach(tests, function (v, i) {
-            it(v[0] + " | " + v[1], function() {
-              expect(MathCore.evaluate({
-                method: "equivLiteral",
-                value: v[0]
-              }, v[1])).not.toBe(true);
-            });
-          });
-        }
-        run([
-          ["1-1", "1+-1"],
-          ["1-1", "1+(-1)"],
-        ]);
-      });
     });
   });
 });

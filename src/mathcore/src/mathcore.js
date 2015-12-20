@@ -42,7 +42,6 @@ var MathCore = (function () {
     "mm": { type: "unit", value: m, base: "m" },
     "ms": { type: "unit", value: m, base: "s" },
     "mL": { type: "unit", value: m, base: "L" },
-    "\\mu": mu,
     "\\mug": { type: "unit", value: mu, base: "g" },
     "\\mus": { type: "unit", value: mu, base: "s" },
     "\\mum": { type: "unit", value: mu, base: "m" },
@@ -76,7 +75,6 @@ var MathCore = (function () {
     "\\degree K": { type: "unit", value: u, base: "\\degree K" },
     "\\degree C": { type: "unit", value: u, base: "\\degree C" },
     "\\degree F": { type: "unit", value: u, base: "\\degree F" },
-    "\\pi": Math.PI,
     "R": { name: "reals" },   // special math symbol for real space
     "matrix": {},
     "pmatrix": {},
@@ -84,7 +82,30 @@ var MathCore = (function () {
     "Bmatrix": {},
     "vmatrix": {},
     "Vmatrix": {},
-    "array": {}
+    "array": {},
+    "\\alpha": { type: "var" },
+    "\\beta": { type: "var" },
+    "\\gamma": { type: "var" },
+    "\\delta": { type: "var" },
+    "\\epsilon": { type: "var" },
+    "\\zeta": { type: "var" },
+    "\\eta": { type: "var" },
+    "\\theta": { type: "var" },
+    "\\iota": { type: "var" },
+    "\\kappa": { type: "var" },
+    "\\lambda": { type: "var" },
+    "\\mu": { type: "const", value: mu },
+    "\\nu": { type: "var" },
+    "\\xi": { type: "var" },
+    "\\pi": { type: "const", value: Math.PI },
+    "\\rho": { type: "var" },
+    "\\sigma": { type: "var" },
+    "\\tau": { type: "var" },
+    "\\upsilon": { type: "var" },
+    "\\phi": { type: "var" },
+    "\\chi": { type: "var" },
+    "\\psi": { type: "var" },
+    "\\omega": { type: "var" }
   };
   function evaluate(spec, solution, resume) {
     try {
@@ -101,12 +122,14 @@ var MathCore = (function () {
     }
   }
   function evaluateVerbose(spec, solution, resume) {
+    var model;
     try {
       assert(spec, message(3001, [spec]));
       Assert.setCounter(1000000, message(3005));
       var evaluator = makeEvaluator(spec);
       var errorCode = 0, msg = "Normal completion", stack, location;
       evaluator.evaluate(solution, function (err, val) {
+        model = evaluator.model;
         console.log("evaluateVerbose() val=" + val);
         resume([], {
           result: val,
@@ -136,7 +159,6 @@ var MathCore = (function () {
       console.log("ERROR evaluateVerbose stack=" + stack);
       resume([e.stack], undefined);
     }
-
     function parseErrorCode(e) {
       var code = +e.slice(0, indexOf(e, ":"));
       if (!isNaN(code)) {
@@ -230,12 +252,20 @@ var MathCore = (function () {
     validateOptions(options);
     Model.pushEnv(env);
     var valueNode = value != undefined ? Model.create(value, "spec") : undefined;
+    if (valueNode) {
+      valueNode.env = env;   // Save environment for later analysis.
+    }
     Model.popEnv();
     var evaluate = function evaluate(solution, resume) {
       Assert.setLocation("user");
       assert(solution != undefined, message(3002));
       Model.pushEnv(env);
       var solutionNode = Model.create(solution, "user");
+      if (!outerResult.model) {
+        // Patch the closed value if it isn't already set.
+        solutionNode.env = env;
+        outerResult.model = solutionNode;
+      }
       Assert.setLocation("spec");
       var result;
       switch (method) {
@@ -287,10 +317,11 @@ var MathCore = (function () {
       console.log("evaluate() result=" + JSON.stringify(result));
       resume(null, result);
     }
-    return {
+    var outerResult = {
       evaluate: evaluate,
-      evaluateVerbose: evaluateVerbose
+      model: valueNode
     };
+    return outerResult;
   }
 
   // Exports

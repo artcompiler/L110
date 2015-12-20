@@ -42,7 +42,6 @@ var ChemCore = (function () {
     "mm": { type: "unit", value: m, base: "m" },
     "ms": { type: "unit", value: m, base: "s" },
     "mL": { type: "unit", value: m, base: "L" },
-    "\\mu": mu,
     "\\mug": { type: "unit", value: mu, base: "g" },
     "\\mus": { type: "unit", value: mu, base: "s" },
     "\\mum": { type: "unit", value: mu, base: "m" },
@@ -77,7 +76,6 @@ var ChemCore = (function () {
     "\\degree K": { type: "unit", value: u, base: "\\degree K" },
     "\\degree C": { type: "unit", value: u, base: "\\degree C" },
     "\\degree F": { type: "unit", value: u, base: "\\degree F" },
-    "\\pi": Math.PI,
     "aq": u, // only so it will be recognized as a single identifier
     "Ac": {"name": "Actinium", "num": "89", "mass": "227"},
     "Al": {"name": "Aluminum", "num": "13", "mass": "26.9815385"},
@@ -189,6 +187,29 @@ var ChemCore = (function () {
     "Y": {"name": "Yttrium", "num": "39", "mass": "88.90584"},
     "Zn": {"name": "Zinc", "num": "30", "mass": "65.38"},
     "Zr": {"name": "Zirconium", "num": "40", "mass": "91.224"},
+    "\\alpha": { type: "var" },
+    "\\beta": { type: "var" },
+    "\\gamma": { type: "var" },
+    "\\delta": { type: "var" },
+    "\\epsilon": { type: "var" },
+    "\\zeta": { type: "var" },
+    "\\eta": { type: "var" },
+    "\\theta": { type: "var" },
+    "\\iota": { type: "var" },
+    "\\kappa": { type: "var" },
+    "\\lambda": { type: "var" },
+    "\\mu": { type: "const", value: mu },
+    "\\nu": { type: "var" },
+    "\\xi": { type: "var" },
+    "\\pi": { type: "const", value: Math.PI },
+    "\\rho": { type: "var" },
+    "\\sigma": { type: "var" },
+    "\\tau": { type: "var" },
+    "\\upsilon": { type: "var" },
+    "\\phi": { type: "var" },
+    "\\chi": { type: "var" },
+    "\\psi": { type: "var" },
+    "\\omega": { type: "var" }
   };
 
   function evaluate(spec, solution) {
@@ -310,12 +331,20 @@ var ChemCore = (function () {
     validateOptions(options);
     Model.pushEnv(env);
     var valueNode = value != undefined ? Model.create(value, "spec") : undefined;
+    if (valueNode) {
+      valueNode.env = env;   // Save environment for later analysis.
+    }
     Model.popEnv();
     var evaluate = function evaluate(solution) {
-      Model.pushEnv(env);
       Assert.setLocation("user");
       assert(solution != undefined, message(4002));
+      Model.pushEnv(env);
       var solutionNode = Model.create(solution, "user");
+      if (!outerResult.model) {
+        // Patch the closed value if it isn't already set.
+        solutionNode.env = env;
+        outerResult.model = solutionNode;
+      }
       Assert.setLocation("spec");
       var result;
       switch (method) {
@@ -327,9 +356,27 @@ var ChemCore = (function () {
         assert(value != undefined, message(4003));
         result = valueNode.equivLiteral(solutionNode);
         break;
+      case "equivSyntax":
+        assert(value != undefined, message(4003));
+        if (!(valueNode instanceof Array)) {
+          valueNode = [valueNode];
+        }
+        result = some(valueNode, function (n) {
+          return n.equivSyntax(solutionNode);
+        });
+        break;
       case "equivSymbolic":
         assert(value != undefined, message(4003));
         result = valueNode.equivSymbolic(solutionNode);
+        break;
+      case "isFactorised":
+        result = solutionNode.isFactorised();
+        break;
+      case "isSimplified":
+        result = solutionNode.isSimplified();
+        break;
+      case "isExpanded":
+        result = solutionNode.isExpanded();
         break;
       case "isUnit":
         result = valueNode.isUnit(solutionNode);
@@ -348,17 +395,18 @@ var ChemCore = (function () {
       Model.popEnv();
       return result;
     }
-    return {
+    var outerResult = {
       evaluate: evaluate,
-      evaluateVerbose: evaluateVerbose,
+      model: valueNode
     };
+    return outerResult;
   }
 
   // Exports
   return {
     "evaluate": evaluate,
     "evaluateVerbose": evaluateVerbose,
-    "makeEvaluator": makeEvaluator,
+    "makeEvaluator": makeEvaluator
   };
 
 })();
