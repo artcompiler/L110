@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - bc66c41
+ * Mathcore unversioned - dd414c6
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -5719,35 +5719,42 @@ var BigDecimal = function(MathContext) {
                     node.args[i + 1] = n0
                   }
                 }else {
-                  if(n0.op !== n1.op) {
-                    if(hashCode(n0.op) < hashCode(n1.op)) {
+                  if(n0.op === Model.POW && (n1.op === Model.POW && v0.length === 0)) {
+                    if(mathValue(n0.args[0]) < mathValue(n1.args[0])) {
                       node.args[i] = n1;
                       node.args[i + 1] = n0
                     }
                   }else {
-                    if(v0.length > 0) {
-                      if((s0 = v0.join(",")) !== (s1 = v1.join(","))) {
-                        if(s0 < s1) {
-                          node.args[i] = n1;
-                          node.args[i + 1] = n0
-                        }
-                      }else {
-                        if((c0 = isPolynomial(n0)) && ((c1 = isPolynomial(n1)) && (s0 = c0.join(",")) !== (s1 = c1.join(",")))) {
+                    if(n0.op !== n1.op) {
+                      if(hashCode(n0.op) < hashCode(n1.op)) {
+                        node.args[i] = n1;
+                        node.args[i + 1] = n0
+                      }
+                    }else {
+                      if(v0.length > 0) {
+                        if((s0 = v0.join(",")) !== (s1 = v1.join(","))) {
                           if(s0 < s1) {
                             node.args[i] = n1;
                             node.args[i + 1] = n0
                           }
                         }else {
-                          if(isLessThan(constantPart(n0), constantPart(n1))) {
-                            node.args[i] = n1;
-                            node.args[i + 1] = n0
+                          if((c0 = isPolynomial(n0)) && ((c1 = isPolynomial(n1)) && (s0 = c0.join(",")) !== (s1 = c1.join(",")))) {
+                            if(s0 < s1) {
+                              node.args[i] = n1;
+                              node.args[i + 1] = n0
+                            }
+                          }else {
+                            if(isLessThan(constantPart(n0), constantPart(n1))) {
+                              node.args[i] = n1;
+                              node.args[i + 1] = n0
+                            }
                           }
                         }
-                      }
-                    }else {
-                      if(isLessThan(leadingCoeff(n0), leadingCoeff(n1))) {
-                        node.args[i] = n1;
-                        node.args[i + 1] = n0
+                      }else {
+                        if(isLessThan(leadingCoeff(n0), leadingCoeff(n1))) {
+                          node.args[i] = n1;
+                          node.args[i + 1] = n0
+                        }
                       }
                     }
                   }

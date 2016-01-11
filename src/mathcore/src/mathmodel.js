@@ -1703,8 +1703,16 @@
                   node.args[i] = n1;
                   node.args[i + 1] = n0;
                 }
-              } else if(v0.length !== v1.length) {
+              } else if (v0.length !== v1.length) {
                 if (v0.length < v1.length) {
+                  node.args[i] = n1;
+                  node.args[i + 1] = n0;
+                }
+              } else if (n0.op === Model.POW && n1.op === Model.POW &&
+                         v0.length === 0) {
+                // We have exponential exprs with the same exponent and no
+                // variables so compare constant operands.
+                if (mathValue(n0.args[0]) < mathValue(n1.args[0])) {
                   node.args[i] = n1;
                   node.args[i + 1] = n0;
                 }

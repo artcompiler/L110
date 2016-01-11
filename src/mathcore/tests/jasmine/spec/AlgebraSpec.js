@@ -265,6 +265,8 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["(i)(i)(\\sqrt{2})", "(i)(\\sqrt{2})(i)"],
+          ["(i)(i)(\\sqrt{x})", "(i)(\\sqrt{x})(i)"],
           ["\\cos^2(3x)-\\sin^2(3x)=\\cos2(3x)", "\\cos^2(3x)-\\sin^2(3x)-\\cos2(3x)=0"],
           ["\\frac{y-6}{4+r}", "\\frac{y-6}{4+r}"],
           ["\\frac{y-6}{4+r}", "\\frac{y-2*3}{4+r}"],
