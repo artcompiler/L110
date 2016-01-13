@@ -258,6 +258,25 @@ define(["mathcore"], function (MathCore) {
                 method: "equivSymbolic",
                 value: v[0],
                 options: {
+                  decimalPlaces: 0,
+                }
+              }, v[1])).toBe(true);
+            });
+          });
+        }
+        run([
+          ["50000/(150952/100000)", "33123"],
+          ["x=50000/1.50952", "x=33123"]
+        ]);
+      });
+      describe("equivSymbolic", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivSymbolic",
+                value: v[0],
+                options: {
                   strict: true
                 }
               }, v[1])).toBe(true);

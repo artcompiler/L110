@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - dd414c6
+ * Mathcore unversioned - e414d2e
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -4265,7 +4265,7 @@ var BigDecimal = function(MathContext) {
     return binaryNode(Model.MUL, args, flatten)
   }
   function fractionNode(n, d) {
-    return binaryNode(Model.MUL, [n, binaryNode(Model.POW, [d, nodeMinusOne])])
+    return multiplyNode([n, binaryNode(Model.POW, [d, nodeMinusOne])], true)
   }
   function unaryNode(op, args) {
     assert(args.length === 1, "Wrong number of arguments for unary node");
@@ -7219,9 +7219,9 @@ var BigDecimal = function(MathContext) {
           }else {
             args[0] = nodeZero
           }
-          var c;
-          if((node.op === Model.EQL || node.op === Model.APPROX) && sign(args[0]) < 0) {
-            args[0] = negate(args[0])
+          var c, cc;
+          if((node.op === Model.EQL || node.op === Model.APPROX) && ((cc = isPolynomial(args[0])) && cc[cc.length - 1] < 0 || !cc && isNeg(leadingCoeff(args[0])))) {
+            args[0] = expand(negate(args[0]))
           }
         }
         return newNode(node.op, args)
@@ -8092,6 +8092,14 @@ var BigDecimal = function(MathContext) {
         var mv;
         if(mv = mathValue(node, true)) {
           return numberNode(mv, true)
+        }
+        var lc, args = [];
+        if(isPolynomial(node) && !isOne(abs(leadingCoeff(node)))) {
+          lc = leadingCoeff(node);
+          forEach(node.args, function(n) {
+            args.push(fractionNode(n, lc))
+          });
+          node = binaryNode(Model.ADD, args)
         }
         var args = [];
         var mv2 = bigZero;
