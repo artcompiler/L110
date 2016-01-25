@@ -397,6 +397,7 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["1-1", "1+1"],
           ["x-y", "x+y"],
           ["x+y", "x-y"],
           [["\\format{\\number{3}}"], "2.333"],
@@ -490,6 +491,8 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["1-1", "1+-1"],
+          ["1-1", "1+(-1)"],
           ["\\format{\\mixedFraction}", "1 \\frac{2.0}{3.0}"],
           ["\\format{\\mixedFraction}", "1 \\frac{1/2}{3/4}"],
           ["\\format{\\simpleFraction}", "\\frac{2.0}{3.0}"],

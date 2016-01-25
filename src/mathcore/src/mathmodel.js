@@ -191,7 +191,12 @@
       return -n;
     } else if (n.op === Model.MUL) {
       var args = n.args.slice(0); // copy
-      return multiplyNode([negate(args.shift())].concat(args));
+      if (isMinusOne(n.args[0])) {
+        args.shift();
+        return multiplyNode(args);
+      } else {
+        return multiplyNode([negate(args.shift())].concat(args));
+      }
     } else if (n.op === Model.NUM) {
       if (n.args[0] === "1") {
         return nodeMinusOne;
@@ -467,6 +472,7 @@
       case Model.UNDERSET:
       case Model.NONE:
       case Model.DEGREE:
+      case Model.DOT:
         node = visit.unary(node);
         break;
       case Model.COMMA:
@@ -1251,8 +1257,7 @@
                 checkNumberFormat(ref.args[0], node.args[0])) {
               return normalNumber;
             }
-            // Strip minus
-            node = arg0;
+            node = negate(arg0);
             break;
           default:
             node = unaryNode(node.op, [arg0]);
@@ -1302,6 +1307,7 @@
       if (node.op !== Model.MUL) {
         return node;
       }
+      var changed = false;
       var numers = {};
       var denoms = {};
       forEach(node.args, function(n, i) {
@@ -1310,6 +1316,7 @@
         if (isMinusOne(n)) {
           // Move negatives to denom.
           n = newNode(Model.POW, [nodeMinusOne, nodeMinusOne]);
+          changed = true;
         }
         if (n.op === Model.POW && isMinusOne(n.args[1])) {
           f = n.args[0];
@@ -1338,7 +1345,7 @@
         // One case is a sole synthetic -1 with not other denoms.
         return node;
       }
-      // Now do he canceling.
+      // Now do the canceling.
       var args = [];
       forEach(nKeys, function (k) {
         var nn = numers[k];
@@ -1347,8 +1354,12 @@
           var count = dd.length > nn.length ? nn.length : dd.length;
           numers[k] = nn.slice(count);  // Slice off count items.
           denoms[k] = dd.slice(count);
+          changed = true;
         }
       });
+      if (!changed) {
+        return node;
+      }
       forEach(nKeys, function (k) {
         args = args.concat(numers[k]);  // Save survivors.
       });
@@ -1360,6 +1371,157 @@
       } else {
         return nodeOne;
       }
+    }
+
+    function cancelTerms(node, location) {
+      // Cancel like terms of opposite sign.
+      if (node.op !== Model.ADD) {
+        return node;
+      }
+      var pos = {};
+      var neg = {};
+      forEach(node.args, function(n, i) {
+        var isNegative = false;
+        var f;
+        if (isNeg(constantPart(n))) {
+          isNegative = true;
+          f = negate(n);
+        } else {
+          f = n;
+        }
+        var mv = mathValue(f, true);
+        var key = mv !== null ? String(mv) : "nid$" + ast.intern(f);
+        if (isNegative) {
+          if (!neg[key]) {
+            neg[key] = [];
+          }
+          neg[key].push(n);
+        } else {
+          if (!pos[key]) {
+            pos[key] = [];
+          }
+          pos[key].push(n);
+        }
+      });
+      var pKeys = keys(pos);
+      var nKeys = keys(neg);
+      if (pKeys.length === 0 || nKeys.length === 0 ||
+         nKeys.length === 1 && nKeys[0] === "-1") {
+        // One case is a sole synthetic -1 with not other denoms.
+        return node;
+      }
+      // Now do the canceling.
+      var args = [];
+      var changed = false;
+      forEach(pKeys, function (k) {
+        var nn = pos[k];
+        var dd = neg[k];
+        if (dd) {
+          var count = dd.length > nn.length ? nn.length : dd.length;
+          pos[k] = nn.slice(count);  // Slice off count items.
+          neg[k] = dd.slice(count);
+          changed = true;
+        }
+      });
+      if (!changed) {
+        return node;
+      }
+      forEach(pKeys, function (k) {
+        args = args.concat(pos[k]);  // Save survivors.
+      });
+      forEach(nKeys, function (k) {
+        args = args.concat(neg[k]);
+      });
+      if (args.length) {
+        return binaryNode(Model.ADD, args);
+      } else {
+        return nodeZero;
+      }
+    }
+
+    function cancelEquals(node) {
+      // Cancel like constants on both sides of a comparision.
+      if (!isComparison(node.op) ||
+          node.args.length != 2 ||
+          isZero(node.args[0]) ||
+          isZero(node.args[1])) {
+        return node;
+      }
+      var lnode = node.args[0];
+      var rnode = node.args[1];
+      var largs, rargs;
+      if (lnode.op === Model.MUL) {
+        largs = lnode.args;
+      } else {
+        largs = [lnode];
+      }
+      if (rnode.op === Model.MUL) {
+        rargs = rnode.args;
+      } else {
+        rargs = [rnode];
+      }
+      // We have multiplication on each side.
+      var lhs = {};
+      var rhs = {};
+      forEach(largs, function(n) {
+        var mv = mathValue(n, true);
+        var key = mv !== null ? String(mv) : "lvars";
+        if (!lhs[key]) {
+          lhs[key] = [];
+        }
+        lhs[key].push(n);
+      });
+      forEach(rargs, function(n) {
+        var mv = mathValue(n, true);
+        var key = mv !== null ? String(mv) : "rvars";
+        if (!rhs[key]) {
+          rhs[key] = [];
+        }
+        rhs[key].push(n);
+      });
+      var lKeys = keys(lhs);
+      var rKeys = keys(rhs);
+      // Now do the canceling.
+      var args = [];
+      var changed = false;
+      forEach(lKeys, function (k) {
+        var ll = lhs[k];
+        var rr = rhs[k];
+        if (rr) {
+          var count = rr.length > ll.length ? ll.length : rr.length;
+          lhs[k] = ll.slice(count);  // Slice off count items from each set.
+          rhs[k] = rr.slice(count);
+          changed = true;
+        }
+      });
+      if (!changed) {
+        return node;
+      }
+      var largs = [];
+      var rargs = [];
+      forEach(lKeys, function (k) {
+        largs = largs.concat(lhs[k]);  // Save survivors.
+      });
+      forEach(rKeys, function (k) {
+        rargs = rargs.concat(rhs[k]);
+      });
+      var larg, rarg;
+      if (largs.length === 0) {
+        larg = nodeOne;
+      } else {
+        larg = multiplyNode(largs);
+      }
+      if (rargs.length === 0) {
+        rarg = nodeOne;
+      } else {
+        rarg = multiplyNode(rargs);
+      }
+      var lmv, rmv;
+      if ((lmv = mathValue(larg)) && (rmv = mathValue(rarg)) &&
+          lmv.compareTo(rmv) === 0) {
+        larg = rarg = nodeZero;
+      }
+      return binaryNode(node.op, [larg, rarg]);
     }
 
     // normalize() replaces subtraction with addition and division with
@@ -1541,6 +1703,8 @@
             node.args[1] = t;
           }
           node = sort(node);   // sort so that the lnodes after reconstruction compare
+          // Doesn't seem to help, yet.
+          // node = cancelEquals(node);
           // If the rhs is not already normalized to 0, then normalize it now.
           if (node.op !== Model.COLON && !isZero(mathValue(node.args[1], true))) {
             // a=b -> a-b=0
@@ -2619,6 +2783,7 @@
           if (node.op === Model.PM) {
             return node;
           }
+          node = cancelTerms(node);
           if (!env || !env.dontGroup) {
             node = groupLikes(node);
           }
@@ -3364,8 +3529,8 @@
             var c, cc;
             if ((node.op === Model.EQL || node.op === Model.APPROX) &&
                 ((cc = isPolynomial(args[0])) && cc[cc.length-1] < 0 ||
-                !cc && isNeg(leadingCoeff(args[0])))) {
-              args[0] = expand(negate(args[0]));
+                !cc && sign(args[0]) < 0)) {
+              args[0] = simplify(expand(negate(args[0])));
             }
           }
           return newNode(node.op, args);
@@ -3878,10 +4043,7 @@
             // Don't flatten matrix nodes.
             return node;
           }
-          if (node.op === Model.MATRIX) {
-            // Don't flatten matrix nodes.
-            return node;
-          }
+          node = cancelTerms(node, "expand");
           return node;
           function unfold(lnode, rnode) {
             if (lnode.op === Model.MATRIX || rnode.op === Model.MATRIX) {
@@ -4230,7 +4392,8 @@
             } else {
               var ff = [];
               var e = mathValue(node.args[1]);
-              if (e !== null && isInteger(e)) {
+              var ea = Math.abs(toNumber(e));
+              if (e !== null && isInteger(e) && ea < 5) {
                 for (var i = toNumber(e); i > 0; i--) {
                   ff.push(node.args[0]);
                 }

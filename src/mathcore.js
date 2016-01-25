@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - e414d2e
+ * Mathcore unversioned - 2fb08c0
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -523,7 +523,7 @@ var Model = function() {
     return render(node)
   };
   var OpStr = {ADD:"+", SUB:"-", MUL:"times", DIV:"div", FRAC:"frac", EQL:"=", ATAN2:"atan2", SQRT:"sqrt", VEC:"vec", PM:"pm", SIN:"sin", COS:"cos", TAN:"tan", SEC:"sec", COT:"cot", CSC:"csc", ARCSIN:"arcsin", ARCCOS:"arccos", ARCTAN:"arctan", LOG:"log", LN:"ln", LG:"lg", VAR:"var", NUM:"num", CST:"cst", COMMA:",", POW:"^", SUBSCRIPT:"_", ABS:"abs", PAREN:"()", HIGHLIGHT:"hi", LT:"lt", LE:"le", GT:"gt", GE:"ge", NE:"ne", APPROX:"approx", INTERVAL:"interval", LIST:"list", EXISTS:"exists", IN:"in", 
-  FORALL:"forall", LIM:"lim", EXP:"exp", TO:"to", SUM:"sum", INT:"int", PROD:"prod", PERCENT:"%", M:"M", RIGHTARROW:"->", FACT:"fact", BINOM:"binom", ROW:"row", COL:"col", COLON:"colon", MATRIX:"matrix", FORMAT:"format", OVERSET:"overset", UNDERSET:"underset", OVERLINE:"overline", DEGREE:"degree", BACKSLASH:"backslash", MATHBF:"mathbf", NONE:"none"};
+  FORALL:"forall", LIM:"lim", EXP:"exp", TO:"to", SUM:"sum", INT:"int", PROD:"prod", PERCENT:"%", M:"M", RIGHTARROW:"->", FACT:"fact", BINOM:"binom", ROW:"row", COL:"col", COLON:"colon", MATRIX:"matrix", FORMAT:"format", OVERSET:"overset", UNDERSET:"underset", OVERLINE:"overline", DEGREE:"degree", BACKSLASH:"backslash", MATHBF:"mathbf", DOT:"dot", NONE:"none"};
   forEach(keys(OpStr), function(v, i) {
     Model[v] = OpStr[v]
   });
@@ -774,6 +774,7 @@ var Model = function() {
     var TK_NE = 301;
     var TK_APPROX = 302;
     var TK_ABS = 303;
+    var TK_DOT = 304;
     var T0 = TK_NONE, T1 = TK_NONE;
     var tokenToOperator = {};
     tokenToOperator[TK_SLASH] = OpStr.FRAC;
@@ -830,6 +831,7 @@ var Model = function() {
     tokenToOperator[TK_UNDERSET] = OpStr.UNDERSET;
     tokenToOperator[TK_BACKSLASH] = OpStr.BACKSLASH;
     tokenToOperator[TK_MATHBF] = OpStr.MATHBF;
+    tokenToOperator[TK_DOT] = OpStr.DOT;
     function newNode(op, args) {
       return{op:op, args:args}
     }
@@ -1060,7 +1062,7 @@ var Model = function() {
           break;
         case TK_ABS:
           next();
-          var e = unaryNode(Model.ABS, [additiveExpr()]);
+          var e = unaryNode(Model.ABS, [braceExpr()]);
           break;
         case TK_FRAC:
           next();
@@ -1208,6 +1210,9 @@ var Model = function() {
         case TK_OVERLINE:
           next();
           return newNode(Model.OVERLINE, [braceExpr()]);
+        case TK_DOT:
+          next();
+          return newNode(Model.DOT, [braceExpr()]);
         case TK_OVERSET:
         ;
         case TK_UNDERSET:
@@ -1499,6 +1504,7 @@ var Model = function() {
     }
     function multiplicativeExpr() {
       var t, expr, explicitOperator = false, prevExplicitOperator, isFraction, args = [];
+      var n0;
       expr = fractionExpr();
       if(expr.op === Model.MUL && !expr.isBinomial) {
         args = expr.args
@@ -1536,18 +1542,9 @@ var Model = function() {
               expr = binaryNode(Model.ADD, [t, expr]);
               expr.isMixedFraction = true
             }else {
-              if(!explicitOperator && (args.length > 0 && isRepeatingDecimal([args[args.length - 1], expr]))) {
-                var n0 = args.pop();
-                var n1 = expr.args[0];
-                n1 = numberNode("." + n1.args[0]);
-                n1.isRepeating = true;
-                if(indexOf(n0.args[0], ".") >= 0) {
-                  var decimalPlaces = n0.args[0].length - indexOf(n0.args[0], ".") - 1;
-                  n1 = multiplyNode([n1, binaryNode(Model.POW, [numberNode("10"), numberNode("-" + decimalPlaces)])])
-                }
-                expr = binaryNode(Model.ADD, [n0, n1]);
-                expr.numberFormat = "decimal";
-                expr.isRepeating = true
+              if(!explicitOperator && (args.length > 0 && (n0 = isRepeatingDecimal([args[args.length - 1], expr])))) {
+                args.pop();
+                expr = n0
               }else {
                 if(t === TK_MUL && (args.length > 0 && (explicitOperator && isScientific([args[args.length - 1], expr])))) {
                   t = args.pop();
@@ -1588,11 +1585,78 @@ var Model = function() {
       }
       return false
     }
-    function isRepeatingDecimal(args) {
-      if(!args[0].lbrk && (!args[1].lbrk && (args[0].op === Model.NUM && (args[0].numberFormat === "decimal" && args[1].op === Model.OVERLINE)))) {
+    function isInteger(node) {
+      var mv;
+      if(!node) {
+        return false
+      }
+      if(node.op === Model.NUM && ((mv = new BigDecimal(node.args[0])) && isInteger(mv))) {
         return true
+      }else {
+        if(node instanceof BigDecimal) {
+          return node.remainder(bigOne).compareTo(bigZero) === 0
+        }
       }
       return false
+    }
+    var bigZero = new BigDecimal("0");
+    var bigOne = new BigDecimal("1");
+    function isRepeatingDecimal(args) {
+      var expr, n0, n1;
+      if(args[0].isRepeating) {
+        var n = args[0].op === Model.ADD && args[0].args[1].op === Model.NUM ? args[0].args[1] : args[0];
+        assert(n.op === Model.NUM);
+        var arg1;
+        if(args[1].op === Model.DOT) {
+          assert(args[1].args[0].op === Model.NUM);
+          arg1 = numberNode(n.args[0] + args[1].args[0].args[0])
+        }else {
+          assert(args[1].op === Model.NUM);
+          arg1 = numberNode(n.args[0] + args[1].args[0])
+        }
+        arg1.isRepeating = true;
+        if(args[0].op === Model.ADD) {
+          args[0].args[1] = arg1;
+          expr = args[0]
+        }else {
+          expr = arg1
+        }
+      }else {
+        if(!args[0].lbrk && (args[0].op === Model.NUM && args[0].numberFormat === "decimal")) {
+          if(args[1].lbrk === 40 && isInteger(args[1])) {
+            n0 = args[0];
+            n1 = args[1]
+          }else {
+            if(!args[1].lbrk && args[1].op === Model.OVERLINE) {
+              n0 = args[0];
+              n1 = args[1].args[0]
+            }else {
+              if(!args[1].lbrk && args[1].op === Model.DOT) {
+                n0 = args[0];
+                n1 = args[1].args[0]
+              }else {
+                return null
+              }
+            }
+          }
+          n1 = numberNode("." + n1.args[0]);
+          n1.isRepeating = true;
+          if(indexOf(n0.args[0], ".") >= 0) {
+            var decimalPlaces = n0.args[0].length - indexOf(n0.args[0], ".") - 1;
+            n1 = multiplyNode([n1, binaryNode(Model.POW, [numberNode("10"), numberNode("-" + decimalPlaces)])])
+          }
+          if(n0.op === Model.NUM && +n0.args[0] === 0) {
+            expr = n1
+          }else {
+            expr = binaryNode(Model.ADD, [n0, n1])
+          }
+          expr.numberFormat = "decimal";
+          expr.isRepeating = true
+        }else {
+          expr = null
+        }
+      }
+      return expr
     }
     function isScientific(args) {
       if(args.length === 1) {
@@ -1681,7 +1745,7 @@ var Model = function() {
         var expr2 = additiveExpr();
         expr = newNode(tokenToOperator[t], [expr, expr2]);
         args.push(expr);
-        expr = expr2
+        expr = Model.create(expr2)
       }
       if(args.length === 0) {
         return expr
@@ -1705,7 +1769,7 @@ var Model = function() {
         var expr2 = additiveExpr();
         expr = newNode(tokenToOperator[t], [expr, expr2]);
         args.push(expr);
-        expr = expr2
+        expr = Model.create(expr2)
       }
       if(args.length === 0) {
         return expr
@@ -1760,7 +1824,7 @@ var Model = function() {
       var lexeme = "";
       var lexemeToToken = {"\\cdot":TK_MUL, "\\times":TK_MUL, "\\div":TK_DIV, "\\dfrac":TK_FRAC, "\\frac":TK_FRAC, "\\sqrt":TK_SQRT, "\\vec":TK_VEC, "\\pm":TK_PM, "\\sin":TK_SIN, "\\cos":TK_COS, "\\tan":TK_TAN, "\\sec":TK_SEC, "\\cot":TK_COT, "\\csc":TK_CSC, "\\arcsin":TK_ARCSIN, "\\arccos":TK_ARCCOS, "\\arctan":TK_ARCTAN, "\\ln":TK_LN, "\\lg":TK_LG, "\\log":TK_LOG, "\\left":null, "\\right":null, "\\big":null, "\\Big":null, "\\bigg":null, "\\Bigg":null, "\\ ":null, "\\quad":null, "\\qquad":null, 
       "\\text":TK_TEXT, "\\textrm":TK_TEXT, "\\textit":TK_TEXT, "\\textbf":TK_TEXT, "\\lt":TK_LT, "\\le":TK_LE, "\\gt":TK_GT, "\\ge":TK_GE, "\\ne":TK_NE, "\\approx":TK_APPROX, "\\exists":TK_EXISTS, "\\in":TK_IN, "\\forall":TK_FORALL, "\\lim":TK_LIM, "\\exp":TK_EXP, "\\to":TK_TO, "\\sum":TK_SUM, "\\int":TK_INT, "\\prod":TK_PROD, "\\%":TK_PERCENT, "\\rightarrow":TK_RIGHTARROW, "\\longrightarrow":TK_RIGHTARROW, "\\binom":TK_BINOM, "\\begin":TK_BEGIN, "\\end":TK_END, "\\colon":TK_COLON, "\\vert":TK_VERTICALBAR, 
-      "\\lvert":TK_VERTICALBAR, "\\rvert":TK_VERTICALBAR, "\\mid":TK_VERTICALBAR, "\\format":TK_FORMAT, "\\overline":TK_OVERLINE, "\\overset":TK_OVERSET, "\\underset":TK_UNDERSET, "\\backslash":TK_BACKSLASH, "\\mathbf":TK_MATHBF, "\\abs":TK_ABS};
+      "\\lvert":TK_VERTICALBAR, "\\rvert":TK_VERTICALBAR, "\\mid":TK_VERTICALBAR, "\\format":TK_FORMAT, "\\overline":TK_OVERLINE, "\\overset":TK_OVERSET, "\\underset":TK_UNDERSET, "\\backslash":TK_BACKSLASH, "\\mathbf":TK_MATHBF, "\\abs":TK_ABS, "\\dot":TK_DOT};
       var identifiers = keys(env);
       function isAlphaCharCode(c) {
         return c >= 65 && c <= 90 || c >= 97 && c <= 122
@@ -1898,7 +1962,7 @@ var Model = function() {
             curIndex++
           }
         }
-        if(lexeme === "." && indexOf(src.substring(curIndex), "overline") === 0) {
+        if(lexeme === "." && (indexOf(src.substring(curIndex), "overline") === 0 || indexOf(src.substring(curIndex), "dot") === 0)) {
           lexeme = "0."
         }
         curIndex--;
@@ -4285,7 +4349,12 @@ var BigDecimal = function(MathContext) {
     }else {
       if(n.op === Model.MUL) {
         var args = n.args.slice(0);
-        return multiplyNode([negate(args.shift())].concat(args))
+        if(isMinusOne(n.args[0])) {
+          args.shift();
+          return multiplyNode(args)
+        }else {
+          return multiplyNode([negate(args.shift())].concat(args))
+        }
       }else {
         if(n.op === Model.NUM) {
           if(n.args[0] === "1") {
@@ -4618,6 +4687,8 @@ var BigDecimal = function(MathContext) {
         case Model.NONE:
         ;
         case Model.DEGREE:
+        ;
+        case Model.DOT:
           node = visit.unary(node);
           break;
         case Model.COMMA:
@@ -5312,7 +5383,7 @@ var BigDecimal = function(MathContext) {
             if(ref && (ref.op === Model.FORMAT && checkNumberFormat(ref.args[0], node.args[0]))) {
               return normalNumber
             }
-            node = arg0;
+            node = negate(arg0);
             break;
           default:
             node = unaryNode(node.op, [arg0]);
@@ -5356,13 +5427,15 @@ var BigDecimal = function(MathContext) {
       if(node.op !== Model.MUL) {
         return node
       }
+      var changed = false;
       var numers = {};
       var denoms = {};
       forEach(node.args, function(n, i) {
         var isDenom = false;
         var f;
         if(isMinusOne(n)) {
-          n = newNode(Model.POW, [nodeMinusOne, nodeMinusOne])
+          n = newNode(Model.POW, [nodeMinusOne, nodeMinusOne]);
+          changed = true
         }
         if(n.op === Model.POW && isMinusOne(n.args[1])) {
           f = n.args[0];
@@ -5396,9 +5469,13 @@ var BigDecimal = function(MathContext) {
         if(dd) {
           var count = dd.length > nn.length ? nn.length : dd.length;
           numers[k] = nn.slice(count);
-          denoms[k] = dd.slice(count)
+          denoms[k] = dd.slice(count);
+          changed = true
         }
       });
+      if(!changed) {
+        return node
+      }
       forEach(nKeys, function(k) {
         args = args.concat(numers[k])
       });
@@ -5410,6 +5487,144 @@ var BigDecimal = function(MathContext) {
       }else {
         return nodeOne
       }
+    }
+    function cancelTerms(node, location) {
+      if(node.op !== Model.ADD) {
+        return node
+      }
+      var pos = {};
+      var neg = {};
+      forEach(node.args, function(n, i) {
+        var isNegative = false;
+        var f;
+        if(isNeg(constantPart(n))) {
+          isNegative = true;
+          f = negate(n)
+        }else {
+          f = n
+        }
+        var mv = mathValue(f, true);
+        var key = mv !== null ? String(mv) : "nid$" + ast.intern(f);
+        if(isNegative) {
+          if(!neg[key]) {
+            neg[key] = []
+          }
+          neg[key].push(n)
+        }else {
+          if(!pos[key]) {
+            pos[key] = []
+          }
+          pos[key].push(n)
+        }
+      });
+      var pKeys = keys(pos);
+      var nKeys = keys(neg);
+      if(pKeys.length === 0 || (nKeys.length === 0 || nKeys.length === 1 && nKeys[0] === "-1")) {
+        return node
+      }
+      var args = [];
+      var changed = false;
+      forEach(pKeys, function(k) {
+        var nn = pos[k];
+        var dd = neg[k];
+        if(dd) {
+          var count = dd.length > nn.length ? nn.length : dd.length;
+          pos[k] = nn.slice(count);
+          neg[k] = dd.slice(count);
+          changed = true
+        }
+      });
+      if(!changed) {
+        return node
+      }
+      forEach(pKeys, function(k) {
+        args = args.concat(pos[k])
+      });
+      forEach(nKeys, function(k) {
+        args = args.concat(neg[k])
+      });
+      if(args.length) {
+        return binaryNode(Model.ADD, args)
+      }else {
+        return nodeZero
+      }
+    }
+    function cancelEquals(node) {
+      if(!isComparison(node.op) || (node.args.length != 2 || (isZero(node.args[0]) || isZero(node.args[1])))) {
+        return node
+      }
+      var lnode = node.args[0];
+      var rnode = node.args[1];
+      var largs, rargs;
+      if(lnode.op === Model.MUL) {
+        largs = lnode.args
+      }else {
+        largs = [lnode]
+      }
+      if(rnode.op === Model.MUL) {
+        rargs = rnode.args
+      }else {
+        rargs = [rnode]
+      }
+      var lhs = {};
+      var rhs = {};
+      forEach(largs, function(n) {
+        var mv = mathValue(n, true);
+        var key = mv !== null ? String(mv) : "lvars";
+        if(!lhs[key]) {
+          lhs[key] = []
+        }
+        lhs[key].push(n)
+      });
+      forEach(rargs, function(n) {
+        var mv = mathValue(n, true);
+        var key = mv !== null ? String(mv) : "rvars";
+        if(!rhs[key]) {
+          rhs[key] = []
+        }
+        rhs[key].push(n)
+      });
+      var lKeys = keys(lhs);
+      var rKeys = keys(rhs);
+      var args = [];
+      var changed = false;
+      forEach(lKeys, function(k) {
+        var ll = lhs[k];
+        var rr = rhs[k];
+        if(rr) {
+          var count = rr.length > ll.length ? ll.length : rr.length;
+          lhs[k] = ll.slice(count);
+          rhs[k] = rr.slice(count);
+          changed = true
+        }
+      });
+      if(!changed) {
+        return node
+      }
+      var largs = [];
+      var rargs = [];
+      forEach(lKeys, function(k) {
+        largs = largs.concat(lhs[k])
+      });
+      forEach(rKeys, function(k) {
+        rargs = rargs.concat(rhs[k])
+      });
+      var larg, rarg;
+      if(largs.length === 0) {
+        larg = nodeOne
+      }else {
+        larg = multiplyNode(largs)
+      }
+      if(rargs.length === 0) {
+        rarg = nodeOne
+      }else {
+        rarg = multiplyNode(rargs)
+      }
+      var lmv, rmv;
+      if((lmv = mathValue(larg)) && ((rmv = mathValue(rarg)) && lmv.compareTo(rmv) === 0)) {
+        larg = rarg = nodeZero
+      }
+      return binaryNode(node.op, [larg, rarg])
     }
     var normalizedNodes = [];
     function normalize(root) {
@@ -6530,6 +6745,7 @@ var BigDecimal = function(MathContext) {
         if(node.op === Model.PM) {
           return node
         }
+        node = cancelTerms(node);
         if(!env || !env.dontGroup) {
           node = groupLikes(node)
         }
@@ -7220,8 +7436,8 @@ var BigDecimal = function(MathContext) {
             args[0] = nodeZero
           }
           var c, cc;
-          if((node.op === Model.EQL || node.op === Model.APPROX) && ((cc = isPolynomial(args[0])) && cc[cc.length - 1] < 0 || !cc && isNeg(leadingCoeff(args[0])))) {
-            args[0] = expand(negate(args[0]))
+          if((node.op === Model.EQL || node.op === Model.APPROX) && ((cc = isPolynomial(args[0])) && cc[cc.length - 1] < 0 || !cc && sign(args[0]) < 0)) {
+            args[0] = simplify(expand(negate(args[0])))
           }
         }
         return newNode(node.op, args)
@@ -7672,9 +7888,7 @@ var BigDecimal = function(MathContext) {
         if(node.op === Model.MATRIX) {
           return node
         }
-        if(node.op === Model.MATRIX) {
-          return node
-        }
+        node = cancelTerms(node, "expand");
         return node;
         function unfold(lnode, rnode) {
           if(lnode.op === Model.MATRIX || rnode.op === Model.MATRIX) {
@@ -7953,7 +8167,8 @@ var BigDecimal = function(MathContext) {
           }else {
             var ff = [];
             var e = mathValue(node.args[1]);
-            if(e !== null && isInteger(e)) {
+            var ea = Math.abs(toNumber(e));
+            if(e !== null && (isInteger(e) && ea < 5)) {
               for(var i = toNumber(e);i > 0;i--) {
                 ff.push(node.args[0])
               }

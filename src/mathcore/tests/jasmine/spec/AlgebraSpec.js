@@ -284,6 +284,8 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["(1+\\frac{i}{50})^{52}", "(1+\\frac{i}{50})^{52}"],
+          ["(1+\\frac{i}{50})^{52}-1", "(1+\\frac{i}{50})^{52}-1"],
           ["(i)(i)(\\sqrt{2})", "(i)(\\sqrt{2})(i)"],
           ["(i)(i)(\\sqrt{x})", "(i)(\\sqrt{x})(i)"],
           ["\\cos^2(3x)-\\sin^2(3x)=\\cos2(3x)", "\\cos^2(3x)-\\sin^2(3x)-\\cos2(3x)=0"],
@@ -605,6 +607,8 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["\\abs{x-7}", "\\abs{x}-7"],
+          ["|x-7|", "|x|-7"],
           ["-\\frac{\\pi}{6}+2n\\pi", "\\frac{\\pi}{6}+2n\\pi"],
           ["x=y", "Ax=Ay"],
           ["Ax=Ay", "\$x=\$y"],
@@ -1572,6 +1576,7 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["OP=OA+AP", "OP=OA+AP"],
           ["1/2=1/2", "2/4=2/4"],
           ["x>y", "\\frac{2x}{2}>y"],
         ]);
