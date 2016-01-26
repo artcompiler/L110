@@ -34,4 +34,6 @@ exports.globalLexicon = {
     "field" : { "tk": 0x01, "name": "FIELD", "cls": "function", "length": 2 },
     "setDecimalSeparator" : { "tk": 0x01, "name": "SET-DECIMAL-SEPARATOR", "cls": "function", "length": 2 },
     "setThousandsSeparator" : { "tk": 0x01, "name": "SET-THOUSANDS-SEPARATOR", "cls": "function", "length": 2 },
+    "m2e" : { "tk": 0x01, "name": "M2E", "cls": "function", "length": 1 , "arity": 1 },
+    "e2m" : { "tk": 0x01, "name": "E2M", "cls": "function", "length": 1 , "arity": 1 },
 }

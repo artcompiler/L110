@@ -893,6 +893,81 @@
       });
     }
 
+    function m2e(root) {
+      // Translate math from LaTeX to English.
+      if (!root || !root.args) {
+        assert(false, "Should not get here. Illformed node.");
+        return 0;
+      }
+      return visit(root, {
+        name: "m2e",
+        exponential: function(node) {
+          var args = [];
+          forEach(node.args, function (n) {
+            args = args.concat(m2e(n));
+          });
+          var str = "exponential " + args;
+          return str;
+        },
+        multiplicative: function(node) {
+          var args = [];
+          forEach(node.args, function (n) {
+            args = args.concat(m2e(n));
+          });
+          var str = args[0] + " times " + args[1];
+          return str;
+        },
+        additive: function(node) {
+          var args = [];
+          forEach(node.args, function (n) {
+            args = args.concat(m2e(n));
+          });
+          var str = "additive " + args;
+          return str;
+        },
+        unary: function(node) {
+          var args = [];
+          forEach(node.args, function (n) {
+            args = args.concat(m2e(n));
+          });
+          var str = "unary " + args;
+          return str;
+        },
+        numeric: function(node) {
+          var args = [];
+          forEach(node.args, function (n) {
+            args = args.concat(n);
+          });
+          var str = args;
+          return str;
+        },
+        variable: function(node) {
+          var args = [];
+          forEach(node.args, function (n) {
+            args = args.concat(n);
+          });
+          var str = args;
+          return str;
+        },
+        comma: function(node) {
+          var args = [];
+          forEach(node.args, function (n) {
+            args = args.concat(m2e(n));
+          });
+          var str = "list " + args;
+          return str;
+        },
+        equals: function(node) {
+          var args = [];
+          forEach(node.args, function (n) {
+            args = args.concat(m2e(n));
+          });
+          var str = "equals " + args;
+          return str;
+        }
+      });
+    }
+
     // Compute the variable part of the expression. The result of 'coeff' and
     // 'variablePart' are complements. Their product are equivSymbolic with the
     // original expression.
@@ -4895,6 +4970,7 @@
     this.hasLikeFactors = hasLikeFactors;
     this.factorGroupingKey = factorGroupingKey;
     this.hint = hint;
+    this.m2e = m2e;
   }
 
   var visitor = new Visitor(new Ast);
@@ -4916,6 +4992,11 @@
   function hint(node) {
     var visitor = new Visitor(new Ast);
     return visitor.hint(node);
+  }
+
+  function m2e(node) {
+    var visitor = new Visitor(new Ast);
+    return visitor.m2e(node);
   }
 
   function variablePart(node) {
@@ -5713,6 +5794,10 @@
 
   Model.fn.hint = function (n1) {
     return hint(n1);
+  }
+
+  Model.fn.m2e = function (n1) {
+    return m2e(n1);
   }
 
   var option = Model.option = function option(p, v) {

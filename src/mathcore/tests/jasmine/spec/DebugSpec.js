@@ -119,15 +119,14 @@ define(["mathcore"], function (MathCore) {
         function run(tests) {
           forEach(tests, function (v, i) {
             it(v[0] + " | " + v[1], function() {
-              expect(MathCore.evaluate({
-                method: "equivSymbolic",
-                value: v[0]
-              }, v[1])).toBe(true);
+              expect(MathCore.evaluateVerbose({
+                method: "validSyntax",
+              }, v[0]).model.m2e()).toEqual(v[1]);
             });
           });
         }
         run([
-          ["P=x^3+42", "\\frac{P}{x-4}=\\frac{x^3+42}{x-4}"]
+          ["x*2", "x times 2"]
         ]);
       });
     });

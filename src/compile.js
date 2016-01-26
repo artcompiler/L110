@@ -41,6 +41,7 @@ var transformer = function() {
     "ALLOW-INTERVAL": allowInterval,
     "IGNORE-TEXT": ignoreText,
     "IGNORE-TRAILING-ZEROS": ignoreTrailingZeros,
+    "M2E": m2e,
   };
   var nodePool;
   function reset() {
@@ -470,6 +471,33 @@ var transformer = function() {
       }
     });
   }
+  function m2e(node, options, resume) {
+    var errs = [];
+    visit(node.elts[0], options, function (err, val) {
+      errs = errs.concat(err);
+      var response = val;
+      if (response) {
+        options.strict = true;
+        var result = MathCore.evaluateVerbose({
+          method: "m2e",
+          options: options,
+        }, response, function (err, val) {
+          delete options.strict;
+          if (err && err.length) {
+            errs = errs.concat(error(err, node.elts[0]));
+          }
+          response = escapeStr(response);
+          console.log("val.model.m2e() " + val.model.m2e()); 
+          resume(errs, {
+            score: val ? (val.result ? 1 : -1) : 0,
+            response: response,
+            objectCode: composeValidation("validSyntax", options),
+            value: val.model.m2e(),
+          });
+        });
+      }
+    });
+  }
   function isUnit(node, options, resume) {
     var errs = [];
     visit(node.elts[1], options, function (err, val) {
@@ -744,6 +772,7 @@ exports.compiler = function () {
           resume(err, val);
         } else {
           renderer.render(val, function (err, val) {
+            console.log("render() val=" + JSON.stringify(val));
             resume(err, val);
           });
         }

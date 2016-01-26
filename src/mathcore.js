@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 2fb08c0
+ * Mathcore unversioned - 4844692
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -5080,6 +5080,69 @@ var BigDecimal = function(MathContext) {
         return hints
       }})
     }
+    function m2e(root) {
+      if(!root || !root.args) {
+        assert(false, "Should not get here. Illformed node.");
+        return 0
+      }
+      return visit(root, {name:"m2e", exponential:function(node) {
+        var args = [];
+        forEach(node.args, function(n) {
+          args = args.concat(m2e(n))
+        });
+        var str = "exponential " + args;
+        return str
+      }, multiplicative:function(node) {
+        var args = [];
+        forEach(node.args, function(n) {
+          args = args.concat(m2e(n))
+        });
+        var str = args[0] + " times " + args[1];
+        return str
+      }, additive:function(node) {
+        var args = [];
+        forEach(node.args, function(n) {
+          args = args.concat(m2e(n))
+        });
+        var str = "additive " + args;
+        return str
+      }, unary:function(node) {
+        var args = [];
+        forEach(node.args, function(n) {
+          args = args.concat(m2e(n))
+        });
+        var str = "unary " + args;
+        return str
+      }, numeric:function(node) {
+        var args = [];
+        forEach(node.args, function(n) {
+          args = args.concat(n)
+        });
+        var str = args;
+        return str
+      }, variable:function(node) {
+        var args = [];
+        forEach(node.args, function(n) {
+          args = args.concat(n)
+        });
+        var str = args;
+        return str
+      }, comma:function(node) {
+        var args = [];
+        forEach(node.args, function(n) {
+          args = args.concat(m2e(n))
+        });
+        var str = "list " + args;
+        return str
+      }, equals:function(node) {
+        var args = [];
+        forEach(node.args, function(n) {
+          args = args.concat(m2e(n))
+        });
+        var str = "equals " + args;
+        return str
+      }})
+    }
     function variablePart(root) {
       var env = Model.env;
       if(!root || !root.args) {
@@ -8608,7 +8671,8 @@ var BigDecimal = function(MathContext) {
     this.scale = scale;
     this.hasLikeFactors = hasLikeFactors;
     this.factorGroupingKey = factorGroupingKey;
-    this.hint = hint
+    this.hint = hint;
+    this.m2e = m2e
   }
   var visitor = new Visitor(new Ast);
   function degree(node, notAbsolute) {
@@ -8626,6 +8690,10 @@ var BigDecimal = function(MathContext) {
   function hint(node) {
     var visitor = new Visitor(new Ast);
     return visitor.hint(node)
+  }
+  function m2e(node) {
+    var visitor = new Visitor(new Ast);
+    return visitor.m2e(node)
   }
   function variablePart(node) {
     var visitor = new Visitor(new Ast);
@@ -9326,6 +9394,9 @@ var BigDecimal = function(MathContext) {
   };
   Model.fn.hint = function(n1) {
     return hint(n1)
+  };
+  Model.fn.m2e = function(n1) {
+    return m2e(n1)
   };
   var option = Model.option = function option(p, v) {
     var options = Model.options;
