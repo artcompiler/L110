@@ -151,7 +151,6 @@ var MathCore = (function () {
           e = x;
         }
       }
-      result = undefined;
       errorCode = parseErrorCode(e.message);
       msg = parseMessage(e.message);
       stack = e.stack;
@@ -308,6 +307,7 @@ var MathCore = (function () {
       case "validSyntax":
         // If we got this far, then value parsed.
         result = true;
+        console.log("valueNode=" + JSON.stringify(valueNode, null, 2));
         break;
       default:
         assert(false, message(3004, [method]));
@@ -319,7 +319,7 @@ var MathCore = (function () {
     }
     var outerResult = {
       evaluate: evaluate,
-      model: valueNode
+      model: valueNode,
     };
     return outerResult;
   }

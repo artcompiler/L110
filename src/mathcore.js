@@ -9504,7 +9504,6 @@ var MathCore = function() {
           e = x
         }
       }
-      result = undefined;
       errorCode = parseErrorCode(e.message);
       msg = parseMessage(e.message);
       stack = e.stack;
@@ -9673,6 +9672,8 @@ var MathCore = function() {
           break;
         case "validSyntax":
           result = true;
+          valueNode = solutionNode;
+          console.log("valueNode=" + JSON.stringify(valueNode, null, 2));
           break;
         default:
           assert(false, message(3004, [method]));

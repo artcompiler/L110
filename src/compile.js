@@ -290,7 +290,6 @@ var transformer = function() {
         errs = errs.concat(err);
         var response = val;
         if (response) {
-          console.log("equivSymbolic() reference=" + reference + " response=" + response);
           options.strict = true;
           MathCore.evaluateVerbose({
             method: "equivSymbolic",
@@ -478,8 +477,8 @@ var transformer = function() {
       var response = val;
       if (response) {
         options.strict = true;
-        var result = MathCore.evaluateVerbose({
-          method: "m2e",
+        MathCore.evaluateVerbose({
+          method: "validSyntax",
           options: options,
         }, response, function (err, val) {
           delete options.strict;
@@ -487,12 +486,10 @@ var transformer = function() {
             errs = errs.concat(error(err, node.elts[0]));
           }
           response = escapeStr(response);
-          console.log("val.model.m2e() " + val.model.m2e()); 
           resume(errs, {
             score: val ? (val.result ? 1 : -1) : 0,
             response: response,
-            objectCode: composeValidation("validSyntax", options),
-            value: val.model.m2e(),
+            objectCode: val ? val.model.m2e() : "error",
           });
         });
       }
@@ -772,7 +769,6 @@ exports.compiler = function () {
           resume(err, val);
         } else {
           renderer.render(val, function (err, val) {
-            console.log("render() val=" + JSON.stringify(val));
             resume(err, val);
           });
         }
