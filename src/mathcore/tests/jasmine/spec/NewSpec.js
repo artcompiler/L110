@@ -136,4 +136,35 @@ var prototypeOfObject = Object.prototype;
 var _toString = function (val) { return prototypeOfObject.toString.apply(val); }; //call.bind(prototypeOfObject.toString);
 
 define(["mathcore"], function (MathCore) {
+  describe("NOT isSimplified inversResult=true", function() {
+    function run(tests) {
+      forEach(tests, function (v, i) {
+        it(v[0], function() {
+          expect(MathCore.evaluate({
+            method: "isSimplified",
+            options: {
+              inverseResult: true
+            }
+          }, v[0])).not.toBe(true);
+        });
+      });
+    };
+    run([
+      ["\\frac{1}{9}=0.\\overline{11}"]
+    ]);
+  });
+  describe("isSimplified", function() {
+    function run(tests) {
+      forEach(tests, function (v, i) {
+        it(v[0], function() {
+          expect(MathCore.evaluate({
+            method: "isSimplified"
+          }, v[0])).toBe(true);
+        });
+      });
+    };
+    run([
+      ["\\frac{1}{9}=0.\\overline{11}"]
+    ]);
+  });
 });

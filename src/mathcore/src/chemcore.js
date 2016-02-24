@@ -16,7 +16,7 @@ var ChemCore = (function () {
   messages[4002] = "No Chem Core solution provided.";
   messages[4003] = "No Chem Core spec value provided.";
   messages[4004] = "Invalid Chem Core spec method '%1'.";
-  messages[4005] = "Operation taking too long.";
+  messages[4005] = "Operation taking more than %1 milliseconds.";
   messages[4006] = "Internal error: %1";
 
   var u = 1;
@@ -216,7 +216,7 @@ var ChemCore = (function () {
     try {
       assert(spec, message(4001, [spec]));
       assert(solution != undefined, message(4002, [solution]));
-      Assert.setCounter(1000000, message(4005));
+      Assert.setTimeout(timeoutDuration, message(4005, [timeoutDuration]));
       var evaluator = makeEvaluator(spec);
       var result = evaluator.evaluate(solution);
     } catch (e) {
@@ -228,7 +228,7 @@ var ChemCore = (function () {
   function evaluateVerbose(spec, solution) {
     try {
       assert(spec != undefined, message(4001, [spec]));
-      Assert.setCounter(1000000, message(4005));
+      Assert.setTimeout(timeoutDuration, message(4005, [timeoutDuration]));
       var evaluator = makeEvaluator(spec);
       var result, errorCode = 0, msg = "Normal completion", stack, location;
       result = evaluator.evaluate(solution);
@@ -272,6 +272,12 @@ var ChemCore = (function () {
       return e;
     }
   }
+
+  var timeoutDuration = 30000; // 30 sec
+  function setTimeoutDuration(duration) {
+    timeoutDuration = duration;
+  }
+
   function validateOption(p, v) {
     switch (p) {
     case "field":
@@ -404,9 +410,10 @@ var ChemCore = (function () {
 
   // Exports
   return {
-    "evaluate": evaluate,
-    "evaluateVerbose": evaluateVerbose,
-    "makeEvaluator": makeEvaluator
+    evaluate: evaluate,
+    evaluateVerbose: evaluateVerbose,
+    makeEvaluator: makeEvaluator,
+    setTimeoutDuration: setTimeoutDuration
   };
 
 })();

@@ -172,6 +172,7 @@ define(["mathcore"], function (MathCore) {
             ["equivValue", ["5x^2+3x+2", "1"], {}, 2005],
             ["equivValue", ["10g", "10"], {}, 2009],
             ["equivValue", ["1000", "10,00"], {allowThousandsSeparator: true}, 1005],
+            ["equivValue", ["9ft + 500m", "9.5km"], {}, 2017],
             ["isFactorised", [undefined, "x^2-25"], {Field: "integer"}, 3006],
             ["isFactorised", [undefined, "x^2-25"], {field: "Integer"}, 3007],
           ];
@@ -322,6 +323,25 @@ define(["mathcore"], function (MathCore) {
           var tests = [
             ["validSyntax", [undefined, "x^23"], ["2016: Exponents should be wrapped in braces."]],
             ["equivValue", ["x=10", "x=10"], ["2005: Non-numeric expressions cannot be compared with equivValue."]],
+          ];
+          run(tests);
+        });
+        describe("various", function() {
+          function run(tests) {
+            forEach(tests, function (v, i) {
+              it(v[0] + " | " + v[1] + " | " + JSON.stringify(v[2]), function() {
+                MathCore.setTimeoutDuration(50);
+                expect(MathCore.evaluateVerbose({
+                  method: v[0],
+                  value: v[1][0],
+                  options: v[2]
+                }, v[1][1]).errorCode).toEqual(v[3]);
+                MathCore.setTimeoutDuration(0);
+              });
+            });
+          }
+          var tests = [
+            ["isSimplified", [undefined, "\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{y\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{\\frac{yy\\frac{\\frac{yyyyy\\frac{\\frac{\\frac{\\frac{yy\\frac{\\frac{yyyy\\frac{\\frac{\\frac{\\frac{yyyy\\frac{yy\\frac{\\frac{\\frac{ }{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }}{ }"], {}, 3005],
           ];
           run(tests);
         });

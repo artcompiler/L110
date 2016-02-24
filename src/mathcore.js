@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 4844692
+ * Mathcore unversioned - 4df46fb
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -251,19 +251,17 @@ var setLocation = function(location) {
 var clearLocation = function() {
   Assert.location = null
 };
-var setCounter = function(count, message) {
-  Assert.count = count;
-  Assert.countMessage = message ? message : "ERROR count exceeded"
-};
-var checkCounter = function() {
-  var count = Assert.count;
-  if(typeof count !== "number" || isNaN(count)) {
-    assert(false, "ERROR counter not set");
-    return
+var setTimeout_ = function(timeout, message) {
+  if(timeout === undefined) {
+    return undefined
   }
-  assert(Assert.count--, Assert.countMessage)
+  Assert.timeout = timeout ? Date.now() + timeout : 0;
+  Assert.timeoutMessage = message ? message : "ERROR timeout exceeded"
 };
-var Assert = {assert:assert, message:message, messages:{}, reserveCodeRange:reserveCodeRange, reservedCodes:[], setLocation:setLocation, clearLocation:clearLocation, setCounter:setCounter, checkCounter:checkCounter};
+var checkTimeout = function() {
+  assert(!Assert.timeout || Assert.timeout > Date.now(), Assert.timeoutMessage)
+};
+var Assert = {assert:assert, message:message, messages:{}, reserveCodeRange:reserveCodeRange, reservedCodes:[], setLocation:setLocation, clearLocation:clearLocation, checkTimeout:checkTimeout, setTimeout:setTimeout_};
 var TRACE = false;
 var global = this;
 var trace = function() {
@@ -1522,7 +1520,7 @@ var Model = function() {
         if(t === TK_DIV) {
           expr = newNode(Model.POW, [expr, nodeMinusOne])
         }
-        assert(explicitOperator || (args.length === 0 || (expr.lbrk || (args[args.length - 1].op !== Model.NUM || (args[args.length - 1].lbrk || expr.op !== Model.NUM)))), message(1010));
+        assert(explicitOperator || (args.length === 0 || (expr.lbrk || (args[args.length - 1].op !== Model.NUM || (args[args.length - 1].lbrk || (isRepeatingDecimal([args[args.length - 1], expr]) || expr.op !== Model.NUM))))), message(1010));
         if(isChemCore() && (t === TK_LEFTPAREN && isVar(args[args.length - 1], "M"))) {
           args.pop();
           expr = unaryNode(Model.M, [expr])
@@ -1603,7 +1601,7 @@ var Model = function() {
     var bigOne = new BigDecimal("1");
     function isRepeatingDecimal(args) {
       var expr, n0, n1;
-      if(args[0].isRepeating) {
+      if(args[0].isRepeating === Model.DOT) {
         var n = args[0].op === Model.ADD && args[0].args[1].op === Model.NUM ? args[0].args[1] : args[0];
         assert(n.op === Model.NUM);
         var arg1;
@@ -1614,7 +1612,7 @@ var Model = function() {
           assert(args[1].op === Model.NUM);
           arg1 = numberNode(n.args[0] + args[1].args[0])
         }
-        arg1.isRepeating = true;
+        arg1.isRepeating = Model.DOT;
         if(args[0].op === Model.ADD) {
           args[0].args[1] = arg1;
           expr = args[0]
@@ -1640,7 +1638,7 @@ var Model = function() {
             }
           }
           n1 = numberNode("." + n1.args[0]);
-          n1.isRepeating = true;
+          n1.isRepeating = args[1].op;
           if(indexOf(n0.args[0], ".") >= 0) {
             var decimalPlaces = n0.args[0].length - indexOf(n0.args[0], ".") - 1;
             n1 = multiplyNode([n1, binaryNode(Model.POW, [numberNode("10"), numberNode("-" + decimalPlaces)])])
@@ -1651,7 +1649,7 @@ var Model = function() {
             expr = binaryNode(Model.ADD, [n0, n1])
           }
           expr.numberFormat = "decimal";
-          expr.isRepeating = true
+          expr.isRepeating = args[1].op
         }else {
           expr = null
         }
@@ -4201,6 +4199,7 @@ var BigDecimal = function(MathContext) {
   messages[2014] = "Incomplete expression found.";
   messages[2015] = "Invalid format name '%1'.";
   messages[2016] = "Exponents should be wrapped in braces.";
+  messages[2017] = "Units with different base units not allowed in a single expression. Found: %1";
   var bigZero = new BigDecimal("0");
   var bigOne = new BigDecimal("1");
   var bigTwo = new BigDecimal("2");
@@ -5273,7 +5272,7 @@ var BigDecimal = function(MathContext) {
             }
             break;
           case "\\decimal":
-            if(node.numberFormat === "decimal" && node.isRepeating === true) {
+            if(node.numberFormat === "decimal" && node.isRepeating) {
               if(length === undefined) {
                 return true
               }else {
@@ -5287,7 +5286,7 @@ var BigDecimal = function(MathContext) {
             }
             break;
           case "\\number":
-            if(node.numberFormat === "decimal" && node.isRepeating === true) {
+            if(node.numberFormat === "decimal" && node.isRepeating) {
               if(length === undefined) {
                 return true
               }else {
@@ -5865,6 +5864,7 @@ var BigDecimal = function(MathContext) {
     }
     var sortedNodes = [];
     function sort(root) {
+      Assert.checkTimeout();
       if(!root || !root.args) {
         assert(false, "Should not get here. Illformed node.");
         return 0
@@ -6800,7 +6800,6 @@ var BigDecimal = function(MathContext) {
       if(root.simplifyNid === nid) {
         return root
       }
-      Assert.checkCounter();
       var node = Model.create(visit(root, {name:"simplify", numeric:function(node) {
         return node
       }, additive:function(node) {
@@ -9053,14 +9052,17 @@ var BigDecimal = function(MathContext) {
         Assert.setLocation(node.location)
       }
       var uu = units(node, env);
+      var baseUnits = [];
+      forEach(uu, function(u) {
+        var unit = env[u];
+        assert(unit.type === "unit");
+        if(indexOf(baseUnits, unit.base) < 0) {
+          baseUnits.push(unit.base)
+        }
+      });
       Assert.setLocation(prevLocation);
-      assert(uu.length < 2, "FIXME need user error message");
-      var u;
-      if(u = env[uu[0]]) {
-        assert(u.type === "unit");
-        return u.base
-      }
-      return undefined
+      assert(baseUnits.length < 2, message(2017, [baseUnits]));
+      return baseUnits[0]
     }
     function baseUnitConversion(u1, u2) {
       var NaN = Math.NaN;
@@ -9292,9 +9294,11 @@ var BigDecimal = function(MathContext) {
       if(isComparison(node.op)) {
         var n = normalize(binaryNode(Model.ADD, [node.args[0], node.args[1]]));
         result = true;
+        var inverseResult = option("inverseResult", false);
         if(!isSimplified(n)) {
           result = false
         }
+        option("inverseResult", inverseResult);
         if(result && hasDenominator(n)) {
           result = false
         }
@@ -9452,7 +9456,7 @@ var MathCore = function() {
   messages[3002] = "No Math Core solution provided.";
   messages[3003] = "No Math Core spec value provided.";
   messages[3004] = "Invalid Math Core spec method '%1'.";
-  messages[3005] = "Operation taking too long.";
+  messages[3005] = "Operation taking more than %1 milliseconds.";
   messages[3006] = "Invalid option name '%1'.";
   messages[3007] = "Invalid option value '%2' for option '%1'.";
   messages[3008] = "Internal error: %1";
@@ -9472,7 +9476,7 @@ var MathCore = function() {
     try {
       assert(spec, message(3001, [spec]));
       assert(solution != undefined, message(3002, [solution]));
-      Assert.setCounter(1E6, message(3005));
+      Assert.setTimeout(timeoutDuration, message(3005, [timeoutDuration]));
       var evaluator = makeEvaluator(spec);
       evaluator.evaluate(solution, function(err, val) {
         resume(null, val)
@@ -9486,7 +9490,7 @@ var MathCore = function() {
     var model;
     try {
       assert(spec, message(3001, [spec]));
-      Assert.setCounter(1E6, message(3005));
+      Assert.setTimeout(timeoutDuration, message(3005, [timeoutDuration]));
       var evaluator = makeEvaluator(spec);
       var errorCode = 0, msg = "Normal completion", stack, location;
       evaluator.evaluate(solution, function(err, val) {
@@ -9504,6 +9508,7 @@ var MathCore = function() {
           e = x
         }
       }
+      result = undefined;
       errorCode = parseErrorCode(e.message);
       msg = parseMessage(e.message);
       stack = e.stack;
@@ -9525,6 +9530,10 @@ var MathCore = function() {
       }
       return e
     }
+  }
+  var timeoutDuration = 3E4;
+  function setTimeoutDuration(duration) {
+    timeoutDuration = duration
   }
   function validateOption(p, v) {
     switch(p) {
@@ -9586,7 +9595,7 @@ var MathCore = function() {
         assert(false, message(3007, [p, v]));
         break;
       case "setThousandsSeparator":
-        if(typeof v === "undefined" || v instanceof Array) {
+        if(typeof v === "undefined" || (typeof v === "string" && v.length === 1 || v instanceof Array)) {
           break
         }
         assert(false, message(3007, [p, v]));
@@ -9672,8 +9681,6 @@ var MathCore = function() {
           break;
         case "validSyntax":
           result = true;
-          valueNode = solutionNode;
-          console.log("valueNode=" + JSON.stringify(valueNode, null, 2));
           break;
         default:
           assert(false, message(3004, [method]));
@@ -9686,7 +9693,7 @@ var MathCore = function() {
     var outerResult = {evaluate:evaluate, model:valueNode};
     return outerResult
   }
-  return{evaluate:evaluate, evaluateVerbose:evaluateVerbose, makeEvaluator:makeEvaluator, Model:Model, Ast:Ast}
+  return{evaluate:evaluate, evaluateVerbose:evaluateVerbose, makeEvaluator:makeEvaluator, setTimeoutDuration:setTimeoutDuration, Model:Model, Ast:Ast}
 }();
 
   return MathCore;

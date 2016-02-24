@@ -193,6 +193,8 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["9000m + 500m", "9.5km"],
+          ["9km + 500m", "9.5km"],
           ["0", "0"],
           ["", ""]
         ]);
@@ -562,8 +564,11 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["0.\\dot{3}333", "1/3"],
+          ["0.333\\dot{3}", "1/3"],
           ["0.\\dot{3}", "1/3"],
           [".\\dot{3}", "1/3"],
+          ["3.142857\\overline{142857}", "\\frac{22}{7}"],
           ["3.\\overline{142857}", "\\frac{22}{7}"],
           ["3.\\dot{1}4285\\dot{7}", "\\frac{22}{7}"],
           ["3.\\dot{1}42857", "\\frac{22}{7}"],
@@ -628,11 +633,13 @@ define(["mathcore"], function (MathCore) {
               expect(MathCore.evaluate({
                 method: "equivSymbolic",
                 value: v[0]
-              }, v[1])).toBe(false);
+              }, v[1])).not.toBe(true);
             });
           });
         }
         run([
+          ["0.\\overline{3}333", "1/3"],
+          ["0.(3)333", "1/3"],
           ["0/0", "0"],
           ["2/0", "1/0"],
           ["0/0", "1/0"],

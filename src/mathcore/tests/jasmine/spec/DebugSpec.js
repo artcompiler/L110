@@ -115,20 +115,6 @@ var forEach = function forEach(array, fun) {
 define(["mathcore"], function (MathCore) {
   describe("Math Core", function() {
     describe("Debug", function() {
-      describe("equivSymbolic", function() {
-        function run(tests) {
-          forEach(tests, function (v, i) {
-            it(v[0] + " | " + v[1], function() {
-              expect(MathCore.evaluateVerbose({
-                method: "validSyntax",
-              }, v[0]).model.m2e()).toEqual(v[1]);
-            });
-          });
-        }
-        run([
-          ["x*2", "x times 2"]
-        ]);
-      });
     });
   });
 });

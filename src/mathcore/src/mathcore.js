@@ -14,7 +14,7 @@ var MathCore = (function () {
   messages[3002] = "No Math Core solution provided.";
   messages[3003] = "No Math Core spec value provided.";
   messages[3004] = "Invalid Math Core spec method '%1'.";
-  messages[3005] = "Operation taking too long.";
+  messages[3005] = "Operation taking more than %1 milliseconds.";
   messages[3006] = "Invalid option name '%1'.";
   messages[3007] = "Invalid option value '%2' for option '%1'.";
   messages[3008] = "Internal error: %1";
@@ -111,7 +111,7 @@ var MathCore = (function () {
     try {
       assert(spec, message(3001, [spec]));
       assert(solution != undefined, message(3002, [solution]));
-      Assert.setCounter(1000000, message(3005));
+      Assert.setTimeout(timeoutDuration, message(3005, [timeoutDuration]));
       var evaluator = makeEvaluator(spec);
       evaluator.evaluate(solution, function (err, val) {
         resume(null, val);
@@ -125,7 +125,7 @@ var MathCore = (function () {
     var model;
     try {
       assert(spec, message(3001, [spec]));
-      Assert.setCounter(1000000, message(3005));
+      Assert.setTimeout(timeoutDuration, message(3005, [timeoutDuration]));
       var evaluator = makeEvaluator(spec);
       var errorCode = 0, msg = "Normal completion", stack, location;
       evaluator.evaluate(solution, function (err, val) {
@@ -151,6 +151,7 @@ var MathCore = (function () {
           e = x;
         }
       }
+      result = undefined;
       errorCode = parseErrorCode(e.message);
       msg = parseMessage(e.message);
       stack = e.stack;
@@ -173,6 +174,13 @@ var MathCore = (function () {
       return e;
     }
   }
+
+  var timeoutDuration = 30000; // 30 sec
+
+  function setTimeoutDuration(duration) {
+    timeoutDuration = duration;
+  }
+
   function validateOption(p, v) {
     switch (p) {
     case "field":
@@ -216,6 +224,7 @@ var MathCore = (function () {
       break;
     case "setThousandsSeparator":
       if (typeof v === "undefined" ||
+          typeof v === "string" && v.length === 1 ||
           v instanceof Array) {
         break;
       }
@@ -307,7 +316,6 @@ var MathCore = (function () {
       case "validSyntax":
         // If we got this far, then value parsed.
         result = true;
-        console.log("valueNode=" + JSON.stringify(valueNode, null, 2));
         break;
       default:
         assert(false, message(3004, [method]));
@@ -319,7 +327,7 @@ var MathCore = (function () {
     }
     var outerResult = {
       evaluate: evaluate,
-      model: valueNode,
+      model: valueNode
     };
     return outerResult;
   }
@@ -329,6 +337,7 @@ var MathCore = (function () {
     evaluate: evaluate,
     evaluateVerbose: evaluateVerbose,
     makeEvaluator: makeEvaluator,
+    setTimeoutDuration: setTimeoutDuration,
     Model: Model,
     Ast: Ast
   };

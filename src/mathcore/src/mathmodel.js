@@ -28,6 +28,7 @@
   messages[2014] = "Incomplete expression found.";
   messages[2015] = "Invalid format name '%1'.";
   messages[2016] = "Exponents should be wrapped in braces.";
+  messages[2017] = "Units with different base units not allowed in a single expression. Found: %1";
 
   var bigZero = new BigDecimal("0");
   var bigOne = new BigDecimal("1");
@@ -1131,7 +1132,7 @@
           break;
         case "\\decimal":
           if (node.numberFormat === "decimal" &&
-              node.isRepeating === true) {
+              node.isRepeating) {
             if (length === undefined) {
               return true;
             } else {
@@ -1150,7 +1151,7 @@
           break;
         case "\\number":
           if (node.numberFormat === "decimal" &&
-              node.isRepeating === true) {
+              node.isRepeating) {
             if (length === undefined) {
               return true;
             } else {
@@ -1818,6 +1819,7 @@
 
     var sortedNodes = [];
     function sort(root) {
+      Assert.checkTimeout();
       if (!root || !root.args) {
         assert(false, "Should not get here. Illformed node.");
         return 0;
@@ -2846,7 +2848,6 @@
       if (root.simplifyNid === nid) {
         return root;
       }
-      Assert.checkCounter();
       var node = Model.create(visit(root, {
         name: "simplify",
         numeric: function (node) {
@@ -5407,15 +5408,17 @@
         Assert.setLocation(node.location);
       }
       var uu = units(node, env);
+      var baseUnits = [];
+      forEach(uu, function (u) {
+        var unit = env[u];
+        assert(unit.type === "unit");
+        if (indexOf(baseUnits, unit.base) < 0) {
+          baseUnits.push(unit.base);
+        }
+      });
       Assert.setLocation(prevLocation);
-      assert(uu.length < 2, "FIXME need user error message");
-      var u;
-      if ((u = env[uu[0]])) {
-        assert(u.type === "unit");
-        return u.base;
-      }
-      // Node has no valid units, so just return undefined.
-      return undefined;
+      assert(baseUnits.length < 2, message(2017, [baseUnits]));
+      return baseUnits[0];
     }
     // Convert between different unit systems
     function baseUnitConversion(u1, u2) {
@@ -5670,10 +5673,12 @@
     } else if (isComparison(node.op)) {
       var n = normalize(binaryNode(Model.ADD, [node.args[0], node.args[1]]));
       result = true;
+      var inverseResult = option("inverseResult", false);
       if (!isSimplified(n)) {
         // Check for like terms on both sides
         result = false;
       }
+      option("inverseResult", inverseResult);
       if (result && hasDenominator(n)) {
         // Check for division or fraction.
         result = false;
