@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 8bb8700
+ * Mathcore unversioned - daf8af4
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -9302,7 +9302,7 @@ var BigDecimal = function(MathContext) {
         return isSimplified(n)
       })
     }else {
-      if(isComparison(node.op)) {
+      if(isComparison(node.op) && (!isZero(node.args[0]) && !isZero(node.args[1]))) {
         var n = normalize(binaryNode(Model.ADD, [node.args[0], node.args[1]]));
         result = true;
         var inverseResult = option("inverseResult", false);

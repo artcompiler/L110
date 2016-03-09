@@ -5692,7 +5692,7 @@
       result = every(node.args, function (n) {
         return isSimplified(n);
       });
-    } else if (isComparison(node.op)) {
+    } else if (isComparison(node.op) && !isZero(node.args[0]) && !isZero(node.args[1])) {
       var n = normalize(binaryNode(Model.ADD, [node.args[0], node.args[1]]));
       result = true;
       var inverseResult = option("inverseResult", false);
