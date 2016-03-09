@@ -694,8 +694,6 @@ define(["mathcore"], function (MathCore) {
           ["x/3=9"],
           ["3x/4=9"],
           ["3x=9"],
-          ["1+5i+10i^2+10i^3+5i^4+i^5"],
-          ["1+5i+10i^2"],
           ["-4-4i"],
           ["2x-2"],
           ["x^2"],
@@ -716,6 +714,8 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["1+5i+10i^2"],
+          ["1+5i+10i^2+10i^3+5i^4+i^5"],
           ["2x+6x"],
           ["2x+6x+6"],
           ["2*3"],
@@ -742,8 +742,6 @@ define(["mathcore"], function (MathCore) {
           });
         };
         run([
-          ["1+5i+10i^2+10i^3+5i^4+i^5"],
-          ["1+5i+10i^2"],
           ["y=x+3"],
           ["x=1/2"],
           ["x=y=z=10"],
@@ -780,6 +778,8 @@ define(["mathcore"], function (MathCore) {
           });
         };
         run([
+          ["1+5i+10i^2+10i^3+5i^4+i^5"],
+          ["1+5i+10i^2"],
           ["1+5i+3i+10i^2"],
           ["x>x^2"],
           ["20y=5x^2+5x+10"],
@@ -1070,6 +1070,10 @@ define(["mathcore"], function (MathCore) {
         }
         run([
           ["x+y", "y+x"],
+          ["0=x^2-18+y^2", "x^2+y^2-18=0"],
+          ["x^2-18+y^2=0", "x^2+y^2-18=0"],
+          ["0=y^2-18+x^2", "x^2+y^2-18=0"],
+          ["y^2-18+x^2=0", "x^2+y^2-18=0"],
         ]);
       });
       describe("equivSymbolic", function() {

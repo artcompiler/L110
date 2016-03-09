@@ -42,7 +42,7 @@
   var nodeInfinity = numberNode("Infinity");
   var nodeMinusInfinity = numberNode("-Infinity");
   var nodeOneHalf = binaryNode(Model.POW, [numberNode("2"), nodeMinusOne]);
-  var nodeImaginary = binaryNode(Model.POW, [nodeMinusOne, nodeOneHalf]);
+  var nodeImaginary = variableNode("i");
   var nodeE = variableNode("e");
 
   // NOTE for debugging only
@@ -219,16 +219,23 @@
   }
 
   function isNeg(n) {
+    var mv;
     if (n === null) {
       return false;
     }
     if (n.op) {
-      n = mathValue(n, true);
+      mv = mathValue(n, true);
+      if (!mv) {
+        if (n.op === Model.MUL && isMinusOne(n.args[0]) ||
+            n.op === Model.NUM && n.args[0] === "-Infinity") {
+          return true;
+        }
+        return false;
+      }
+    } else {
+      mv = n;
     }
-    if (n === null) {
-      return false;  // What about -Infinity?
-    }
-    return n.compareTo(bigZero) < 0;
+    return mv.compareTo(bigZero) < 0;
   }
 
   function isInfinity(n) {
@@ -1748,6 +1755,11 @@
               args.push(normalize(node.args[0]));
             }
             break;
+          case Model.POW:
+            if (isMinusOne(node.args[0]) && toNumber(mathValue(node.args[1])) === 0.5) {
+              return nodeImaginary;
+            }
+            // Fall through.
           default:
             args.push(normalize(node.args[0]));
             break;
@@ -1842,9 +1854,13 @@
           // Sort by descending degree
           var args = [];
           forEach(node.args, function (n, i) {
+            if (i > 0 && node.op === Model.SUB) {
+              n = negate(n);
+            }
             args.push(sort(n));
           });
-          node = binaryNode(node.op, args);
+          var op = node.op === Model.SUB ? Model.ADD : node.op;
+          node = binaryNode(op, args, true);
           if (node.op === Model.PM ||
               node.op === Model.BACKSLASH) {
             // Don't sort these kinds of nodes.
@@ -1897,7 +1913,7 @@
                     node.args[i] = n1;
                     node.args[i + 1] = n0;
                   }
-                } else if (isLessThan((cp0 = abs(constantPart(n0))), (cp1 = abs(constantPart(n1))))) {
+                } else if (isLessThan((cp0 = constantPart(n0)), (cp1 = constantPart(n1)))) {
                   node.args[i] = n1;
                   node.args[i + 1] = n0;
                 } else if (!cp0 && cp1) {
@@ -2839,6 +2855,7 @@
 
     var simplifiedNodes = [];
     function simplify(root, env, resume) {
+    // var level = 0;
       if (!root || !root.args) {
         assert(false, "Should not get here. Illformed node.");
         return 0;
@@ -2848,6 +2865,10 @@
       if (root.simplifyNid === nid) {
         return root;
       }
+      // if (level === 0) {
+      //   console.log("node: " + JSON.stringify(stripNids(root), null, 2));
+      // }
+      // level++;
       var node = Model.create(visit(root, {
         name: "simplify",
         numeric: function (node) {
@@ -3612,13 +3633,14 @@
           return newNode(node.op, args);
         }
       }), root.location);
+      // level--;
       // If the node has changed, simplify again
       while (nid !== ast.intern(node)) {
         nid = ast.intern(node);
         node = simplify(node, env);
       }
       node.simplifyNid = nid;
-//      simplifiedNodes[rootNid] = node;
+      // simplifiedNodes[rootNid] = node;
       return node;
     }
 

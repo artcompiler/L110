@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 4df46fb
+ * Mathcore unversioned - 8bb8700
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -866,10 +866,6 @@ var Model = function() {
           }
         });
         return indexOf(decimalSeparator, ch) >= 0
-      }
-      if(thousandsSeparators instanceof Array && indexOf(thousandsSeparators, ".") >= 0) {
-        assert(false, message(1008));
-        return false
       }
       return ch === "."
     }
@@ -4212,7 +4208,7 @@ var BigDecimal = function(MathContext) {
   var nodeInfinity = numberNode("Infinity");
   var nodeMinusInfinity = numberNode("-Infinity");
   var nodeOneHalf = binaryNode(Model.POW, [numberNode("2"), nodeMinusOne]);
-  var nodeImaginary = binaryNode(Model.POW, [nodeMinusOne, nodeOneHalf]);
+  var nodeImaginary = variableNode("i");
   var nodeE = variableNode("e");
   function stripNids(node) {
     forEach(keys(node), function(k) {
@@ -4387,16 +4383,22 @@ var BigDecimal = function(MathContext) {
     return multiplyNode([nodeMinusOne, n])
   }
   function isNeg(n) {
+    var mv;
     if(n === null) {
       return false
     }
     if(n.op) {
-      n = mathValue(n, true)
+      mv = mathValue(n, true);
+      if(!mv) {
+        if(n.op === Model.MUL && isMinusOne(n.args[0]) || n.op === Model.NUM && n.args[0] === "-Infinity") {
+          return true
+        }
+        return false
+      }
+    }else {
+      mv = n
     }
-    if(n === null) {
-      return false
-    }
-    return n.compareTo(bigZero) < 0
+    return mv.compareTo(bigZero) < 0
   }
   function isInfinity(n) {
     if(n === Number.POSITIVE_INFINITY || (n === Number.NEGATIVE_INFINITY || n.op === Model.NUM && (n.args[0] === "Infinity" || n.args[0] === "-Infinity"))) {
@@ -5814,6 +5816,11 @@ var BigDecimal = function(MathContext) {
               args.push(normalize(node.args[0]))
             }
             break;
+          case Model.POW:
+            if(isMinusOne(node.args[0]) && toNumber(mathValue(node.args[1])) === 0.5) {
+              return nodeImaginary
+            }
+          ;
           default:
             args.push(normalize(node.args[0]));
             break
@@ -5883,9 +5890,13 @@ var BigDecimal = function(MathContext) {
       }, additive:function(node) {
         var args = [];
         forEach(node.args, function(n, i) {
+          if(i > 0 && node.op === Model.SUB) {
+            n = negate(n)
+          }
           args.push(sort(n))
         });
-        node = binaryNode(node.op, args);
+        var op = node.op === Model.SUB ? Model.ADD : node.op;
+        node = binaryNode(op, args, true);
         if(node.op === Model.PM || node.op === Model.BACKSLASH) {
           return node
         }
@@ -5940,7 +5951,7 @@ var BigDecimal = function(MathContext) {
                         node.args[i + 1] = n0
                       }
                     }else {
-                      if(isLessThan(cp0 = abs(constantPart(n0)), cp1 = abs(constantPart(n1)))) {
+                      if(isLessThan(cp0 = constantPart(n0), cp1 = constantPart(n1))) {
                         node.args[i] = n1;
                         node.args[i + 1] = n0
                       }else {

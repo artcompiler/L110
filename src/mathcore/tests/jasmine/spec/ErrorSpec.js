@@ -141,6 +141,7 @@ define(["mathcore"], function (MathCore) {
             ["equivLiteral", [".", "."], {}, 1004],
             ["equivLiteral", ["<", "<"], {strict: true}, 1006],
             ["equivLiteral", ["10", "10..."], {}, 1007],
+<<<<<<< HEAD
             ["isFactorised", ["3xy(x^2-3y^2+4xy)"], {field: "integer"}, 2001],          
             ["isFactorised", ["3xy(x^2-3y^2+4xy)"], {field: "integer"}, 2001],          
             ["equivLiteral", ["10", "10..."], {}, 1007],
@@ -148,6 +149,8 @@ define(["mathcore"], function (MathCore) {
               allowThousandsSeparator: true,
               setThousandsSeparator: ['.']
             }, 1008],
+=======
+>>>>>>> 64bd9fead7c94abb7f17b4add2d7700052503429
             ["equivLiteral", ["1,000", "1000"], {
               allowThousandsSeparator: true,
               setThousandsSeparator: [','],
