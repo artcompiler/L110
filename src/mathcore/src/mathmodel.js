@@ -5520,6 +5520,27 @@
     return inverseResult ? !result : result;
   }
 
+  function formulaKind(node) {
+    var kind;
+    switch (node.op) {
+    case Model.EQL:
+      kind = Model.EQL;
+      break;
+    case Model.GE:
+    case Model.LE:
+      kind = Model.GE;
+      break;
+    case Model.GT:
+    case Model.LT:
+      kind = Model.GT;
+      break;
+    default:
+      kind = 0;
+      break;
+    }
+    return kind;
+  }
+
   // Check if two equations are mathematically equivalent. Two equations are
   // mathematically equivalent if they are literally equal after simplification
   // and normalization.
@@ -5542,7 +5563,10 @@
         return true;
       }
     }
-    if (option("compareSides") && isComparison(n1.op) && n1.op === n2.op) {
+    if (formulaKind(n1) !== formulaKind(n2)) {
+      // No way they are going to compare 'equivSymbolic'.
+      var result = false;
+    } else if (option("compareSides") && isComparison(n1.op) && n1.op === n2.op) {
       var n1l = n1.args[0];
       var n1r = n1.args[1];
       var n2l = n2.args[0];

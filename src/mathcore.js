@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - daf8af4
+ * Mathcore unversioned - b3a2d56
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -9153,6 +9153,28 @@ var BigDecimal = function(MathContext) {
     var result = nid1 === nid2;
     return inverseResult ? !result : result
   };
+  function formulaKind(node) {
+    var kind;
+    switch(node.op) {
+      case Model.EQL:
+        kind = Model.EQL;
+        break;
+      case Model.GE:
+      ;
+      case Model.LE:
+        kind = Model.GE;
+        break;
+      case Model.GT:
+      ;
+      case Model.LT:
+        kind = Model.GT;
+        break;
+      default:
+        kind = 0;
+        break
+    }
+    return kind
+  }
   Model.fn.equivSymbolic = function(n1, n2, resume) {
     var n1o = n1;
     var n2o = n2;
@@ -9171,42 +9193,46 @@ var BigDecimal = function(MathContext) {
         return true
       }
     }
-    if(option("compareSides") && (isComparison(n1.op) && n1.op === n2.op)) {
-      var n1l = n1.args[0];
-      var n1r = n1.args[1];
-      var n2l = n2.args[0];
-      var n2r = n2.args[1];
-      n1l = scale(normalize(simplify(expand(normalize(n1l)))));
-      n2l = scale(normalize(simplify(expand(normalize(n2l)))));
-      var nid1l = ast.intern(n1l);
-      var nid2l = ast.intern(n2l);
-      n1r = scale(normalize(simplify(expand(normalize(n1r)))));
-      n2r = scale(normalize(simplify(expand(normalize(n2r)))));
-      var nid1r = ast.intern(n1r);
-      var nid2r = ast.intern(n2r);
-      var result = nid1l === nid2l && nid1r === nid2r
+    if(formulaKind(n1) !== formulaKind(n2)) {
+      var result = false
     }else {
-      n1 = scale(normalize(simplify(expand(normalize(n1)))));
-      n2 = scale(normalize(simplify(expand(normalize(n2)))));
-      var nid1 = ast.intern(n1);
-      var nid2 = ast.intern(n2);
-      var result = nid1 === nid2;
-      if(!result && !inverseResult) {
-        if(isComparison(n1.op)) {
-          n1 = scale(normalize(simplify(expand(normalize(n1)))));
-          n2 = scale(normalize(simplify(expand(normalize(n2)))));
-          nid1 = ast.intern(n1);
-          nid2 = ast.intern(n2);
-          result = nid1 === nid2
-        }else {
-          if(!isComparison(n2.op) && (!isAggregate(n1) && !isAggregate(n2))) {
-            n1 = newNode(Model.SUB, [n1o, n2o]);
-            n2 = nodeZero;
+      if(option("compareSides") && (isComparison(n1.op) && n1.op === n2.op)) {
+        var n1l = n1.args[0];
+        var n1r = n1.args[1];
+        var n2l = n2.args[0];
+        var n2r = n2.args[1];
+        n1l = scale(normalize(simplify(expand(normalize(n1l)))));
+        n2l = scale(normalize(simplify(expand(normalize(n2l)))));
+        var nid1l = ast.intern(n1l);
+        var nid2l = ast.intern(n2l);
+        n1r = scale(normalize(simplify(expand(normalize(n1r)))));
+        n2r = scale(normalize(simplify(expand(normalize(n2r)))));
+        var nid1r = ast.intern(n1r);
+        var nid2r = ast.intern(n2r);
+        var result = nid1l === nid2l && nid1r === nid2r
+      }else {
+        n1 = scale(normalize(simplify(expand(normalize(n1)))));
+        n2 = scale(normalize(simplify(expand(normalize(n2)))));
+        var nid1 = ast.intern(n1);
+        var nid2 = ast.intern(n2);
+        var result = nid1 === nid2;
+        if(!result && !inverseResult) {
+          if(isComparison(n1.op)) {
             n1 = scale(normalize(simplify(expand(normalize(n1)))));
             n2 = scale(normalize(simplify(expand(normalize(n2)))));
             nid1 = ast.intern(n1);
             nid2 = ast.intern(n2);
             result = nid1 === nid2
+          }else {
+            if(!isComparison(n2.op) && (!isAggregate(n1) && !isAggregate(n2))) {
+              n1 = newNode(Model.SUB, [n1o, n2o]);
+              n2 = nodeZero;
+              n1 = scale(normalize(simplify(expand(normalize(n1)))));
+              n2 = scale(normalize(simplify(expand(normalize(n2)))));
+              nid1 = ast.intern(n1);
+              nid2 = ast.intern(n2);
+              result = nid1 === nid2
+            }
           }
         }
       }
