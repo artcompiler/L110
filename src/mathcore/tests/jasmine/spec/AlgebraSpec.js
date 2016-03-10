@@ -284,6 +284,9 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["\\frac{-3x-7}{2x-4}", "\\frac{3x+7}{4-2x}"],
+          ["\\frac{-1\\times(-3x-7)}{-1\\times(2x-4)}", "\\frac{3x+7}{4-2x}"],
+          ["\\frac{-1\\times(3x+7)}{-1\\times(4-2x)}", "\\frac{3x+7}{4-2x}"],
           ["(1+\\frac{i}{50})^{52}", "(1+\\frac{i}{50})^{52}"],
           ["(1+\\frac{i}{50})^{52}-1", "(1+\\frac{i}{50})^{52}-1"],
           ["(i)(i)(\\sqrt{2})", "(i)(\\sqrt{2})(i)"],

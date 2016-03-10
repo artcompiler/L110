@@ -5817,7 +5817,7 @@ var BigDecimal = function(MathContext) {
             }
             break;
           case Model.POW:
-            if(isMinusOne(node.args[0]) && toNumber(mathValue(node.args[1])) === 0.5) {
+            if(isMinusOne(node.args[0]) && toNumber(mathValue(node.args[1], true)) === 0.5) {
               return nodeImaginary
             }
           ;
@@ -6289,9 +6289,6 @@ var BigDecimal = function(MathContext) {
       }
       node.normalizeExpandedNid = nid;
       return node
-    }
-    function isAggregate(node) {
-      return node.op === Model.COMMA || (node.op === Model.LIST || (node.op === Model.MATRIX || node.op === Model.INTERVAL))
     }
     function isAdditive(node) {
       return node.op === Model.ADD || (node.op === Model.SUB || (node.op === Model.PM || node.op === Model.BACKSLASH))
@@ -7385,15 +7382,13 @@ var BigDecimal = function(MathContext) {
                       if(emv.remainder(bigFour).compareTo(bigZero) === 0) {
                         return[nodeOne]
                       }else {
-                        if(emv.remainder(bigThree).compareTo(bigZero) === 0) {
-                          return[multiplyNode([nodeMinusOne, nodeImaginary])]
+                        if(emv.remainder(bigTwo).compareTo(bigZero) === 0) {
+                          return[nodeMinusOne]
                         }else {
-                          if(emv.remainder(bigTwo).compareTo(bigZero) === 0) {
-                            return[nodeMinusOne]
+                          if(emv.remainder(bigThree).compareTo(bigZero) === 0) {
+                            return[multiplyNode([nodeMinusOne, nodeImaginary])]
                           }else {
-                            if(emv.remainder(bigOne).compareTo(bigZero) === 0) {
-                              return[nodeImaginary]
-                            }
+                            return[nodeImaginary]
                           }
                         }
                       }
@@ -8262,7 +8257,7 @@ var BigDecimal = function(MathContext) {
         forEach(node.args, function(n) {
           args = args.concat(factors(n))
         });
-        return newNode(node.op, args)
+        return[newNode(node.op, args)]
       }, equals:function(node) {
         return[node]
       }})
@@ -9159,6 +9154,8 @@ var BigDecimal = function(MathContext) {
     return inverseResult ? !result : result
   };
   Model.fn.equivSymbolic = function(n1, n2, resume) {
+    var n1o = n1;
+    var n2o = n2;
     var result;
     var inverseResult = option("inverseResult");
     if(!inverseResult && !option("strict")) {
@@ -9194,12 +9191,24 @@ var BigDecimal = function(MathContext) {
       var nid1 = ast.intern(n1);
       var nid2 = ast.intern(n2);
       var result = nid1 === nid2;
-      if(!result && isComparison(n1.op)) {
-        n1 = scale(normalize(simplify(expand(normalize(n1)))));
-        n2 = scale(normalize(simplify(expand(normalize(n2)))));
-        nid1 = ast.intern(n1);
-        nid2 = ast.intern(n2);
-        result = nid1 === nid2
+      if(!result && !inverseResult) {
+        if(isComparison(n1.op)) {
+          n1 = scale(normalize(simplify(expand(normalize(n1)))));
+          n2 = scale(normalize(simplify(expand(normalize(n2)))));
+          nid1 = ast.intern(n1);
+          nid2 = ast.intern(n2);
+          result = nid1 === nid2
+        }else {
+          if(!isComparison(n2.op) && (!isAggregate(n1) && !isAggregate(n2))) {
+            n1 = newNode(Model.SUB, [n1o, n2o]);
+            n2 = nodeZero;
+            n1 = scale(normalize(simplify(expand(normalize(n1)))));
+            n2 = scale(normalize(simplify(expand(normalize(n2)))));
+            nid1 = ast.intern(n1);
+            nid2 = ast.intern(n2);
+            result = nid1 === nid2
+          }
+        }
       }
     }
     if(result) {
@@ -9209,6 +9218,18 @@ var BigDecimal = function(MathContext) {
   };
   function isEqualsComparison(op) {
     return op === Model.LE || (op === Model.GE || op === Model.EQL)
+  }
+  function isAggregate(node) {
+    if(node.op === Model.COMMA || (node.op === Model.LIST || (node.op === Model.MATRIX || node.op === Model.INTERVAL))) {
+      return true
+    }else {
+      if(node.op === Model.NUM || node.op === Model.VAR) {
+        return false
+      }
+    }
+    return some(node.args, function(n) {
+      return isAggregate(n)
+    })
   }
   function isComparison(op) {
     return op === Model.LT || (op === Model.LE || (op === Model.GT || (op === Model.GE || (op === Model.NE || (op === Model.APPROX || op === Model.EQL)))))

@@ -115,6 +115,45 @@ var forEach = function forEach(array, fun) {
 define(["mathcore"], function (MathCore) {
   describe("Math Core", function() {
     describe("Debug", function() {
+      describe("equivSymbolic", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivSymbolic",
+                value: v[0],
+                options: {
+                  strict: true,
+                }
+              }, v[1])).toBe(true);
+            });
+          });
+        }
+        run([
+          ["i^6", "i^2"],
+          ["i", "\\sqrt{-1}"],
+        ]);
+      });
+      describe("equivSymbolic", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivSymbolic",
+                value: v[0],
+                options: {
+                  strict: true,
+                  inverseResult: true,
+                }
+              }, v[1])).toBe(true);
+            });
+          });
+        }
+        run([
+          ["\\frac{391t^2+0.112}{0.218t^4+0.991t^2+1}+\\frac{391(t-1)^2+0.112}{0.218(t-1)^4+0.991(t-1)^2+1}",
+           "\\frac{392t^2}{0.218(t-1)^4+0.991(t-1)^2+1}+\\frac{391t^2}{0.218t^4+0.991t^2+1}+\\frac{0.112}{0.218t^4+0.991t^2+1}-\\frac{782t}{0.218(t-1)^4+0.991(t-1)^2+1}+\\frac{391.112}{0.218(t-1)^4+0.991(t-1)^2+1}"],
+        ]);
+      });
     });
   });
 });
