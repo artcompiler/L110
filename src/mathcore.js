@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - b3a2d56
+ * Mathcore unversioned - e210981
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -702,6 +702,7 @@ var Model = function() {
     return text
   };
   var parse = function parse(src, env) {
+    src = stripInvisible(src);
     var TK_NONE = 0;
     var TK_ADD = "+".charCodeAt(0);
     var TK_CARET = "^".charCodeAt(0);
@@ -1813,6 +1814,46 @@ var Model = function() {
       return nodeNone
     }
     return{expr:expr, tokenize:tokenize};
+    function isInvisibleCharCode(c) {
+      return isControlCharCode(c)
+    }
+    function isWhitespaceCharCode(c) {
+      return c === 32 || (c === 9 || (c === 10 || c === 13))
+    }
+    function isNumberCharCode(c) {
+      return c >= 48 && c <= 57
+    }
+    function isControlCharCode(c) {
+      return c >= 1 && c <= 31 || c >= 127 && c <= 159
+    }
+    function stripInvisible(src) {
+      var out = "";
+      var c, lastCharCode;
+      var curIndex = 0;
+      while(curIndex < src.length) {
+        while(curIndex < src.length && isInvisibleCharCode(c = src.charCodeAt(curIndex++))) {
+          if(lastCharCode === 32) {
+            continue
+          }
+          c = 9;
+          lastCharCode = c
+        }
+        if(c === 92) {
+          out += String.fromCharCode(c);
+          if(curIndex < src.length) {
+            c = src.charCodeAt(curIndex++)
+          }
+        }else {
+          if(c === 9) {
+            if(isNumberCharCode(out.charCodeAt(out.length - 1)) && isNumberCharCode(src.charCodeAt(curIndex))) {
+              c = src.charCodeAt(curIndex++)
+            }
+          }
+        }
+        out += String.fromCharCode(c)
+      }
+      return out
+    }
     function scanner(src) {
       var curIndex = 0;
       var lexeme = "";
@@ -1822,9 +1863,6 @@ var Model = function() {
       var identifiers = keys(env);
       function isAlphaCharCode(c) {
         return c >= 65 && c <= 90 || c >= 97 && c <= 122
-      }
-      function isNumberCharCode(c) {
-        return c >= 48 && c <= 57
       }
       function start(options) {
         if(!options) {
@@ -4396,7 +4434,11 @@ var BigDecimal = function(MathContext) {
         return false
       }
     }else {
-      mv = n
+      if(!(n instanceof BigDecimal)) {
+        return false
+      }else {
+        mv = n
+      }
     }
     return mv.compareTo(bigZero) < 0
   }
@@ -4570,6 +4612,7 @@ var BigDecimal = function(MathContext) {
     }
     var result = factCache[i - 1];
     for(;i <= n;i++) {
+      Assert.checkTimeout();
       factCache[i] = result = result.multiply(new BigDecimal(i.toString()))
     }
     return result
@@ -7503,10 +7546,6 @@ var BigDecimal = function(MathContext) {
           }else {
             args[0] = nodeZero
           }
-          var c, cc;
-          if((node.op === Model.EQL || node.op === Model.APPROX) && ((cc = isPolynomial(args[0])) && cc[cc.length - 1] < 0 || !cc && sign(args[0]) < 0)) {
-            args[0] = simplify(expand(negate(args[0])))
-          }
         }
         return newNode(node.op, args)
       }}), root.location);
@@ -7994,7 +8033,7 @@ var BigDecimal = function(MathContext) {
             lterms = terms(lnode);
             rterms = terms(rnode)
           }
-          if(!isAggregate(lnode) && lterms.length > 1 || !isAggregate(rnode) && rterms.length > 1) {
+          if((!isAggregate(lnode) && lterms.length > 1 || !isAggregate(rnode) && rterms.length > 1) && ((lnode.args.length < 64 || rnode.args.length < 2) && (lnode.args.length < 2 || rnode.args.length < 64))) {
             return multiplyTerms(lterms, rterms, expo)
           }
           var result = [];
@@ -8418,6 +8457,10 @@ var BigDecimal = function(MathContext) {
         return newNode(node.op, args)
       }, equals:function(node) {
         var args = [];
+        var c, cc;
+        if((node.op === Model.EQL || node.op === Model.APPROX) && ((cc = isPolynomial(node.args[0])) && cc[cc.length - 1] < 0 || !cc && sign(node.args[0]) < 0)) {
+          node.args[0] = simplify(expand(negate(node.args[0])))
+        }
         forEach(node.args, function(n) {
           args.push(scale(n))
         });

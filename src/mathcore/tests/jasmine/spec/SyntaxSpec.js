@@ -122,6 +122,29 @@ var _toString = function (val) { return prototypeOfObject.toString.apply(val); }
 
 define(["mathcore"], function (MathCore) {
   describe("Math Core", function() {
+    describe("Special Characters", function() {
+      describe("equivLiteral", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivLiteral",
+                value: v[0]
+              }, v[1])).toBe(true);
+            });
+          });
+        }
+        run([
+          ["12 ", "12 "],
+          ["x\\ y", "x\\   y"],
+          ["1\u007f2", "1\u007f2"],  // Ignore control characters.
+          ["f\u006F\u006F", "foo"],
+          ["\u007f", "\u0080"],  // Ignore control characters.
+          ["\u001a A \u0018 B \u0003 C \u0016 D \u0013 E \u0007 F \u0011 G \u0017 H \u0012 I \u0015 J \u000f K \u001b L \u001d M \u001c N \u001f O",
+           "ABCDEFGHIJKLMNO"],
+        ]);
+      });
+    });
     it("spec is being changed when typing -1 and validating on any keypress", function() {
       var result,
       spec = {

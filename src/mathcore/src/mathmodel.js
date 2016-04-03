@@ -232,6 +232,8 @@
         }
         return false;
       }
+    } else if (!(n instanceof BigDecimal)) {
+      return false;
     } else {
       mv = n;
     }
@@ -392,6 +394,7 @@
     }
     var result = factCache[i-1];
     for (; i <= n; i++) {
+      Assert.checkTimeout();
       factCache[i] = result = result.multiply(new BigDecimal(i.toString()));
     }
     return result;
@@ -3615,13 +3618,6 @@
               // LHS has no more terms, so is zero
               args[0] = nodeZero;
             }
-            // If equality and LHS leading coefficient is negative, then multiply by -1
-            var c, cc;
-            if ((node.op === Model.EQL || node.op === Model.APPROX) &&
-                ((cc = isPolynomial(args[0])) && cc[cc.length-1] < 0 ||
-                !cc && sign(args[0]) < 0)) {
-              args[0] = simplify(expand(negate(args[0])));
-            }
           }
           return newNode(node.op, args);
         }
@@ -4178,9 +4174,12 @@
               lterms = terms(lnode);
               rterms = terms(rnode);
             }
-            if (!isAggregate(lnode) && lterms.length > 1 ||
-                !isAggregate(rnode) && rterms.length > 1) {
+            if ((!isAggregate(lnode) && lterms.length > 1 ||
+                 !isAggregate(rnode) && rterms.length > 1) &&
+                (lnode.args.length < 64 || rnode.args.length < 2) &&
+                (lnode.args.length < 2 || rnode.args.length < 64)) {
               // (x + 2)(x - 3)
+              // Limit the number of terms to avoid runaway expansion.
               return multiplyTerms(lterms, rterms, expo);
             }
             var result = [];
@@ -4689,6 +4688,13 @@
         },
         equals: function(node) {
           var args = [];
+          // If equality and LHS leading coefficient is negative, then multiply by -1
+          var c, cc;
+          if ((node.op === Model.EQL || node.op === Model.APPROX) &&
+              ((cc = isPolynomial(node.args[0])) && cc[cc.length-1] < 0 ||
+               !cc && sign(node.args[0]) < 0)) {
+            node.args[0] = simplify(expand(negate(node.args[0])));
+          }
           forEach(node.args, function (n) {
             args.push(scale(n));
           });

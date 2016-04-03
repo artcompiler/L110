@@ -31,6 +31,9 @@ new:	check
 content: check
 	open ../tests/jasmine/ContentRunner.html
 
+perf: 	check
+	open ../tests/jasmine/PerfRunner.html
+
 check:
 	$(shell echo ./check-lib.sh)
 
