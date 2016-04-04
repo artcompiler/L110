@@ -129,6 +129,28 @@
     return toDecimal(Math.abs(n));
   }
 
+  function isNeg(n) {
+    var mv;
+    if (n === null) {
+      return false;
+    }
+    if (n.op) {
+      mv = mathValue(n, true);
+      if (!mv) {
+        if (n.op === Model.MUL && isMinusOne(n.args[0]) ||
+            n.op === Model.NUM && n.args[0] === "-Infinity") {
+          return true;
+        }
+        return false;
+      }
+    } else if (!(n instanceof BigDecimal)) {
+      return false;
+    } else {
+      mv = n;
+    }
+    return mv.compareTo(bigZero) < 0;
+  }
+
   function numberNode(val, doScale, roundOnly, isRepeating) {
     assert(!(val instanceof Array));
     // doScale - scale n if true
@@ -216,28 +238,6 @@
       return binaryNode(Model.POW, [negate(n.args[0]), nodeMinusOne]);
     }
     return multiplyNode([nodeMinusOne, n]);
-  }
-
-  function isNeg(n) {
-    var mv;
-    if (n === null) {
-      return false;
-    }
-    if (n.op) {
-      mv = mathValue(n, true);
-      if (!mv) {
-        if (n.op === Model.MUL && isMinusOne(n.args[0]) ||
-            n.op === Model.NUM && n.args[0] === "-Infinity") {
-          return true;
-        }
-        return false;
-      }
-    } else if (!(n instanceof BigDecimal)) {
-      return false;
-    } else {
-      mv = n;
-    }
-    return mv.compareTo(bigZero) < 0;
   }
 
   function isInfinity(n) {
@@ -2861,10 +2861,10 @@
       if (root.simplifyNid === nid) {
         return root;
       }
-      // if (level === 0) {
-      //   console.log("node: " + JSON.stringify(stripNids(root), null, 2));
-      // }
-      // level++;
+//       if (level === 0) {
+//         console.log("node: " + JSON.stringify(stripNids(root), null, 2));
+//       }
+//       level++;
       var node = Model.create(visit(root, {
         name: "simplify",
         numeric: function (node) {
@@ -3558,11 +3558,11 @@
           }
         },
         variable: function(node) {
-          var val, n;
-          var env = Model.env;
-          if (node.args[0] === "e") {
-            node = numberNode(Math.E);
-          }
+          // var val, n;
+          // var env = Model.env;
+          // if (node.args[0] === "e") {
+          //   node = numberNode(Math.E);
+          // }
           return node;
         },
         comma: function(node) {
@@ -4324,21 +4324,21 @@
                   } else {
                     args.push(newNode(op, [n, expo]));
                   }
-                } else if (!dontExpandPowers && expo.op === Model.MUL) {
-                  // x^(2y) -> x^y*x^y
-                  var c = constantPart(expo);
-                  var cmv = mathValue(c);
-                  var vp = variablePart(expo);
-                  if (vp !== null) {
-                    if (!isOne(cmv)) {
-                      args.push(binaryNode(Model.POW, [n, c]));
-                    }
-                    args.push(binaryNode(Model.POW, [n, vp]));
-                  } else if (cmv !== null) {
-                    args.push(newNode(op, [n, numberNode(cmv.toString())]));
-                  } else {
-                    args.push(newNode(op, [n, expo]));
-                  }
+                // } else if (!dontExpandPowers && expo.op === Model.MUL) {
+                //   // x^(2y) -> x^y*x^y
+                //   var c = constantPart(expo);
+                //   var cmv = mathValue(c);
+                //   var vp = variablePart(expo);
+                //   if (vp !== null) {
+                //     if (!isOne(cmv)) {
+                //       args.push(binaryNode(Model.POW, [n, c]));
+                //     }
+                //     args.push(binaryNode(Model.POW, [n, vp]));
+                //   } else if (cmv !== null) {
+                //     args.push(newNode(op, [n, numberNode(cmv.toString())]));
+                //   } else {
+                //     args.push(newNode(op, [n, expo]));
+                //   }
                 } else {
                   args.push(newNode(op, [n, expo]));
                 }
@@ -4676,6 +4676,9 @@
         variable: function(node) {
           if (node.args[0] === "\\pi") {
             node = numberNode(Math.PI, true);
+          }
+          if (node.args[0] === "e") {
+            node = numberNode(Math.E, true);
           }
           return node;  // nothing to do here
         },

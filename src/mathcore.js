@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - e210981
+ * Mathcore unversioned - a8fcc93
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -4325,6 +4325,28 @@ var BigDecimal = function(MathContext) {
     }
     return toDecimal(Math.abs(n))
   }
+  function isNeg(n) {
+    var mv;
+    if(n === null) {
+      return false
+    }
+    if(n.op) {
+      mv = mathValue(n, true);
+      if(!mv) {
+        if(n.op === Model.MUL && isMinusOne(n.args[0]) || n.op === Model.NUM && n.args[0] === "-Infinity") {
+          return true
+        }
+        return false
+      }
+    }else {
+      if(!(n instanceof BigDecimal)) {
+        return false
+      }else {
+        mv = n
+      }
+    }
+    return mv.compareTo(bigZero) < 0
+  }
   function numberNode(val, doScale, roundOnly, isRepeating) {
     assert(!(val instanceof Array));
     var mv, node, minusOne;
@@ -4419,28 +4441,6 @@ var BigDecimal = function(MathContext) {
       }
     }
     return multiplyNode([nodeMinusOne, n])
-  }
-  function isNeg(n) {
-    var mv;
-    if(n === null) {
-      return false
-    }
-    if(n.op) {
-      mv = mathValue(n, true);
-      if(!mv) {
-        if(n.op === Model.MUL && isMinusOne(n.args[0]) || n.op === Model.NUM && n.args[0] === "-Infinity") {
-          return true
-        }
-        return false
-      }
-    }else {
-      if(!(n instanceof BigDecimal)) {
-        return false
-      }else {
-        mv = n
-      }
-    }
-    return mv.compareTo(bigZero) < 0
   }
   function isInfinity(n) {
     if(n === Number.POSITIVE_INFINITY || (n === Number.NEGATIVE_INFINITY || n.op === Model.NUM && (n.args[0] === "Infinity" || n.args[0] === "-Infinity"))) {
@@ -7497,11 +7497,6 @@ var BigDecimal = function(MathContext) {
           return[expo, base]
         }
       }, variable:function(node) {
-        var val, n;
-        var env = Model.env;
-        if(node.args[0] === "e") {
-          node = numberNode(Math.E)
-        }
         return node
       }, comma:function(node) {
         var args = [];
@@ -8135,25 +8130,7 @@ var BigDecimal = function(MathContext) {
                     }
                   }
                 }else {
-                  if(!dontExpandPowers && expo.op === Model.MUL) {
-                    var c = constantPart(expo);
-                    var cmv = mathValue(c);
-                    var vp = variablePart(expo);
-                    if(vp !== null) {
-                      if(!isOne(cmv)) {
-                        args.push(binaryNode(Model.POW, [n, c]))
-                      }
-                      args.push(binaryNode(Model.POW, [n, vp]))
-                    }else {
-                      if(cmv !== null) {
-                        args.push(newNode(op, [n, numberNode(cmv.toString())]))
-                      }else {
-                        args.push(newNode(op, [n, expo]))
-                      }
-                    }
-                  }else {
-                    args.push(newNode(op, [n, expo]))
-                  }
+                  args.push(newNode(op, [n, expo]))
                 }
               }
             })
@@ -8447,6 +8424,9 @@ var BigDecimal = function(MathContext) {
       }, variable:function(node) {
         if(node.args[0] === "\\pi") {
           node = numberNode(Math.PI, true)
+        }
+        if(node.args[0] === "e") {
+          node = numberNode(Math.E, true)
         }
         return node
       }, comma:function(node) {
@@ -9572,7 +9552,7 @@ var MathCore = function() {
   "ft":{type:"unit", value:u, base:"ft"}, "yd":{type:"unit", value:3, base:"ft"}, "mi":{type:"unit", value:5280, base:"ft"}, "fl":{type:"unit", value:1, base:"fl"}, "cup":{type:"unit", value:8, base:"fl"}, "pt":{type:"unit", value:16, base:"fl"}, "qt":{type:"unit", value:32, base:"fl"}, "gal":{type:"unit", value:128, base:"fl"}, "oz":{type:"unit", value:1 / 16, base:"lb"}, "lb":{type:"unit", value:1, base:"lb"}, "st":{type:"unit", value:1 / 1614, base:"lb"}, "qtr":{type:"unit", value:28, base:"lb"}, 
   "cwt":{type:"unit", value:112, base:"lb"}, "t":{type:"unit", value:2240, base:"lb"}, "$":{type:"unit", value:u, base:"$"}, "i":{type:"unit", value:null, base:"i"}, "min":{type:"unit", value:60, base:"s"}, "hr":{type:"unit", value:3600, base:"s"}, "day":{type:"unit", value:24 * 3600, base:"s"}, "\\radian":{type:"unit", value:u, base:"radian"}, "\\degree":{type:"unit", value:Math.PI / 180, base:"radian"}, "\\degree K":{type:"unit", value:u, base:"\\degree K"}, "\\degree C":{type:"unit", value:u, 
   base:"\\degree C"}, "\\degree F":{type:"unit", value:u, base:"\\degree F"}, "R":{name:"reals"}, "matrix":{}, "pmatrix":{}, "bmatrix":{}, "Bmatrix":{}, "vmatrix":{}, "Vmatrix":{}, "array":{}, "\\alpha":{type:"var"}, "\\beta":{type:"var"}, "\\gamma":{type:"var"}, "\\delta":{type:"var"}, "\\epsilon":{type:"var"}, "\\zeta":{type:"var"}, "\\eta":{type:"var"}, "\\theta":{type:"var"}, "\\iota":{type:"var"}, "\\kappa":{type:"var"}, "\\lambda":{type:"var"}, "\\mu":{type:"const", value:mu}, "\\nu":{type:"var"}, 
-  "\\xi":{type:"var"}, "\\pi":{type:"const", value:Math.PI}, "\\rho":{type:"var"}, "\\sigma":{type:"var"}, "\\tau":{type:"var"}, "\\upsilon":{type:"var"}, "\\phi":{type:"var"}, "\\chi":{type:"var"}, "\\psi":{type:"var"}, "\\omega":{type:"var"}};
+  "\\xi":{type:"var"}, "\\pi":{type:"const", value:Math.PI}, "e":{type:"const", value:Math.E}, "\\rho":{type:"var"}, "\\sigma":{type:"var"}, "\\tau":{type:"var"}, "\\upsilon":{type:"var"}, "\\phi":{type:"var"}, "\\chi":{type:"var"}, "\\psi":{type:"var"}, "\\omega":{type:"var"}};
   function evaluate(spec, solution, resume) {
     try {
       assert(spec, message(3001, [spec]));

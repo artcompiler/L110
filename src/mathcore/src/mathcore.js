@@ -98,6 +98,7 @@ var MathCore = (function () {
     "\\nu": { type: "var" },
     "\\xi": { type: "var" },
     "\\pi": { type: "const", value: Math.PI },
+    "e": { type: "const", value: Math.E },
     "\\rho": { type: "var" },
     "\\sigma": { type: "var" },
     "\\tau": { type: "var" },
