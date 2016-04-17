@@ -131,7 +131,6 @@ var MathCore = (function () {
       var errorCode = 0, msg = "Normal completion", stack, location;
       evaluator.evaluate(solution, function (err, val) {
         model = evaluator.model;
-        console.log("evaluateVerbose() val=" + val);
         resume([], {
           result: val,
           errorCode: errorCode,
@@ -152,11 +151,10 @@ var MathCore = (function () {
           e = x;
         }
       }
-      result = undefined;
-      errorCode = parseErrorCode(e.message);
-      msg = parseMessage(e.message);
-      stack = e.stack;
-      location = e.location;
+      var errorCode = parseErrorCode(e.message);
+      var msg = parseMessage(e.message);
+      var stack = e.stack;
+      var location = e.location;
       console.log("ERROR evaluateVerbose stack=" + stack);
       resume([e.stack], undefined);
     }
@@ -314,6 +312,9 @@ var MathCore = (function () {
       case "isTrue":
         result = solutionNode.isTrue();
         break;
+      case "calculate":
+        result = solutionNode.calculate();
+        break;
       case "validSyntax":
         // If we got this far, then value parsed.
         result = true;
@@ -323,7 +324,6 @@ var MathCore = (function () {
         break;
       }
       Model.popEnv();
-      console.log("evaluate() result=" + JSON.stringify(result));
       resume(null, result);
     }
     var outerResult = {

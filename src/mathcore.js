@@ -4357,7 +4357,7 @@ var BigDecimal = function(MathContext) {
       mv = toDecimal(val);
       if(isNeg(mv) && !isMinusOne(mv)) {
         minusOne = bigMinusOne.setScale(scale, BigDecimal.ROUND_HALF_UP);
-        mv = abs(mv)
+        mv = bigMinusOne.multiply(mv)
       }
       if(mv !== null && (!roundOnly || mv.scale() > scale)) {
         mv = mv.setScale(scale, BigDecimal.ROUND_HALF_UP)
@@ -4631,9 +4631,9 @@ var BigDecimal = function(MathContext) {
       node.hints.push(str)
     }
   }
+  var normalNumber = numberNode("298230487121230434902874");
+  normalNumber.is_normal = true;
   function Visitor(ast) {
-    var normalNumber = numberNode("298230487121230434902874");
-    normalNumber.is_normal = true;
     function visit(node, visit, resume) {
       assert(node.op && node.args, "Visitor.visit() op=" + node.op + " args = " + node.args);
       switch(node.op) {
@@ -4721,7 +4721,7 @@ var BigDecimal = function(MathContext) {
         case Model.POW:
         ;
         case Model.SUBSCRIPT:
-          node = visit.unary(node, resume);
+        ;
         case Model.OVERLINE:
         ;
         case Model.OVERSET:
@@ -4733,7 +4733,7 @@ var BigDecimal = function(MathContext) {
         case Model.DEGREE:
         ;
         case Model.DOT:
-          node = visit.unary(node);
+          node = visit.unary(node, resume);
           break;
         case Model.COMMA:
         ;
@@ -6527,7 +6527,8 @@ var BigDecimal = function(MathContext) {
           assert(false);
           break
       }
-      return toDecimal(f(n))
+      var result = toDecimal(f(n));
+      return result
     }
     function flattenNestedNodes(node, doSimplify) {
       var args = [];
@@ -8702,21 +8703,18 @@ var BigDecimal = function(MathContext) {
     this.hint = hint;
     this.m2e = m2e
   }
-  var visitor = new Visitor(new Ast);
+  var ast = new Ast;
+  var visitor = new Visitor(ast);
   function degree(node, notAbsolute) {
-    var visitor = new Visitor(new Ast);
     return visitor.degree(node, notAbsolute)
   }
   function constantPart(node) {
-    var visitor = new Visitor(new Ast);
     return visitor.constantPart(node)
   }
   function variables(node) {
-    var visitor = new Visitor(new Ast);
     return visitor.variables(node)
   }
   function hint(node) {
-    var visitor = new Visitor(new Ast);
     return visitor.hint(node)
   }
   function m2e(node) {
@@ -8724,11 +8722,10 @@ var BigDecimal = function(MathContext) {
     return visitor.m2e(node)
   }
   function variablePart(node) {
-    var visitor = new Visitor(new Ast);
     return visitor.variablePart(node)
   }
   function sort(node) {
-    var visitor = new Visitor(new Ast);
+    var visitor = new Visitor(ast);
     var prevLocation = Assert.location;
     if(node.location) {
       Assert.setLocation(node.location)
@@ -8738,7 +8735,7 @@ var BigDecimal = function(MathContext) {
     return result
   }
   function normalize(node) {
-    var visitor = new Visitor(new Ast);
+    var visitor = new Visitor(ast);
     var prevLocation = Assert.location;
     if(node.location) {
       Assert.setLocation(node.location)
@@ -8748,7 +8745,6 @@ var BigDecimal = function(MathContext) {
     return result
   }
   function normalizeLiteral(node) {
-    var visitor = new Visitor(new Ast);
     var prevLocation = Assert.location;
     if(node.location) {
       Assert.setLocation(node.location)
@@ -8758,7 +8754,6 @@ var BigDecimal = function(MathContext) {
     return result
   }
   function normalizeSyntax(node, ref) {
-    var visitor = new Visitor(new Ast);
     var prevLocation = Assert.location;
     if(node.location) {
       Assert.setLocation(node.location)
@@ -8768,7 +8763,6 @@ var BigDecimal = function(MathContext) {
     return result
   }
   function normalizeExpanded(node) {
-    var visitor = new Visitor(new Ast);
     var prevLocation = Assert.location;
     if(node.location) {
       Assert.setLocation(node.location)
@@ -8778,7 +8772,6 @@ var BigDecimal = function(MathContext) {
     return result
   }
   function mathValue(node, env, allowDecimal) {
-    var visitor = new Visitor(new Ast);
     var prevLocation = Assert.location;
     if(node.location) {
       Assert.setLocation(node.location)
@@ -8788,7 +8781,6 @@ var BigDecimal = function(MathContext) {
     return result
   }
   function units(node, env) {
-    var visitor = new Visitor(new Ast);
     var prevLocation = Assert.location;
     if(node.location) {
       Assert.setLocation(node.location)
@@ -8798,7 +8790,7 @@ var BigDecimal = function(MathContext) {
     return result
   }
   function simplify(node, env) {
-    var visitor = new Visitor(new Ast);
+    var visitor = new Visitor(ast);
     var prevLocation = Assert.location;
     if(node.location) {
       Assert.setLocation(node.location)
@@ -8818,7 +8810,6 @@ var BigDecimal = function(MathContext) {
     })
   }
   function hasLikeFactors(node, env) {
-    var visitor = new Visitor(new Ast);
     var prevLocation = Assert.location;
     if(node.location) {
       Assert.setLocation(node.location)
@@ -8828,7 +8819,6 @@ var BigDecimal = function(MathContext) {
     return result
   }
   function expand(node, env) {
-    var visitor = new Visitor(new Ast);
     var prevLocation = Assert.location;
     if(node.location) {
       Assert.setLocation(node.location)
@@ -8838,7 +8828,6 @@ var BigDecimal = function(MathContext) {
     return result
   }
   function terms(node, env) {
-    var visitor = new Visitor(new Ast);
     var prevLocation = Assert.location;
     if(node.location) {
       Assert.setLocation(node.location)
@@ -8848,7 +8837,6 @@ var BigDecimal = function(MathContext) {
     return result
   }
   function factorGroupingKey(node, env) {
-    var visitor = new Visitor(new Ast);
     var prevLocation = Assert.location;
     if(node.location) {
       Assert.setLocation(node.location)
@@ -8858,7 +8846,6 @@ var BigDecimal = function(MathContext) {
     return result
   }
   function factors(node, env) {
-    var visitor = new Visitor(new Ast);
     var prevLocation = Assert.location;
     if(node.location) {
       Assert.setLocation(node.location)
@@ -8868,7 +8855,6 @@ var BigDecimal = function(MathContext) {
     return result
   }
   function isFactorised(node, env) {
-    var visitor = new Visitor(new Ast);
     var prevLocation = Assert.location;
     if(node.location) {
       Assert.setLocation(node.location)
@@ -8878,7 +8864,6 @@ var BigDecimal = function(MathContext) {
     return result
   }
   function scale(node) {
-    var visitor = new Visitor(new Ast);
     var prevLocation = Assert.location;
     if(node.location) {
       Assert.setLocation(node.location)
@@ -8898,9 +8883,39 @@ var BigDecimal = function(MathContext) {
     }
     return prec
   }
-  function stripTrailingZeros(bd) {
-    var mc = new MathContext(precision(bd));
-    return v1.round(mc)
+  function stripTrailingZeros(n) {
+    if(n.op !== Model.NUM) {
+      var mv = mathValue(n);
+      if(!mv) {
+        return n
+      }
+      n = newNode(Model.NUM, [String(mv)])
+    }
+    var decimalPoint;
+    var s = n.args[0];
+    for(var i = 0;i < s.length;i++) {
+      var c = s.charCodeAt(i);
+      if(c === 46) {
+        decimalPoint = i
+      }else {
+        if(c < 48 || (c > 57 || c === 45)) {
+          return n
+        }
+      }
+    }
+    if(decimalPoint !== undefined) {
+      for(var i = s.length - 1;i > decimalPoint;i--) {
+        if(s.charCodeAt(i) === 48) {
+          s = s.substring(0, i)
+        }else {
+          break
+        }
+      }
+      if(s.charCodeAt(s.length - 1) === 46) {
+        s = s.substring(0, s.length - 1)
+      }
+    }
+    return numberNode(s)
   }
   function distributeUnits(n1, n2) {
     var n1units = units(n1);
@@ -9309,6 +9324,16 @@ var BigDecimal = function(MathContext) {
     var inverseResult = option("inverseResult");
     return inverseResult ? !result : result
   };
+  Model.fn.calculate = function(n1) {
+    var prevLocation = Assert.location;
+    if(n1.location) {
+      Assert.setLocation(n1.location)
+    }
+    var node = stripTrailingZeros(scale(numberNode(mathValue(normalize(n1), Model.env, true))));
+    var result = node.op === Model.NUM ? node.args[0] : "ERROR";
+    Assert.setLocation(prevLocation);
+    return result
+  };
   Model.fn.isExpanded = function isExpanded(node) {
     var n1, n2, nid1, nid2, result;
     if(node.op === Model.COMMA) {
@@ -9576,7 +9601,6 @@ var MathCore = function() {
       var errorCode = 0, msg = "Normal completion", stack, location;
       evaluator.evaluate(solution, function(err, val) {
         model = evaluator.model;
-        console.log("evaluateVerbose() val=" + val);
         resume([], {result:val, errorCode:errorCode, message:msg, stack:stack, location:location, toString:function() {
           return this.errorCode + ": (" + location + ") " + msg + "\n" + this.stack
         }})
@@ -9589,11 +9613,10 @@ var MathCore = function() {
           e = x
         }
       }
-      result = undefined;
-      errorCode = parseErrorCode(e.message);
-      msg = parseMessage(e.message);
-      stack = e.stack;
-      location = e.location;
+      var errorCode = parseErrorCode(e.message);
+      var msg = parseMessage(e.message);
+      var stack = e.stack;
+      var location = e.location;
       console.log("ERROR evaluateVerbose stack=" + stack);
       resume([e.stack], undefined)
     }
@@ -9760,6 +9783,9 @@ var MathCore = function() {
         case "isTrue":
           result = solutionNode.isTrue();
           break;
+        case "calculate":
+          result = solutionNode.calculate();
+          break;
         case "validSyntax":
           result = true;
           break;
@@ -9768,7 +9794,6 @@ var MathCore = function() {
           break
       }
       Model.popEnv();
-      console.log("evaluate() result=" + JSON.stringify(result));
       resume(null, result)
     };
     var outerResult = {evaluate:evaluate, model:valueNode};

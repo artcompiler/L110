@@ -164,7 +164,7 @@
       mv = toDecimal(val);
       if (isNeg(mv) && !isMinusOne(mv)) {
         minusOne = bigMinusOne.setScale(scale, BigDecimal.ROUND_HALF_UP);
-        mv = abs(mv);
+        mv = bigMinusOne.multiply(mv);
       }
       if (mv !== null && (!roundOnly || mv.scale() > scale)) {
         mv = mv.setScale(scale, BigDecimal.ROUND_HALF_UP);
@@ -417,11 +417,12 @@
     }
   }
 
+  var normalNumber = numberNode("298230487121230434902874");
+  normalNumber.is_normal = true;
+
   // The outer Visitor function provides a global scope for all visitors,
   // as well as dispatching to methods within a visitor.
   function Visitor(ast) {
-    var normalNumber = numberNode("298230487121230434902874");
-    normalNumber.is_normal = true;
     function visit(node, visit, resume) {
       assert(node.op && node.args, "Visitor.visit() op=" + node.op + " args = " + node.args);
       switch (node.op) {
@@ -477,14 +478,13 @@
       case Model.ION:
       case Model.POW:
       case Model.SUBSCRIPT:
-        node = visit.unary(node, resume);
       case Model.OVERLINE:
       case Model.OVERSET:
       case Model.UNDERSET:
       case Model.NONE:
       case Model.DEGREE:
       case Model.DOT:
-        node = visit.unary(node);
+        node = visit.unary(node, resume);
         break;
       case Model.COMMA:
       case Model.MATRIX:
@@ -2505,7 +2505,8 @@
         assert(false);
         break;
       }
-      return toDecimal(f(n));
+      var result = toDecimal(f(n));
+      return result;
     }
 
     function flattenNestedNodes(node, doSimplify) {
@@ -2861,10 +2862,10 @@
       if (root.simplifyNid === nid) {
         return root;
       }
-//       if (level === 0) {
-//         console.log("node: " + JSON.stringify(stripNids(root), null, 2));
-//       }
-//       level++;
+      // if (level === 0) {
+      //   console.log("node: " + JSON.stringify(stripNids(root), null, 2));
+      // }
+      // level++;
       var node = Model.create(visit(root, {
         name: "simplify",
         numeric: function (node) {
@@ -3558,11 +3559,6 @@
           }
         },
         variable: function(node) {
-          // var val, n;
-          // var env = Model.env;
-          // if (node.args[0] === "e") {
-          //   node = numberNode(Math.E);
-          // }
           return node;
         },
         comma: function(node) {
@@ -4324,21 +4320,6 @@
                   } else {
                     args.push(newNode(op, [n, expo]));
                   }
-                // } else if (!dontExpandPowers && expo.op === Model.MUL) {
-                //   // x^(2y) -> x^y*x^y
-                //   var c = constantPart(expo);
-                //   var cmv = mathValue(c);
-                //   var vp = variablePart(expo);
-                //   if (vp !== null) {
-                //     if (!isOne(cmv)) {
-                //       args.push(binaryNode(Model.POW, [n, c]));
-                //     }
-                //     args.push(binaryNode(Model.POW, [n, vp]));
-                //   } else if (cmv !== null) {
-                //     args.push(newNode(op, [n, numberNode(cmv.toString())]));
-                //   } else {
-                //     args.push(newNode(op, [n, expo]));
-                //   }
                 } else {
                   args.push(newNode(op, [n, expo]));
                 }
@@ -4998,24 +4979,21 @@
     this.m2e = m2e;
   }
 
-  var visitor = new Visitor(new Ast);
+  var ast = new Ast;
+  var visitor = new Visitor(ast);
   function degree(node, notAbsolute) {
-    var visitor = new Visitor(new Ast);
     return visitor.degree(node, notAbsolute);
   }
 
   function constantPart(node) {
-    var visitor = new Visitor(new Ast);
     return visitor.constantPart(node);
   }
 
   function variables(node) {
-    var visitor = new Visitor(new Ast);
     return visitor.variables(node);
   }
 
   function hint(node) {
-    var visitor = new Visitor(new Ast);
     return visitor.hint(node);
   }
 
@@ -5025,12 +5003,11 @@
   }
 
   function variablePart(node) {
-    var visitor = new Visitor(new Ast);
     return visitor.variablePart(node);
   }
 
   function sort(node) {
-    var visitor = new Visitor(new Ast);
+    var visitor = new Visitor(ast);
     var prevLocation = Assert.location;
     if (node.location) {
       Assert.setLocation(node.location);
@@ -5041,7 +5018,7 @@
   }
 
   function normalize(node) {
-    var visitor = new Visitor(new Ast);
+    var visitor = new Visitor(ast);
     var prevLocation = Assert.location;
     if (node.location) {
       Assert.setLocation(node.location);
@@ -5052,7 +5029,6 @@
   }
 
   function normalizeLiteral(node) {
-    var visitor = new Visitor(new Ast);
     var prevLocation = Assert.location;
     if (node.location) {
       Assert.setLocation(node.location);
@@ -5063,7 +5039,6 @@
   }
 
   function normalizeSyntax(node, ref) {
-    var visitor = new Visitor(new Ast);
     var prevLocation = Assert.location;
     if (node.location) {
       Assert.setLocation(node.location);
@@ -5074,7 +5049,6 @@
   }
 
   function normalizeExpanded(node) {
-    var visitor = new Visitor(new Ast);
     var prevLocation = Assert.location;
     if (node.location) {
       Assert.setLocation(node.location);
@@ -5085,7 +5059,6 @@
   }
 
   function mathValue(node, env, allowDecimal) {
-    var visitor = new Visitor(new Ast);
     var prevLocation = Assert.location;
     if (node.location) {
       Assert.setLocation(node.location);
@@ -5096,7 +5069,6 @@
   }
 
   function units(node, env) {
-    var visitor = new Visitor(new Ast);
     var prevLocation = Assert.location;
     if (node.location) {
       Assert.setLocation(node.location);
@@ -5107,7 +5079,7 @@
   }
 
   function simplify(node, env) {
-    var visitor = new Visitor(new Ast);
+    var visitor = new Visitor(ast);
     var prevLocation = Assert.location;
     if (node.location) {
       Assert.setLocation(node.location);
@@ -5129,7 +5101,6 @@
   }
 
   function hasLikeFactors(node, env) {
-    var visitor = new Visitor(new Ast);
     var prevLocation = Assert.location;
     if (node.location) {
       Assert.setLocation(node.location);
@@ -5140,7 +5111,6 @@
   }
 
   function expand(node, env) {
-    var visitor = new Visitor(new Ast);
     var prevLocation = Assert.location;
     if (node.location) {
       Assert.setLocation(node.location);
@@ -5151,7 +5121,6 @@
   }
 
   function terms(node, env) {
-    var visitor = new Visitor(new Ast);
     var prevLocation = Assert.location;
     if (node.location) {
       Assert.setLocation(node.location);
@@ -5162,7 +5131,6 @@
   }
 
   function factorGroupingKey(node, env) {
-    var visitor = new Visitor(new Ast);
     var prevLocation = Assert.location;
     if (node.location) {
       Assert.setLocation(node.location);
@@ -5173,7 +5141,6 @@
   }
 
   function factors(node, env) {
-    var visitor = new Visitor(new Ast);
     var prevLocation = Assert.location;
     if (node.location) {
       Assert.setLocation(node.location);
@@ -5184,7 +5151,6 @@
   }
 
   function isFactorised(node, env) {
-    var visitor = new Visitor(new Ast);
     var prevLocation = Assert.location;
     if (node.location) {
       Assert.setLocation(node.location);
@@ -5195,7 +5161,6 @@
   }
 
   function scale(node) {
-    var visitor = new Visitor(new Ast);
     var prevLocation = Assert.location;
     if (node.location) {
       Assert.setLocation(node.location);
@@ -5219,9 +5184,37 @@
     return prec;
   }
 
-  function stripTrailingZeros(bd) {
-    var mc = new MathContext(precision(bd));
-    return v1.round(mc);
+  function stripTrailingZeros(n) {
+    if (n.op !== Model.NUM) {
+      var mv = mathValue(n);
+      if (!mv) {
+        return n;
+      }
+      n = newNode(Model.NUM, [String(mv)]);
+    }
+    var decimalPoint;
+    var s = n.args[0];
+    for (var i = 0; i < s.length; i++) {
+      var c = s.charCodeAt(i);
+      if (c === 46) {
+        decimalPoint = i;
+      } else if (c < 48 || c > 57 || c === 45) {
+        return n;
+      }
+    }
+    if (decimalPoint !== undefined) {
+      for (var i = s.length-1; i > decimalPoint; i--) {
+        if (s.charCodeAt(i) === 48) {
+          s = s.substring(0, i);
+        } else {
+          break;
+        }
+      }
+      if (s.charCodeAt(s.length-1) === 46) {
+        s = s.substring(0, s.length-1);
+      }
+    }
+    return numberNode(s);
   }
 
   // Check if two equations have the same math value. Two equations have the
@@ -5676,6 +5669,17 @@
     }
     var inverseResult = option("inverseResult");
     return inverseResult ? !result : result;
+  }
+
+  Model.fn.calculate = function (n1) {
+    var prevLocation = Assert.location;
+    if (n1.location) {
+      Assert.setLocation(n1.location);
+    }
+    var node = stripTrailingZeros(scale(numberNode(mathValue(normalize(n1), Model.env, true))));
+    var result = node.op === Model.NUM ? node.args[0] : "ERROR";
+    Assert.setLocation(prevLocation);
+    return result;
   }
 
   Model.fn.isExpanded = function isExpanded(node) {

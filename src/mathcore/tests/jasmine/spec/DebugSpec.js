@@ -115,47 +115,22 @@ var forEach = function forEach(array, fun) {
 define(["mathcore"], function (MathCore) {
   describe("Math Core", function() {
     describe("Debug", function() {
-      describe("equivValue decimalPlaces", function() {
+      describe("calculate", function() {
         function run(tests) {
           forEach(tests, function (v, i) {
-            it(v[0] + " | " + v[1] + " | " + v[2], function() {
+            it(v[0], function() {
               expect(MathCore.evaluate({
-                method: "equivValue",
-                value: v[0],
-                options: {
-                  decimalPlaces: v[2]
-                }
-              }, v[1])).toBe(true);
+                method: "calculate"
+              }, v[0])).toBe(v[1]);
             });
           });
         }
         run([
-          ["e", "2.718", "3"],
-          ["e", "2.718281828459045", "10"],
-          ["\\frac{\\pi}{2}", "1.57", "2"],
-          ["\\pi", "3.14", "2"],
-        ]);
-      });
-      describe("equivSymbolic", function() {
-        function run(tests) {
-          forEach(tests, function (v, i) {
-            it(v[0] + " | " + v[1], function() {
-              expect(MathCore.evaluate({
-                method: "equivSymbolic",
-                options: {
-                  inverseResult: true,
-                },
-                value: v[0]
-              }, v[1])).toBe(true);
-            });
-          });
-        }
-        run([
-          ["4(e^{-x+4}-1)", "(e^{-x}*e^5-1)"],
-          ["4(e^{-x+4}-1)", "(e^{-x}*e^4-1)"],
-          ["4(e^{-x+4}-1)", "(e^{-x+4}-1)"],
-          ["4(e^{-x+4}-1)", "\\frac{1}{3}e^{-x+4}-\\frac{1}{3}"],
-          ["4e^{-x+4}-4", "\\frac{1}{3}e^{-x+4}-\\frac{1}{3}"],
+          ["1+2", "3"],
+          ["\\sin \\pi", "0"],
+          ["\\sin 0", "0"],
+          ["\\sqrt{9}", "3"],
+          ["1/3", "0.3333333333"],
         ]);
       });
     });
