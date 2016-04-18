@@ -286,10 +286,10 @@ var transformer = function() {
     var errs = [];
     visit(node.elts[1], options, function (err, val) {
       errs = errs.concat(err);
-      var reference = val;
+      var reference = val.result ? val.result : val;
       visit(node.elts[0], options, function (err, val) {
         errs = errs.concat(err);
-        var response = val;
+        var response = val.result ? val.result : val;
         if (response) {
           options.strict = true;
           MathCore.evaluateVerbose({
@@ -318,10 +318,10 @@ var transformer = function() {
     var errs = [];
     visit(node.elts[1], options, function (err, val) {
       errs = errs.concat(err);
-      var reference = val;
+      var reference = val.result ? val.result : val;
       visit(node.elts[0], options, function (err, val) {
         errs = errs.concat(err);
-        var response = val;
+        var response = val.result ? val.result : val;
         if (response) {
           options.strict = true;
           MathCore.evaluateVerbose({
