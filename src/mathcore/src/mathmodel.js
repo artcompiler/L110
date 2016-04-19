@@ -173,7 +173,7 @@
       mv = toDecimal(val);
       if (isNeg(mv) && !isMinusOne(mv)) {
         minusOne = bigMinusOne;
-        mv = abs(mv);
+        mv = bigMinusOne.multiply(mv);
       }
     }
     if (minusOne) {
@@ -2505,8 +2505,7 @@
         assert(false);
         break;
       }
-      var result = toDecimal(f(n));
-      return result;
+      return toDecimal(f(n));
     }
 
     function flattenNestedNodes(node, doSimplify) {
@@ -4760,7 +4759,7 @@
           }
           assert(vars.length < 2, message(2001));
           // FIXME What other checks can we add here?
-          return undefined;
+          return true;
         },
         multiplicative: function (node) {
           switch (node.op) {

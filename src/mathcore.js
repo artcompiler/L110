@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 367e128
+ * Mathcore unversioned - 27fb99d
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -4366,7 +4366,7 @@ var BigDecimal = function(MathContext) {
       mv = toDecimal(val);
       if(isNeg(mv) && !isMinusOne(mv)) {
         minusOne = bigMinusOne;
-        mv = abs(mv)
+        mv = bigMinusOne.multiply(mv)
       }
     }
     if(minusOne) {
@@ -6527,8 +6527,7 @@ var BigDecimal = function(MathContext) {
           assert(false);
           break
       }
-      var result = toDecimal(f(n));
-      return result
+      return toDecimal(f(n))
     }
     function flattenNestedNodes(node, doSimplify) {
       var args = [];
@@ -8512,7 +8511,7 @@ var BigDecimal = function(MathContext) {
           }
         }
         assert(vars.length < 2, message(2001));
-        return undefined
+        return true
       }, multiplicative:function(node) {
         switch(node.op) {
           case Model.MUL:
