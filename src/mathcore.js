@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 35c415c
+ * Mathcore unversioned - d101b8f
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -9079,7 +9079,7 @@ var BigDecimal = function(MathContext) {
   }
   function stripTrailingZeros(n) {
     if(n.op !== Model.NUM) {
-      var mv = mathValue(n);
+      var mv = mathValue(n, true);
       if(!mv) {
         return n
       }
@@ -9109,7 +9109,7 @@ var BigDecimal = function(MathContext) {
         s = s.substring(0, s.length - 1)
       }
     }
-    return numberNode(s)
+    return s
   }
   function distributeUnits(n1, n2) {
     var n1units = units(n1);
@@ -9523,8 +9523,8 @@ var BigDecimal = function(MathContext) {
     if(n1.location) {
       Assert.setLocation(n1.location)
     }
-    var node = stripTrailingZeros(scale(numberNode(mathValue(normalize(n1), Model.env, true))));
-    var result = node.op === Model.NUM ? node.args[0] : "ERROR";
+    var result = stripTrailingZeros(scale(numberNode(mathValue(normalize(n1), Model.env, true))));
+    result = typeof result === "string" ? result : "ERROR";
     Assert.setLocation(prevLocation);
     return result
   };
@@ -9829,7 +9829,7 @@ var MathCore = function() {
       return e
     }
   }
-  var timeoutDuration = 3E4;
+  var timeoutDuration = 3E6;
   function setTimeoutDuration(duration) {
     timeoutDuration = duration
   }

@@ -5265,7 +5265,7 @@
 
   function stripTrailingZeros(n) {
     if (n.op !== Model.NUM) {
-      var mv = mathValue(n);
+      var mv = mathValue(n, true);
       if (!mv) {
         return n;
       }
@@ -5293,7 +5293,7 @@
         s = s.substring(0, s.length-1);
       }
     }
-    return numberNode(s);
+    return s;
   }
 
   // Check if two equations have the same math value. Two equations have the
@@ -5755,8 +5755,8 @@
     if (n1.location) {
       Assert.setLocation(n1.location);
     }
-    var node = stripTrailingZeros(scale(numberNode(mathValue(normalize(n1), Model.env, true))));
-    var result = node.op === Model.NUM ? node.args[0] : "ERROR";
+    var result = stripTrailingZeros(scale(numberNode(mathValue(normalize(n1), Model.env, true))));
+    result = typeof result === "string" ? result : "ERROR";
     Assert.setLocation(prevLocation);
     return result;
   }

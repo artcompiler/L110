@@ -174,7 +174,7 @@ var MathCore = (function () {
     }
   }
 
-  var timeoutDuration = 30000; // 30 sec
+  var timeoutDuration = 3000000; // 30 sec
 
   function setTimeoutDuration(duration) {
     timeoutDuration = duration;
