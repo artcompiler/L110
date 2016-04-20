@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - b2b30d1
+ * Mathcore unversioned - 35c415c
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -4336,8 +4336,8 @@ var BigDecimal = function(MathContext) {
   var nodeOne = numberNode("1");
   var nodeMinusOne = numberNode("-1");
   var nodeZero = numberNode("0");
-  var nodeInfinity = numberNode("Infinity");
-  var nodeMinusInfinity = numberNode("-Infinity");
+  var nodePositiveInfinity = numberNode("Infinity");
+  var nodeNegativeInfinity = numberNode("-Infinity");
   var nodeOneHalf = binaryNode(Model.POW, [numberNode("2"), nodeMinusOne]);
   var nodeImaginary = variableNode("i");
   var nodeE = variableNode("e");
@@ -4512,10 +4512,10 @@ var BigDecimal = function(MathContext) {
               return nodeOne
             }else {
               if(n.args[0] === "Infinity") {
-                return nodeMinusInfinity
+                return nodeNegativeInfinity
               }else {
                 if(n.args[0] === "-Infinity") {
-                  return nodeInfinity
+                  return nodePositiveInfinity
                 }else {
                   if(n.args[0].charAt(0) === "-") {
                     return unaryNode(Model.SUB, [n])
@@ -4534,6 +4534,18 @@ var BigDecimal = function(MathContext) {
       }
     }
     return multiplyNode([nodeMinusOne, n])
+  }
+  function isPositiveInfinity(n) {
+    if(n === Number.POSITIVE_INFINITY || n.op === Model.NUM && n.args[0] === "Infinity") {
+      return true
+    }
+    return false
+  }
+  function isNegativeInfinity(n) {
+    if(n === Number.NEGATIVE_INFINITY || n.op === Model.NUM && n.args[0] === "-Infinity") {
+      return true
+    }
+    return false
   }
   function isInfinity(n) {
     if(n === Number.POSITIVE_INFINITY || (n === Number.NEGATIVE_INFINITY || n.op === Model.NUM && (n.args[0] === "Infinity" || n.args[0] === "-Infinity"))) {
@@ -4993,7 +5005,7 @@ var BigDecimal = function(MathContext) {
             return d / 2;
           case Model.FACT:
             if(d !== 0) {
-              return nodeInfinity
+              return nodePositiveInfinity
             }
             return 0;
           case Model.DEGREE:
@@ -5914,9 +5926,21 @@ var BigDecimal = function(MathContext) {
           if(ast.intern(n) === ast.intern(nodeOne)) {
             return
           }
-          if(args.length > 0 && (isMinusOne(n) && isMinusOne(args[args.length - 1]))) {
-            args.pop();
-            return
+          if(args.length > 0 && isMinusOne(args[args.length - 1])) {
+            if(isMinusOne(n)) {
+              args.pop();
+              return
+            }
+            if(isPositiveInfinity(n)) {
+              args.pop();
+              args.push(nodeNegativeInfinity);
+              return
+            }
+            if(isNegativeInfinity(n)) {
+              args.pop();
+              args.push(nodePositiveInfinity);
+              return
+            }
           }
           if(n.op === Model.MUL) {
             args = args.concat(n.args)
@@ -5976,6 +6000,9 @@ var BigDecimal = function(MathContext) {
       }, variable:function(node) {
         if(node.args[0] === "i" && !option("dontSimplifyImaginary")) {
           node = nodeImaginary
+        }
+        if(node.args[0] === "\\infty") {
+          node = nodePositiveInfinity
         }
         return node
       }, exponential:function(node) {
@@ -7852,10 +7879,14 @@ var BigDecimal = function(MathContext) {
           case Model.ARCTANH:
             if(allowDecimal) {
               var val;
-              if(node.args[0].op === Model.VAR && node.args[0].args[0] === "\\infty") {
+              if(isPositiveInfinity(node.args[0])) {
                 val = Number.POSITIVE_INFINITY
               }else {
-                val = mathValue(toRadians(node.args[0]), env, allowDecimal)
+                if(isNegativeInfinity(node.args[0])) {
+                  val = Number.NEGATIVE_INFINITY
+                }else {
+                  val = mathValue(toRadians(node.args[0]), env, allowDecimal)
+                }
               }
               return trig(val, node.op)
             }
@@ -9061,7 +9092,7 @@ var BigDecimal = function(MathContext) {
       if(c === 46) {
         decimalPoint = i
       }else {
-        if(c < 48 || (c > 57 || c === 45)) {
+        if((c < 48 || c > 57) && c !== 45) {
           return n
         }
       }

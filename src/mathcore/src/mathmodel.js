@@ -39,8 +39,8 @@
   var nodeOne = numberNode("1");
   var nodeMinusOne = numberNode("-1");
   var nodeZero = numberNode("0");
-  var nodeInfinity = numberNode("Infinity");
-  var nodeMinusInfinity = numberNode("-Infinity");
+  var nodePositiveInfinity = numberNode("Infinity");
+  var nodeNegativeInfinity = numberNode("-Infinity");
   var nodeOneHalf = binaryNode(Model.POW, [numberNode("2"), nodeMinusOne]);
   var nodeImaginary = variableNode("i");
   var nodeE = variableNode("e");
@@ -226,9 +226,9 @@
       } else if (n.args[0] === "-1") {
         return nodeOne;
       } else if (n.args[0] === "Infinity") {
-        return nodeMinusInfinity;
+        return nodeNegativeInfinity;
       } else if (n.args[0] === "-Infinity") {
-        return nodeInfinity;
+        return nodePositiveInfinity;
       } else if (n.args[0].charAt(0) === "-") {
         return unaryNode(Model.SUB, [n]);
       } else {
@@ -238,6 +238,22 @@
       return binaryNode(Model.POW, [negate(n.args[0]), nodeMinusOne]);
     }
     return multiplyNode([nodeMinusOne, n]);
+  }
+
+  function isPositiveInfinity(n) {
+    if (n === Number.POSITIVE_INFINITY ||
+        n.op === Model.NUM && n.args[0] === "Infinity") {
+      return true;
+    }
+    return false;
+  }
+
+  function isNegativeInfinity(n) {
+    if (n === Number.NEGATIVE_INFINITY ||
+        n.op === Model.NUM && n.args[0] === "-Infinity") {
+      return true;
+    }
+    return false;
   }
 
   function isInfinity(n) {
@@ -618,7 +634,7 @@
             return d / 2;
           case Model.FACT:
             if (d !==  0) {
-              return nodeInfinity;
+              return nodePositiveInfinity;
             }
             return 0;
           case Model.DEGREE:
@@ -1693,12 +1709,24 @@
               // because it simplifies constant expressions.
               return;
             }
-            if (args.length > 0 &&
-                isMinusOne(n) &&
-                isMinusOne(args[args.length-1])) {
-              // Double negative, so erase both.
-              args.pop();
-              return;
+            if (args.length > 0 && isMinusOne(args[args.length-1])) {
+              if (isMinusOne(n)) {
+                // Double negative, so erase both.
+                args.pop();
+                return;
+              }
+              if (isPositiveInfinity(n)) {
+                // Collapse.
+                args.pop();
+                args.push(nodeNegativeInfinity);
+                return;
+              }
+              if (isNegativeInfinity(n)) {
+                // Collapse.
+                args.pop();
+                args.push(nodePositiveInfinity);
+                return;
+              }
             }
             if (n.op === Model.MUL) {
               // Flatten
@@ -1762,6 +1790,9 @@
         variable: function(node) {
           if (node.args[0] === "i" && !option("dontSimplifyImaginary")) {
             node = nodeImaginary;
+          }
+          if (node.args[0] === "\\infty") {
+            node = nodePositiveInfinity;
           }
           return node;
         },
@@ -3827,8 +3858,10 @@
           case Model.ARCTANH:
             if (allowDecimal) {
               var val;
-              if (node.args[0].op === Model.VAR && node.args[0].args[0] === "\\infty") {
+              if (isPositiveInfinity(node.args[0])) {
                 val = Number.POSITIVE_INFINITY;
+              } else if (isNegativeInfinity(node.args[0])) {
+                val = Number.NEGATIVE_INFINITY;
               } else {
                 val = mathValue(toRadians(node.args[0]), env, allowDecimal);
               }
@@ -5244,7 +5277,7 @@
       var c = s.charCodeAt(i);
       if (c === 46) {
         decimalPoint = i;
-      } else if (c < 48 || c > 57 || c === 45) {
+      } else if ((c < 48 || c > 57) && c !== 45) {
         return n;
       }
     }

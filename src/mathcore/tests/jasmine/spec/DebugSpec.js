@@ -128,6 +128,7 @@ define(["mathcore"], function (MathCore) {
         run([
           ["\\cosh{0}", "1"],
           ["\\sinh{0}", "0"],
+          ["\\tanh{--\\infty}", "1"],
           ["\\tanh{\\infty}", "1"],
           ["\\sin \\pi", "0"],
           ["\\sin 0", "0"],
