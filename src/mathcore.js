@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 27fb99d
+ * Mathcore unversioned - 22ef395
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -520,8 +520,8 @@ var Model = function() {
   Mp.toLaTex = function toLaTex(node) {
     return render(node)
   };
-  var OpStr = {ADD:"+", SUB:"-", MUL:"times", DIV:"div", FRAC:"frac", EQL:"=", ATAN2:"atan2", SQRT:"sqrt", VEC:"vec", PM:"pm", SIN:"sin", COS:"cos", TAN:"tan", SEC:"sec", COT:"cot", CSC:"csc", ARCSIN:"arcsin", ARCCOS:"arccos", ARCTAN:"arctan", LOG:"log", LN:"ln", LG:"lg", VAR:"var", NUM:"num", CST:"cst", COMMA:",", POW:"^", SUBSCRIPT:"_", ABS:"abs", PAREN:"()", HIGHLIGHT:"hi", LT:"lt", LE:"le", GT:"gt", GE:"ge", NE:"ne", APPROX:"approx", INTERVAL:"interval", LIST:"list", EXISTS:"exists", IN:"in", 
-  FORALL:"forall", LIM:"lim", EXP:"exp", TO:"to", SUM:"sum", INT:"int", PROD:"prod", PERCENT:"%", M:"M", RIGHTARROW:"->", FACT:"fact", BINOM:"binom", ROW:"row", COL:"col", COLON:"colon", MATRIX:"matrix", FORMAT:"format", OVERSET:"overset", UNDERSET:"underset", OVERLINE:"overline", DEGREE:"degree", BACKSLASH:"backslash", MATHBF:"mathbf", DOT:"dot", NONE:"none"};
+  var OpStr = {ADD:"+", SUB:"-", MUL:"times", DIV:"div", FRAC:"frac", EQL:"=", ATAN2:"atan2", SQRT:"sqrt", VEC:"vec", PM:"pm", SIN:"sin", COS:"cos", TAN:"tan", SEC:"sec", COT:"cot", CSC:"csc", ARCSIN:"arcsin", ARCCOS:"arccos", ARCTAN:"arctan", SINH:"sinh", COSH:"cosh", TANH:"tanh", SECH:"sech", COTH:"coth", CSCH:"csch", ARCSINH:"arcsinh", ARCCOSH:"arccosh", ARCTANH:"arctanh", LOG:"log", LN:"ln", LG:"lg", VAR:"var", NUM:"num", CST:"cst", COMMA:",", POW:"^", SUBSCRIPT:"_", ABS:"abs", PAREN:"()", HIGHLIGHT:"hi", 
+  LT:"lt", LE:"le", GT:"gt", GE:"ge", NE:"ne", APPROX:"approx", INTERVAL:"interval", LIST:"list", EXISTS:"exists", IN:"in", FORALL:"forall", LIM:"lim", EXP:"exp", TO:"to", SUM:"sum", INT:"int", PROD:"prod", PERCENT:"%", M:"M", RIGHTARROW:"->", FACT:"fact", BINOM:"binom", ROW:"row", COL:"col", COLON:"colon", MATRIX:"matrix", FORMAT:"format", OVERSET:"overset", UNDERSET:"underset", OVERLINE:"overline", DEGREE:"degree", BACKSLASH:"backslash", MATHBF:"mathbf", DOT:"dot", NONE:"none"};
   forEach(keys(OpStr), function(v, i) {
     Model[v] = OpStr[v]
   });
@@ -545,6 +545,15 @@ var Model = function() {
   OpToLaTeX[OpStr.SEC] = "\\sec";
   OpToLaTeX[OpStr.COT] = "\\cot";
   OpToLaTeX[OpStr.CSC] = "\\csc";
+  OpToLaTeX[OpStr.SINH] = "\\sinh";
+  OpToLaTeX[OpStr.COSH] = "\\cosh";
+  OpToLaTeX[OpStr.TANH] = "\\tanh";
+  OpToLaTeX[OpStr.ARCSINH] = "\\arcsinh";
+  OpToLaTeX[OpStr.ARCCOSH] = "\\arccosh";
+  OpToLaTeX[OpStr.ARCTANH] = "\\arctanh";
+  OpToLaTeX[OpStr.SECH] = "\\sech";
+  OpToLaTeX[OpStr.COTH] = "\\coth";
+  OpToLaTeX[OpStr.CSCH] = "\\csch";
   OpToLaTeX[OpStr.LN] = "\\ln";
   OpToLaTeX[OpStr.COMMA] = ",";
   OpToLaTeX[OpStr.M] = "\\M";
@@ -629,6 +638,24 @@ var Model = function() {
             case OpStr.COT:
             ;
             case OpStr.CSC:
+            ;
+            case OpStr.SINH:
+            ;
+            case OpStr.COSH:
+            ;
+            case OpStr.TANH:
+            ;
+            case OpStr.ARCSINH:
+            ;
+            case OpStr.ARCCOSH:
+            ;
+            case OpStr.ARCTANH:
+            ;
+            case OpStr.SECH:
+            ;
+            case OpStr.COTH:
+            ;
+            case OpStr.CSCH:
             ;
             case OpStr.LN:
             ;
@@ -774,6 +801,15 @@ var Model = function() {
     var TK_APPROX = 302;
     var TK_ABS = 303;
     var TK_DOT = 304;
+    var TK_SINH = 305;
+    var TK_COSH = 306;
+    var TK_TANH = 307;
+    var TK_SECH = 308;
+    var TK_COTH = 309;
+    var TK_CSCH = 310;
+    var TK_ARCSINH = 311;
+    var TK_ARCCOSH = 312;
+    var TK_ARCTANH = 313;
     var T0 = TK_NONE, T1 = TK_NONE;
     var tokenToOperator = {};
     tokenToOperator[TK_SLASH] = OpStr.FRAC;
@@ -796,6 +832,15 @@ var Model = function() {
     tokenToOperator[TK_SEC] = OpStr.SEC;
     tokenToOperator[TK_COT] = OpStr.COT;
     tokenToOperator[TK_CSC] = OpStr.CSC;
+    tokenToOperator[TK_SINH] = OpStr.SINH;
+    tokenToOperator[TK_COSH] = OpStr.COSH;
+    tokenToOperator[TK_TANH] = OpStr.TANH;
+    tokenToOperator[TK_ARCSINH] = OpStr.ARCSINH;
+    tokenToOperator[TK_ARCCOSH] = OpStr.ARCCOSH;
+    tokenToOperator[TK_ARCTANH] = OpStr.ARCTANH;
+    tokenToOperator[TK_SECH] = OpStr.SECH;
+    tokenToOperator[TK_COTH] = OpStr.COTH;
+    tokenToOperator[TK_CSCH] = OpStr.CSCH;
     tokenToOperator[TK_LN] = OpStr.LN;
     tokenToOperator[TK_LG] = OpStr.LG;
     tokenToOperator[TK_LOG] = OpStr.LOG;
@@ -1102,6 +1147,12 @@ var Model = function() {
         case TK_COS:
         ;
         case TK_TAN:
+        ;
+        case TK_SINH:
+        ;
+        case TK_COSH:
+        ;
+        case TK_TANH:
           next();
           var t, args = [];
           while((t = hd()) === TK_CARET) {
@@ -1132,6 +1183,18 @@ var Model = function() {
         case TK_COT:
         ;
         case TK_CSC:
+        ;
+        case TK_ARCSINH:
+        ;
+        case TK_ARCCOSH:
+        ;
+        case TK_ARCTANH:
+        ;
+        case TK_SECH:
+        ;
+        case TK_COTH:
+        ;
+        case TK_CSCH:
           next();
           var t, args = [];
           while((t = hd()) === TK_CARET) {
@@ -1857,9 +1920,9 @@ var Model = function() {
     function scanner(src) {
       var curIndex = 0;
       var lexeme = "";
-      var lexemeToToken = {"\\cdot":TK_MUL, "\\times":TK_MUL, "\\div":TK_DIV, "\\dfrac":TK_FRAC, "\\frac":TK_FRAC, "\\sqrt":TK_SQRT, "\\vec":TK_VEC, "\\pm":TK_PM, "\\sin":TK_SIN, "\\cos":TK_COS, "\\tan":TK_TAN, "\\sec":TK_SEC, "\\cot":TK_COT, "\\csc":TK_CSC, "\\arcsin":TK_ARCSIN, "\\arccos":TK_ARCCOS, "\\arctan":TK_ARCTAN, "\\ln":TK_LN, "\\lg":TK_LG, "\\log":TK_LOG, "\\left":null, "\\right":null, "\\big":null, "\\Big":null, "\\bigg":null, "\\Bigg":null, "\\ ":null, "\\quad":null, "\\qquad":null, 
-      "\\text":TK_TEXT, "\\textrm":TK_TEXT, "\\textit":TK_TEXT, "\\textbf":TK_TEXT, "\\lt":TK_LT, "\\le":TK_LE, "\\gt":TK_GT, "\\ge":TK_GE, "\\ne":TK_NE, "\\approx":TK_APPROX, "\\exists":TK_EXISTS, "\\in":TK_IN, "\\forall":TK_FORALL, "\\lim":TK_LIM, "\\exp":TK_EXP, "\\to":TK_TO, "\\sum":TK_SUM, "\\int":TK_INT, "\\prod":TK_PROD, "\\%":TK_PERCENT, "\\rightarrow":TK_RIGHTARROW, "\\longrightarrow":TK_RIGHTARROW, "\\binom":TK_BINOM, "\\begin":TK_BEGIN, "\\end":TK_END, "\\colon":TK_COLON, "\\vert":TK_VERTICALBAR, 
-      "\\lvert":TK_VERTICALBAR, "\\rvert":TK_VERTICALBAR, "\\mid":TK_VERTICALBAR, "\\format":TK_FORMAT, "\\overline":TK_OVERLINE, "\\overset":TK_OVERSET, "\\underset":TK_UNDERSET, "\\backslash":TK_BACKSLASH, "\\mathbf":TK_MATHBF, "\\abs":TK_ABS, "\\dot":TK_DOT};
+      var lexemeToToken = {"\\cdot":TK_MUL, "\\times":TK_MUL, "\\div":TK_DIV, "\\dfrac":TK_FRAC, "\\frac":TK_FRAC, "\\sqrt":TK_SQRT, "\\vec":TK_VEC, "\\pm":TK_PM, "\\sin":TK_SIN, "\\cos":TK_COS, "\\tan":TK_TAN, "\\sec":TK_SEC, "\\cot":TK_COT, "\\csc":TK_CSC, "\\arcsin":TK_ARCSIN, "\\arccos":TK_ARCCOS, "\\arctan":TK_ARCTAN, "\\sinh":TK_SINH, "\\cosh":TK_COSH, "\\tanh":TK_TANH, "\\sech":TK_SECH, "\\coth":TK_COTH, "\\csch":TK_CSCH, "\\arcsinh":TK_ARCSINH, "\\arccosh":TK_ARCCOSH, "\\arctanh":TK_ARCTANH, 
+      "\\ln":TK_LN, "\\lg":TK_LG, "\\log":TK_LOG, "\\left":null, "\\right":null, "\\big":null, "\\Big":null, "\\bigg":null, "\\Bigg":null, "\\ ":null, "\\quad":null, "\\qquad":null, "\\text":TK_TEXT, "\\textrm":TK_TEXT, "\\textit":TK_TEXT, "\\textbf":TK_TEXT, "\\lt":TK_LT, "\\le":TK_LE, "\\gt":TK_GT, "\\ge":TK_GE, "\\ne":TK_NE, "\\approx":TK_APPROX, "\\exists":TK_EXISTS, "\\in":TK_IN, "\\forall":TK_FORALL, "\\lim":TK_LIM, "\\exp":TK_EXP, "\\to":TK_TO, "\\sum":TK_SUM, "\\int":TK_INT, "\\prod":TK_PROD, 
+      "\\%":TK_PERCENT, "\\rightarrow":TK_RIGHTARROW, "\\longrightarrow":TK_RIGHTARROW, "\\binom":TK_BINOM, "\\begin":TK_BEGIN, "\\end":TK_END, "\\colon":TK_COLON, "\\vert":TK_VERTICALBAR, "\\lvert":TK_VERTICALBAR, "\\rvert":TK_VERTICALBAR, "\\mid":TK_VERTICALBAR, "\\format":TK_FORMAT, "\\overline":TK_OVERLINE, "\\overset":TK_OVERSET, "\\underset":TK_UNDERSET, "\\backslash":TK_BACKSLASH, "\\mathbf":TK_MATHBF, "\\abs":TK_ABS, "\\dot":TK_DOT};
       var identifiers = keys(env);
       function isAlphaCharCode(c) {
         return c >= 65 && c <= 90 || c >= 97 && c <= 122
@@ -4690,6 +4753,24 @@ var BigDecimal = function(MathContext) {
         ;
         case Model.COT:
         ;
+        case Model.SINH:
+        ;
+        case Model.COSH:
+        ;
+        case Model.TANH:
+        ;
+        case Model.ARCSINH:
+        ;
+        case Model.ARCCOSH:
+        ;
+        case Model.ARCTANH:
+        ;
+        case Model.SECH:
+        ;
+        case Model.CSCH:
+        ;
+        case Model.COTH:
+        ;
         case Model.PERCENT:
         ;
         case Model.M:
@@ -4833,9 +4914,9 @@ var BigDecimal = function(MathContext) {
           ;
           case Model.SUB:
           ;
-          case Model.COS:
-          ;
           case Model.SIN:
+          ;
+          case Model.COS:
           ;
           case Model.TAN:
           ;
@@ -4850,6 +4931,24 @@ var BigDecimal = function(MathContext) {
           case Model.CSC:
           ;
           case Model.COT:
+          ;
+          case Model.SINH:
+          ;
+          case Model.COSH:
+          ;
+          case Model.TANH:
+          ;
+          case Model.ARCSINH:
+          ;
+          case Model.ARCCOSH:
+          ;
+          case Model.ARCTANH:
+          ;
+          case Model.SECH:
+          ;
+          case Model.CSCH:
+          ;
+          case Model.COTH:
           ;
           case Model.PM:
           ;
@@ -6523,6 +6622,24 @@ var BigDecimal = function(MathContext) {
         case Model.ARCTAN:
           f = Math.atan;
           break;
+        case Model.SINH:
+          f = Math.sinh;
+          break;
+        case Model.COSH:
+          f = Math.cosh;
+          break;
+        case Model.TANH:
+          f = Math.tanh;
+          break;
+        case Model.ARCSINH:
+          f = Math.asinh;
+          break;
+        case Model.ARCCOSH:
+          f = Math.acosh;
+          break;
+        case Model.ARCTANH:
+          f = Math.atanh;
+          break;
         default:
           assert(false);
           break
@@ -7691,6 +7808,18 @@ var BigDecimal = function(MathContext) {
           case Model.ARCCOS:
           ;
           case Model.ARCTAN:
+          ;
+          case Model.SINH:
+          ;
+          case Model.COSH:
+          ;
+          case Model.TANH:
+          ;
+          case Model.ARCSINH:
+          ;
+          case Model.ARCCOSH:
+          ;
+          case Model.ARCTANH:
             if(allowDecimal) {
               var val = mathValue(toRadians(node.args[0]), env, allowDecimal);
               return trig(val, node.op)

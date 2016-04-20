@@ -462,6 +462,15 @@
       case Model.SEC:
       case Model.CSC:
       case Model.COT:
+      case Model.SINH:
+      case Model.COSH:
+      case Model.TANH:
+      case Model.ARCSINH:
+      case Model.ARCCOSH:
+      case Model.ARCTANH:
+      case Model.SECH:
+      case Model.CSCH:
+      case Model.COTH:
       case Model.PERCENT:
       case Model.M:
       case Model.ABS:
@@ -581,8 +590,8 @@
           switch (node.op) {
           case Model.ADD:
           case Model.SUB:
-          case Model.COS:
           case Model.SIN:
+          case Model.COS:
           case Model.TAN:
           case Model.ARCSIN:
           case Model.ARCCOS:
@@ -590,6 +599,15 @@
           case Model.SEC:
           case Model.CSC:
           case Model.COT:
+          case Model.SINH:
+          case Model.COSH:
+          case Model.TANH:
+          case Model.ARCSINH:
+          case Model.ARCCOSH:
+          case Model.ARCTANH:
+          case Model.SECH:
+          case Model.CSCH:
+          case Model.COTH:
           case Model.PM:
           case Model.PERCENT:
           case Model.M:
@@ -2501,6 +2519,24 @@
       case Model.ARCTAN:
         f = Math.atan;
         break;
+      case Model.SINH:
+        f = Math.sinh;
+        break;
+      case Model.COSH:
+        f = Math.cosh;
+        break;
+      case Model.TANH:
+        f = Math.tanh;
+        break;
+      case Model.ARCSINH:
+        f = Math.asinh;
+        break;
+      case Model.ARCCOSH:
+        f = Math.acosh;
+        break;
+      case Model.ARCTANH:
+        f = Math.atanh;
+        break;
       default:
         assert(false);
         break;
@@ -3783,6 +3819,12 @@
           case Model.ARCSIN:
           case Model.ARCCOS:
           case Model.ARCTAN:
+          case Model.SINH:
+          case Model.COSH:
+          case Model.TANH:
+          case Model.ARCSINH:
+          case Model.ARCCOSH:
+          case Model.ARCTANH:
             if (allowDecimal) {
               var val = mathValue(toRadians(node.args[0]), env, allowDecimal);
               return trig(val, node.op);

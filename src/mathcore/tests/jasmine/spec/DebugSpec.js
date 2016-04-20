@@ -126,7 +126,9 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
-          ["1+2", "3"],
+          ["\\cosh{0}", "1"],
+          ["\\sinh{0}", "0"],
+          ["\\tanh{0}", "0"],
           ["\\sin \\pi", "0"],
           ["\\sin 0", "0"],
           ["\\sqrt{9}", "3"],
