@@ -3826,7 +3826,12 @@
           case Model.ARCCOSH:
           case Model.ARCTANH:
             if (allowDecimal) {
-              var val = mathValue(toRadians(node.args[0]), env, allowDecimal);
+              var val;
+              if (node.args[0].op === Model.VAR && node.args[0].args[0] === "\\infty") {
+                val = Number.POSITIVE_INFINITY;
+              } else {
+                val = mathValue(toRadians(node.args[0]), env, allowDecimal);
+              }
               return trig(val, node.op);
             }
             return null;
