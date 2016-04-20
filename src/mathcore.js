@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - a949e45
+ * Mathcore unversioned - b2b30d1
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -213,6 +213,36 @@ if(typeof window !== "undefined" && !window.JSON) {
     }
   }()}
 }
+Math.sinh = Math.sinh || function(x) {
+  return(Math.exp(x) - Math.exp(-x)) / 2
+};
+Math.cosh = Math.cosh || function(x) {
+  return(Math.exp(x) + Math.exp(-x)) / 2
+};
+Math.tanh = Math.tanh || function(x) {
+  if(x === Infinity) {
+    return 1
+  }else {
+    if(x === -Infinity) {
+      return-1
+    }else {
+      return(Math.exp(x) - Math.exp(-x)) / (Math.exp(x) + Math.exp(-x))
+    }
+  }
+};
+Math.asinh = Math.asinh || function(x) {
+  if(x === -Infinity) {
+    return x
+  }else {
+    return Math.log(x + Math.sqrt(x * x + 1))
+  }
+};
+Math.acosh = Math.acosh || function(x) {
+  return Math.log(x + Math.sqrt(x * x - 1))
+};
+Math.atanh = Math.atanh || function(x) {
+  return Math.log((1 + x) / (1 - x)) / 2
+};
 var ASSERT = true;
 var assert = function() {
   return!ASSERT ? function() {
