@@ -2470,13 +2470,31 @@
       if (b === null || e === null) {
         return null;
       }
-      b = toNumber(b);
-      e = toNumber(e);
-      val = Math.pow(b, e);
-      if (isNaN(val)) {
-        return null;
+      if (Math.abs(toNumber(e)) > 1000) {
+        // FIXME bigger powers take too long to compute.
+        e = toNumber(e);
+        b = toNumber(b);
+        return toDecimal(Math.pow(b, e));
       }
-      return toDecimal(val);
+      if (b instanceof BigDecimal) {
+        if (isInteger(e)) {
+          val = b.pow(e.abs());
+          if (isNeg(e)) {
+            val = divide(bigOne, val);
+          }
+          return val;
+        } else {
+          b = toNumber(b);
+          e = toNumber(e);
+          val = Math.pow(b, e);
+          if (isNaN(val)) {
+            return null;
+          }
+          return toDecimal(val);
+        }
+      } else {
+        return toDecimal(Math.pow(b, e));
+      }
     }
 
     function sqrtNode(node) {

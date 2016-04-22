@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - e8d971e
+ * Mathcore unversioned - 6a1ec06
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -6607,13 +6607,30 @@ var BigDecimal = function(MathContext) {
       if(b === null || e === null) {
         return null
       }
-      b = toNumber(b);
-      e = toNumber(e);
-      val = Math.pow(b, e);
-      if(isNaN(val)) {
-        return null
+      if(Math.abs(toNumber(e)) > 1E3) {
+        e = toNumber(e);
+        b = toNumber(b);
+        return toDecimal(Math.pow(b, e))
       }
-      return toDecimal(val)
+      if(b instanceof BigDecimal) {
+        if(isInteger(e)) {
+          val = b.pow(e.abs());
+          if(isNeg(e)) {
+            val = divide(bigOne, val)
+          }
+          return val
+        }else {
+          b = toNumber(b);
+          e = toNumber(e);
+          val = Math.pow(b, e);
+          if(isNaN(val)) {
+            return null
+          }
+          return toDecimal(val)
+        }
+      }else {
+        return toDecimal(Math.pow(b, e))
+      }
     }
     function sqrtNode(node) {
       return binaryNode(Model.POW, [node, nodeOneHalf])
@@ -9828,7 +9845,7 @@ var MathCore = function() {
       return e
     }
   }
-  var timeoutDuration = 3E6;
+  var timeoutDuration = 3E4;
   function setTimeoutDuration(duration) {
     timeoutDuration = duration
   }
