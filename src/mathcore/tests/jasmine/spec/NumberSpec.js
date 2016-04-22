@@ -150,6 +150,7 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["\\frac{4}{15^{7225318}}", "0"],
           ["3^2^2^2", "43046721"],
           ["2^3^2", "512"],
           ["-3^{9}\\times-3^{5}", "3^{9+5}"],
@@ -193,6 +194,7 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["\\frac{4}{15^{7225318}}", "0"],
           ["9000m + 500m", "9.5km"],
           ["9km + 500m", "9.5km"],
           ["0", "0"],
@@ -1059,6 +1061,7 @@ define(["mathcore"], function (MathCore) {
               expect(MathCore.evaluate({
                 method: "equivLiteral",
                 options: {
+                  allowThousandsSeparator: true,
                   setThousandsSeparator: ["."],
                   setDecimalSeparator: [","],
                 },
@@ -1071,6 +1074,26 @@ define(["mathcore"], function (MathCore) {
           ["1.000,000", "1.000,000"],
           ["1,000.000", "1,000000"],
           ["1.000,000.000", "1000,000000"],
+        ]);
+      });
+      describe("equivLiteral allowThousandsSeparator=false setThousandsSeparator", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivLiteral",
+                value: v[0],
+                options: {
+                  allowThousandsSeparator: false,
+                  setThousandsSeparator: [",", " "],
+                  setDecimalSeparator: "."
+                }
+              }, v[1])).toBe(true);
+            });
+          });
+        }
+        run([
+          ["2,123", "2  ,   123"],
         ]);
       });
       describe("equivLiteral allowThousandsSeparator", function() {

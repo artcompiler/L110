@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - d101b8f
+ * Mathcore unversioned - e8d971e
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -550,15 +550,15 @@ var Model = function() {
   Mp.toLaTex = function toLaTex(node) {
     return render(node)
   };
-  var OpStr = {ADD:"+", SUB:"-", MUL:"times", DIV:"div", FRAC:"frac", EQL:"=", ATAN2:"atan2", SQRT:"sqrt", VEC:"vec", PM:"pm", SIN:"sin", COS:"cos", TAN:"tan", SEC:"sec", COT:"cot", CSC:"csc", ARCSIN:"arcsin", ARCCOS:"arccos", ARCTAN:"arctan", SINH:"sinh", COSH:"cosh", TANH:"tanh", SECH:"sech", COTH:"coth", CSCH:"csch", ARCSINH:"arcsinh", ARCCOSH:"arccosh", ARCTANH:"arctanh", LOG:"log", LN:"ln", LG:"lg", VAR:"var", NUM:"num", CST:"cst", COMMA:",", POW:"^", SUBSCRIPT:"_", ABS:"abs", PAREN:"()", HIGHLIGHT:"hi", 
-  LT:"lt", LE:"le", GT:"gt", GE:"ge", NE:"ne", APPROX:"approx", INTERVAL:"interval", LIST:"list", EXISTS:"exists", IN:"in", FORALL:"forall", LIM:"lim", EXP:"exp", TO:"to", SUM:"sum", INT:"int", PROD:"prod", PERCENT:"%", M:"M", RIGHTARROW:"->", FACT:"fact", BINOM:"binom", ROW:"row", COL:"col", COLON:"colon", MATRIX:"matrix", FORMAT:"format", OVERSET:"overset", UNDERSET:"underset", OVERLINE:"overline", DEGREE:"degree", BACKSLASH:"backslash", MATHBF:"mathbf", DOT:"dot", NONE:"none"};
+  var OpStr = {ADD:"+", SUB:"-", MUL:"mul", TIMES:"times", DIV:"div", FRAC:"frac", EQL:"=", ATAN2:"atan2", SQRT:"sqrt", VEC:"vec", PM:"pm", SIN:"sin", COS:"cos", TAN:"tan", SEC:"sec", COT:"cot", CSC:"csc", ARCSIN:"arcsin", ARCCOS:"arccos", ARCTAN:"arctan", SINH:"sinh", COSH:"cosh", TANH:"tanh", SECH:"sech", COTH:"coth", CSCH:"csch", ARCSINH:"arcsinh", ARCCOSH:"arccosh", ARCTANH:"arctanh", LOG:"log", LN:"ln", LG:"lg", VAR:"var", NUM:"num", CST:"cst", COMMA:",", POW:"^", SUBSCRIPT:"_", ABS:"abs", PAREN:"()", 
+  HIGHLIGHT:"hi", LT:"lt", LE:"le", GT:"gt", GE:"ge", NE:"ne", APPROX:"approx", INTERVAL:"interval", LIST:"list", EXISTS:"exists", IN:"in", FORALL:"forall", LIM:"lim", EXP:"exp", TO:"to", SUM:"sum", INT:"int", PROD:"prod", PERCENT:"%", M:"M", RIGHTARROW:"->", FACT:"fact", BINOM:"binom", ROW:"row", COL:"col", COLON:"colon", MATRIX:"matrix", FORMAT:"format", OVERSET:"overset", UNDERSET:"underset", OVERLINE:"overline", DEGREE:"degree", BACKSLASH:"backslash", MATHBF:"mathbf", DOT:"dot", NONE:"none"};
   forEach(keys(OpStr), function(v, i) {
     Model[v] = OpStr[v]
   });
   var OpToLaTeX = {};
   OpToLaTeX[OpStr.ADD] = "+";
   OpToLaTeX[OpStr.SUB] = "-";
-  OpToLaTeX[OpStr.MUL] = "\\times";
+  OpToLaTeX[OpStr.MUL] = "*";
   OpToLaTeX[OpStr.DIV] = "\\div";
   OpToLaTeX[OpStr.FRAC] = "\\frac";
   OpToLaTeX[OpStr.EQL] = "=";
@@ -910,7 +910,7 @@ var Model = function() {
       return{op:op, args:args}
     }
     function matchThousandsSeparator(ch, last) {
-      if(Model.option("allowThousandsSeparator") || Model.option("setThousandsSeparator")) {
+      if(Model.option("allowThousandsSeparator")) {
         var separators = Model.option("setThousandsSeparator");
         if(!separators) {
           return ch === "," ? ch : ""
@@ -1615,14 +1615,8 @@ var Model = function() {
           args.pop();
           expr = unaryNode(Model.M, [expr])
         }else {
-          if(!explicitOperator && (Model.option("ignoreCoefficientOne") && (args.length === 1 && isOneOrMinusOne(args[0])))) {
-            if(isOne(args[0])) {
-              args.pop()
-            }else {
-              expr = negate(expr)
-            }
-          }else {
-            if(!explicitOperator && (args.length > 0 && isMixedFraction(args[args.length - 1], expr))) {
+          if(!explicitOperator) {
+            if(args.length > 0 && isMixedFraction(args[args.length - 1], expr)) {
               t = args.pop();
               if(isNeg(t)) {
                 expr = binaryNode(Model.MUL, [nodeMinusOne, expr])
@@ -1630,19 +1624,29 @@ var Model = function() {
               expr = binaryNode(Model.ADD, [t, expr]);
               expr.isMixedFraction = true
             }else {
-              if(!explicitOperator && (args.length > 0 && (n0 = isRepeatingDecimal([args[args.length - 1], expr])))) {
-                args.pop();
-                expr = n0
+              if(Model.option("ignoreCoefficientOne") && (args.length === 1 && isOneOrMinusOne(args[0]))) {
+                if(isOne(args[0])) {
+                  args.pop()
+                }else {
+                  expr = negate(expr)
+                }
               }else {
-                if(t === TK_MUL && (args.length > 0 && (explicitOperator && isScientific([args[args.length - 1], expr])))) {
-                  t = args.pop();
-                  if(isNeg(t)) {
-                    expr = binaryNode(Model.MUL, [nodeMinusOne, expr])
-                  }
-                  expr = binaryNode(Model.MUL, [t, expr]);
-                  expr.isScientific = true
+                if(args.length > 0 && (n0 = isRepeatingDecimal([args[args.length - 1], expr]))) {
+                  args.pop();
+                  expr = n0
+                }else {
+                  expr.isImplicit = true
                 }
               }
+            }
+          }else {
+            if(t === TK_MUL && (args.length > 0 && isScientific([args[args.length - 1], expr]))) {
+              t = args.pop();
+              if(isNeg(t)) {
+                expr = binaryNode(Model.MUL, [nodeMinusOne, expr])
+              }
+              expr = binaryNode(Model.MUL, [t, expr]);
+              expr.isScientific = true
             }
           }
         }
@@ -2106,6 +2110,11 @@ var Model = function() {
           if(!match) {
             break
           }
+          lexeme += ch
+        }
+        while(isNumberCharCode(c)) {
+          c = src.charCodeAt(curIndex++);
+          var ch = String.fromCharCode(c);
           lexeme += ch
         }
         while(c === "'".charCodeAt(0)) {
@@ -4499,9 +4508,9 @@ var BigDecimal = function(MathContext) {
         var args = n.args.slice(0);
         if(isMinusOne(n.args[0])) {
           args.shift();
-          return multiplyNode(args)
+          return multiplyNode(args, true)
         }else {
-          return multiplyNode([negate(args.shift())].concat(args))
+          return multiplyNode([negate(args.shift())].concat(args), true)
         }
       }else {
         if(n.op === Model.NUM) {
@@ -4533,7 +4542,7 @@ var BigDecimal = function(MathContext) {
         }
       }
     }
-    return multiplyNode([nodeMinusOne, n])
+    return multiplyNode([nodeMinusOne, n], true)
   }
   function isPositiveInfinity(n) {
     if(n === Number.POSITIVE_INFINITY || n.op === Model.NUM && n.args[0] === "Infinity") {
@@ -4759,6 +4768,8 @@ var BigDecimal = function(MathContext) {
           }
           break;
         case Model.MUL:
+        ;
+        case Model.TIMES:
         ;
         case Model.DIV:
         ;
@@ -6366,15 +6377,18 @@ var BigDecimal = function(MathContext) {
         }
         return binaryNode(node.op, args)
       }, multiplicative:function(node) {
-        var equivLiteralDivAndFrac = false;
         var args = [];
+        var flatten = true;
         forEach(node.args, function(n) {
-          args.push(normalizeLiteral(n))
+          if(n.isImplicit) {
+            assert(args.length > 0);
+            args.push(binaryNode(Model.MUL, [args.pop(), normalizeLiteral(n)], flatten))
+          }else {
+            args.push(normalizeLiteral(n))
+          }
         });
-        if(equivLiteralDivAndFrac && node.op === Model.FRAC) {
-          return newNode(Model.MUL, [args[0], newNode(Model.POW, [args[1], nodeMinusOne])])
-        }
-        return binaryNode(node.op, args, true)
+        var op = node.op === Model.MUL ? Model.TIMES : node.op;
+        return binaryNode(op, args, true)
       }, unary:function(node) {
         var args = [];
         forEach(node.args, function(n) {
@@ -6418,11 +6432,7 @@ var BigDecimal = function(MathContext) {
         }
         return node
       }});
-      while(nid !== ast.intern(node)) {
-        nid = ast.intern(node);
-        node = normalizeLiteral(node)
-      }
-      node.normalizeLiteralNid = nid;
+      node.normalizeLiteralNid = ast.intern(node);
       return node
     }
     function normalizeExpanded(root) {
@@ -6493,7 +6503,7 @@ var BigDecimal = function(MathContext) {
       return node.op === Model.ADD || (node.op === Model.SUB || (node.op === Model.PM || node.op === Model.BACKSLASH))
     }
     function isMultiplicative(node) {
-      return node.op === Model.MUL || node.op === Model.DIV
+      return node.op === Model.MUL || (node.op === Model.TIMES || node.op === Model.DIV)
     }
     function isInteger(node) {
       var mv;
@@ -6597,25 +6607,13 @@ var BigDecimal = function(MathContext) {
       if(b === null || e === null) {
         return null
       }
-      if(b instanceof BigDecimal) {
-        if(isInteger(e)) {
-          val = b.pow(e.abs());
-          if(isNeg(e)) {
-            val = divide(bigOne, val)
-          }
-          return val
-        }else {
-          b = toNumber(b);
-          e = toNumber(e);
-          val = Math.pow(b, e);
-          if(isNaN(val)) {
-            return null
-          }
-          return toDecimal(val)
-        }
-      }else {
-        return toDecimal(Math.pow(b, e))
+      b = toNumber(b);
+      e = toNumber(e);
+      val = Math.pow(b, e);
+      if(isNaN(val)) {
+        return null
       }
+      return toDecimal(val)
     }
     function sqrtNode(node) {
       return binaryNode(Model.POW, [node, nodeOneHalf])
@@ -7780,7 +7778,7 @@ var BigDecimal = function(MathContext) {
         assert(false, "Should not get here. Illformed node.");
         return 0
       }
-      return visit(root, {name:"simplify", numeric:function(node) {
+      return visit(root, {name:"mathValue", numeric:function(node) {
         if(isUndefined(node)) {
           return null
         }
@@ -7974,7 +7972,7 @@ var BigDecimal = function(MathContext) {
         assert(false, "Should not get here. Illformed node.");
         return 0
       }
-      return getUnique(visit(root, {name:"terms", exponential:function(node) {
+      return getUnique(visit(root, {name:"units", exponential:function(node) {
         return units(node.args[0], env)
       }, multiplicative:function(node) {
         var uu = [];
@@ -9013,6 +9011,7 @@ var BigDecimal = function(MathContext) {
     return result
   }
   function expand(node, env) {
+    var visitor = new Visitor(ast);
     var prevLocation = Assert.location;
     if(node.location) {
       Assert.setLocation(node.location)

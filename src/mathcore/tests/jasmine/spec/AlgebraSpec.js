@@ -154,6 +154,44 @@ define(["mathcore"], function (MathCore) {
           ["x < 0.5x + 0.5x"],
         ]);
       });
+      describe("equivLiteral ignoreCoefficientOne", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivLiteral",
+                options: {
+                  ignoreCoefficientOne: true,
+                },
+                value: v[0]
+              }, v[1])).toBe(true);
+            });
+          });
+        }
+        run([
+          ["1x", "x"],
+          ["1x^2+2x+3", "x^2+2x+3"],
+        ]);
+      });
+      describe("NOT equivLiteral ignoreCoefficientOne", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivLiteral",
+                options: {
+                  ignoreCoefficientOne: true,
+                },
+                value: v[0]
+              }, v[1])).not.toBe(true);
+            });
+          });
+        }
+        run([
+          ["1\\frac{1}{2}", "\\frac{1}{2}"],
+          ["1x+1\\frac{1}{2}", "x+\\frac{1}{2}"],
+        ]);
+      });
       describe("equivLiteral", function() {
         function run(tests) {
           forEach(tests, function (v, i) {
@@ -167,8 +205,8 @@ define(["mathcore"], function (MathCore) {
         }
         run([
           ["10\\times2", "10\\cdot2"],
-          ["cos(10)", "cos 10"],
-          ["cos10", "cos 10"],
+          ["\\cos(10)", "\\cos 10"],
+          ["\\cos10", "\\cos 10"],
           ["x+1", "x+1"],
           ["(x+2)", "x+2"],
           ["(x+y)-1", "x+y-1"],
@@ -185,12 +223,19 @@ define(["mathcore"], function (MathCore) {
             it(v[0] + " | " + v[1], function() {
               expect(MathCore.evaluate({
                 method: "equivLiteral",
+                options: {
+                  ignoreOrder: true
+                },
                 value: v[0]
               }, v[1])).toBe(false);
             });
           });
         }
         run([
+          ["2x+3y", "3*y+2*x"],
+          ["2x+3y", "x2+y3"],
+          ["2x", "2*x"],
+          ["2x", "2 \\times x"],
           ["x+1", "x+2"],
           ["x+1", "x+2-1"],
         ]);
@@ -210,6 +255,7 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["2x+3y", "3y+2x"],
           ["5+(x+1)+(x-1-2.3)", "(x-1-2.3)+(x+1)+5"],
           ["5(x+1)(x-1-2.3)", "(x-1-2.3)(x+1)5"],
           ["5(x+1)(x-1-2)", "(x-1-2)(x+1)5"],

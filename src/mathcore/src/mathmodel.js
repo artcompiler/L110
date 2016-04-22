@@ -216,9 +216,9 @@
       var args = n.args.slice(0); // copy
       if (isMinusOne(n.args[0])) {
         args.shift();
-        return multiplyNode(args);
+        return multiplyNode(args, true);
       } else {
-        return multiplyNode([negate(args.shift())].concat(args));
+        return multiplyNode([negate(args.shift())].concat(args), true);
       }
     } else if (n.op === Model.NUM) {
       if (n.args[0] === "1") {
@@ -237,7 +237,7 @@
     } else if (n.op === Model.POW && isMinusOne(n.args[1])) {
       return binaryNode(Model.POW, [negate(n.args[0]), nodeMinusOne]);
     }
-    return multiplyNode([nodeMinusOne, n]);
+    return multiplyNode([nodeMinusOne, n], true);
   }
 
   function isPositiveInfinity(n) {
@@ -456,6 +456,7 @@
         }
         break;
       case Model.MUL:
+      case Model.TIMES:
       case Model.DIV:
       case Model.FRAC:
         node = visit.multiplicative(node, resume);
@@ -2187,15 +2188,19 @@
           return binaryNode(node.op, args);
         },
         multiplicative: function (node) {
-          var equivLiteralDivAndFrac = false;
           var args = [];
+          var flatten = true;
           forEach(node.args, function (n) {
-            args.push(normalizeLiteral(n));
+            if (n.isImplicit) {
+              assert(args.length > 0);
+              args.push(binaryNode(Model.MUL, [args.pop(), normalizeLiteral(n)], flatten));
+            } else {
+              args.push(normalizeLiteral(n));
+            }
           });
-          if (equivLiteralDivAndFrac && node.op === Model.FRAC) {
-            return newNode(Model.MUL, [args[0], newNode(Model.POW, [args[1], nodeMinusOne])]);
-          }
-          return binaryNode(node.op, args, true);
+          // Only have explicit mul left, so convert to times.
+          var op = node.op === Model.MUL ? Model.TIMES : node.op;
+          return binaryNode(op, args, true);
         },
         unary: function(node) {
           var args = [];
@@ -2248,12 +2253,13 @@
           return node;
         }
       });
-      // If the node has changed, normalizeLiteral again
-      while (nid !== ast.intern(node)) {
-        nid = ast.intern(node);
-        node = normalizeLiteral(node);
-      }
-      node.normalizeLiteralNid = nid;
+      // // If the node has changed, normalizeLiteral again
+      // while (nid !== ast.intern(node)) {
+      //   nid = ast.intern(node);
+      //   node = normalizeLiteral(node);
+      // }
+      // node.normalizeLiteralNid = nid;
+      node.normalizeLiteralNid = ast.intern(node);
       return node;
     }
 
@@ -2341,7 +2347,7 @@
     }
 
     function isMultiplicative(node) {
-      return node.op === Model.MUL || node.op === Model.DIV;
+      return node.op === Model.MUL || node.op === Model.TIMES || node.op === Model.DIV;
     }
 
     function isInteger(node) {
@@ -2464,25 +2470,13 @@
       if (b === null || e === null) {
         return null;
       }
-      if (b instanceof BigDecimal) {
-        if (isInteger(e)) {
-          val = b.pow(e.abs());
-          if (isNeg(e)) {
-            val = divide(bigOne, val);
-          }
-          return val;
-        } else {
-          b = toNumber(b);
-          e = toNumber(e);
-          val = Math.pow(b, e);
-          if (isNaN(val)) {
-            return null;
-          }
-          return toDecimal(val);
-        }
-      } else {
-        return toDecimal(Math.pow(b, e));
+      b = toNumber(b);
+      e = toNumber(e);
+      val = Math.pow(b, e);
+      if (isNaN(val)) {
+        return null;
       }
+      return toDecimal(val);
     }
 
     function sqrtNode(node) {
@@ -3762,7 +3756,7 @@
         return 0;
       }
       return visit(root, {
-        name: "simplify",
+        name: "mathValue",
         numeric: function (node) {
           if (isUndefined(node)) {
             return null;
@@ -3956,7 +3950,7 @@
         return 0;
       }
       return getUnique(visit(root, {
-        name: "terms",
+        name: "units",
         exponential: function (node) {
           return units(node.args[0], env);
         },
@@ -5190,6 +5184,7 @@
   }
 
   function expand(node, env) {
+    var visitor = new Visitor(ast);
     var prevLocation = Assert.location;
     if (node.location) {
       Assert.setLocation(node.location);
