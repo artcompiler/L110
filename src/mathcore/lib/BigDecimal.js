@@ -4229,7 +4229,7 @@ BigDecimal.ONE = BigDecimal.prototype.ONE = new BigDecimal("1");
    {
     throw "setScale(): " + arguments.length + " given; expected 1 or 2";
    }
-  var scale = arguments[0];
+  var scale = +arguments[0];
   //--int ourscale;
   var ourscale;
   //--com.ibm.icu.math.BigDecimal res;

@@ -2496,7 +2496,6 @@
         return toDecimal(Math.pow(b, e));
       }
     }
-
     function sqrtNode(node) {
       return binaryNode(Model.POW, [
         node, nodeOneHalf

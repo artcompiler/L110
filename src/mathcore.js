@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 6a1ec06
+ * Mathcore unversioned - b6886d2
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -3490,7 +3490,7 @@ var BigDecimal = function(MathContext) {
         throw"setScale(): " + arguments.length + " given; expected 1 or 2";
       }
     }
-    var scale = arguments[0];
+    var scale = +arguments[0];
     var ourscale;
     var res;
     var padding = 0;
