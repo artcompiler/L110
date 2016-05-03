@@ -42,7 +42,7 @@ var transformer = function() {
     "ALLOW-INTERVAL": allowInterval,
     "IGNORE-TEXT": ignoreText,
     "IGNORE-TRAILING-ZEROS": ignoreTrailingZeros,
-    "M2E": m2e,
+    "HIDE-EXPECTED": hideExpected,
   };
   var nodePool;
   function reset() {
@@ -258,6 +258,8 @@ var transformer = function() {
       visit(node.elts[0], options, function (err, val) {
         errs = errs.concat(err);
         var response = val.result ? val.result : val;
+        var hideExpected = options.hideExpected;
+        delete options.hideExpected;
         if (response) {
           options.strict = true;
           MathCore.evaluateVerbose({
@@ -271,6 +273,9 @@ var transformer = function() {
             }
             response = escapeStr(response);
             reference = escapeStr(reference);
+            if (hideExpected) {
+              reference = undefined;
+            }
             resume(errs, {
               score: val ? (val.result ? 1 : -1) : 0,
               response: response,
@@ -498,31 +503,6 @@ var transformer = function() {
       }
     });
   }
-  function m2e(node, options, resume) {
-    var errs = [];
-    visit(node.elts[0], options, function (err, val) {
-      errs = errs.concat(err);
-      var response = val;
-      if (response) {
-        options.strict = true;
-        MathCore.evaluateVerbose({
-          method: "validSyntax",
-          options: options,
-        }, response, function (err, val) {
-          delete options.strict;
-          if (err && err.length) {
-            errs = errs.concat(error(err, node.elts[0]));
-          }
-          response = escapeStr(response);
-          resume(errs, {
-            score: val ? (val.result ? 1 : -1) : 0,
-            response: response,
-            objectCode: val ? val.model.m2e() : "error",
-          });
-        });
-      }
-    });
-  }
   function isUnit(node, options, resume) {
     var errs = [];
     visit(node.elts[1], options, function (err, val) {
@@ -607,6 +587,13 @@ var transformer = function() {
 
   function ignoreTrailingZeros(node, options, resume) {
     option(options, "ignoreTrailingZeros", true);
+    visit(node.elts[0], options, function (err, val) {
+      resume(err, val);
+    });
+  }
+
+  function hideExpected(node, options, resume) {
+    option(options, "hideExpected", true);
     visit(node.elts[0], options, function (err, val) {
       resume(err, val);
     });
