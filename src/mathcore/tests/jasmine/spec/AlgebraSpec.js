@@ -233,7 +233,6 @@ define(["mathcore"], function (MathCore) {
         }
         run([
           ["2x+3y", "3*y+2*x"],
-          ["2x+3y", "x2+y3"],
           ["2x", "2*x"],
           ["2x", "2 \\times x"],
           ["x+1", "x+2"],
@@ -255,6 +254,8 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["-3x^2+2", "2-3x^2"],
+          ["-3\\times(x+1)+2", "2-3\\times(x+1)"],
           ["2x+3y", "3y+2x"],
           ["5+(x+1)+(x-1-2.3)", "(x-1-2.3)+(x+1)+5"],
           ["5(x+1)(x-1-2.3)", "(x-1-2.3)(x+1)5"],
@@ -265,7 +266,6 @@ define(["mathcore"], function (MathCore) {
           ["x<3", "3>x"],
           ["1<2<3", "3>2>1"],
           ["-3x+2", "2-3x"],
-          ["10 \\text{foo bar abc}", "\\text{foo bar abc} 10"],
           ["\\left(x+2\\right)^2+\\left(y-7\\right)^2=53", "\\left(x+2\\right)^2+\\left(-7+y\\right)^2=53"],
           ["1+2+3", "3+2+1"],
           ["1*2*3", "3*2*1"],
@@ -290,6 +290,11 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["2x^2", "x^22"],
+          ["2x", "x2"],
+          ["2x", "2(x)"],
+          ["2\timesx", "2(x)"],
+          ["10 \\text{foo bar abc}", "\\text{foo bar abc} 10"],
           [
             '10\\times4\\times\\frac{11}{4}=110 \\text{cubic} \\text{inches}',
             '10\\times4\\times\\frac{4}{11}=110 \\text{cubic} \\text{inches}'

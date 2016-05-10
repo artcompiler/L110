@@ -212,13 +212,14 @@
   function negate(n) {
     if (typeof n === "number") {
       return -n;
-    } else if (n.op === Model.MUL) {
+    } else if (n.op === Model.MUL || n.op === Model.COEFF || n.op === Model.TIMES) {
+      // Handle leading coefficients
       var args = n.args.slice(0); // copy
       if (isMinusOne(n.args[0])) {
         args.shift();
-        return multiplyNode(args, true);
+        return binaryNode(n.op, args, true);
       } else {
-        return multiplyNode([negate(args.shift())].concat(args), true);
+        return binaryNode(n.op, [negate(args.shift())].concat(args), true);
       }
     } else if (n.op === Model.NUM) {
       if (n.args[0] === "1") {
@@ -457,6 +458,7 @@
         break;
       case Model.MUL:
       case Model.TIMES:
+      case Model.COEFF:
       case Model.DIV:
       case Model.FRAC:
         node = visit.multiplicative(node, resume);
@@ -1985,8 +1987,9 @@
             args.push(sort(n));
           });
           node = binaryNode(node.op, args);
-          if (node.op === Model.FRAC) {
-            // Don't sort numerators and denominator
+          if (node.op === Model.FRAC ||
+              node.op === Model.COEFF) {
+            // Don't sort numerators and denominator or coefficients
             return node;
           }
           var d0, d1;
@@ -2191,7 +2194,10 @@
           var args = [];
           var flatten = true;
           forEach(node.args, function (n) {
-            if (n.isImplicit) {
+            if (n.isPolynomial) {
+              assert(args.length > 0);
+              args.push(binaryNode(Model.COEFF, [args.pop(), normalizeLiteral(n)], flatten));
+            } else if (n.isImplicit) {
               assert(args.length > 0);
               args.push(binaryNode(Model.MUL, [args.pop(), normalizeLiteral(n)], flatten));
             } else {
@@ -2347,7 +2353,12 @@
     }
 
     function isMultiplicative(node) {
-      return node.op === Model.MUL || node.op === Model.TIMES || node.op === Model.DIV;
+      return (
+        node.op === Model.MUL ||
+        node.op === Model.TIMES ||
+        node.op === Model.COEFF ||
+        node.op === Model.DIV
+      );
     }
 
     function isInteger(node) {
