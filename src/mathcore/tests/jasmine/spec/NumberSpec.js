@@ -264,14 +264,8 @@ define(["mathcore"], function (MathCore) {
           });
         };
         run([
-          ["\\frac{1}{9}=0.\\overline{11}"],
-          ["x=0.0\\overline{11}"],
-          ["0.0\\overline{11}"],
-          ["x=0.\\overline{3}"],
-          ["0.\\overline{3}"],
           ["0.3"],
           [".3"],
-          ["1.\\overline{3}"],
           ["\\frac{1}{2}"],
           ["0.2"],
           ["\\frac{1}{2}"]
@@ -288,8 +282,19 @@ define(["mathcore"], function (MathCore) {
           });
         };
         run([
+          ["0.\\overline{11}"],
+          ["0.0\\overline{11}"],
+          ["x=0.0\\overline{11}"],
+          ["10+2.5\\overline{15}"],
+          ["10+2.5(15)"],
+          ["\\frac{1}{9}=0.\\overline{11}"],
+          ["x=0.0\\overline{11}"],
+          ["0.0\\overline{11}"],
+          ["x=0.\\overline{3}"],
+          ["0.\\overline{3}"],
           ["\\frac{2}{2}"],
-          ["\\frac{2}{4}"]
+          ["\\frac{2}{4}"],
+          ["1.\\overline{3}"],
         ]);
       });
       describe("isExpanded", function() {

@@ -335,6 +335,10 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["\\frac{2}{2x+2y}", "\\frac{1}{x+y}"],
+          ["2x", "x2"],
+          ["2x", "(x)2"],
+          ["2x", "x 2"],
           ["\\frac{-3x-7}{2x-4}", "\\frac{3x+7}{4-2x}"],
           ["\\frac{-1\\times(-3x-7)}{-1\\times(2x-4)}", "\\frac{3x+7}{4-2x}"],
           ["\\frac{-1\\times(3x+7)}{-1\\times(4-2x)}", "\\frac{3x+7}{4-2x}"],
@@ -801,6 +805,10 @@ define(["mathcore"], function (MathCore) {
           });
         };
         run([
+          ["\\frac{x+1}{2}"],
+          ["x^2y^2"],
+          ["35%"],
+          [".35"],
           ["x^2+y^2-18=0"],
           ["0=x^2+y^2-18"],
           ["y^2+x^2-18=0"],
@@ -814,16 +822,11 @@ define(["mathcore"], function (MathCore) {
           ["x=y=z=10"],
           ["3x=-10"],
           ["3>x>1>y"],
-          ["219+3x"],
-          ["219+3c"],
-          ["3x+219"],
-          ["3c+219"],
           ["219"],
           ["3c"],
           ["x+y"],
           ["a+b+c"],
           ["3a+b+c"],
-          ["5x^2+5x+10"],
           ["x^2+x+2"],
           ["x^2 + \\frac{1}{4}x"],
           ["x^2 + \\frac{x}{4}"],
@@ -832,6 +835,7 @@ define(["mathcore"], function (MathCore) {
           ["1/2"],
           ["x^2"],
           ["x"],
+          ["10x(1+x)"],
         ]);
       });
       describe("NOT isSimplified", function() {
@@ -845,6 +849,12 @@ define(["mathcore"], function (MathCore) {
           });
         };
         run([
+          ["\\frac{2}{2x+2y}"],
+          ["5x^2+5x+10"],
+          ["219+3x"],
+          ["219+3c"],
+          ["3x+219"],
+          ["3c+219"],
           ["1+5i+10i^2+10i^3+5i^4+i^5"],
           ["1+5i+10i^2"],
           ["1+5i+3i+10i^2"],
@@ -856,7 +866,6 @@ define(["mathcore"], function (MathCore) {
           ["y\\div5=x"],
           ["7-10/x=2+15/x"],
           ["x*x>10"],
-          ["10x(1+x)"],
           ["(x+2)^2"],
           ["(x+2)^-2"],
           ["\\frac{2}{4}"],
@@ -1273,9 +1282,7 @@ define(["mathcore"], function (MathCore) {
           });
         };
         run([
-          ["(xy)^2"],
           ["x^5"],
-          ["(xy)^z"],
         ]);
       });
       describe("NOT isSimplified", function() {
@@ -1289,6 +1296,8 @@ define(["mathcore"], function (MathCore) {
           });
         };
         run([
+          ["(xy)^2"],
+          ["(xy)^z"],
           ["2xy+3xy"],
           ["2x^3y+3x^3y"],
         ]);
@@ -1724,7 +1733,7 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
-            ["-4-4i", "\\left(1+i\\right)^5"]
+            ["-4(1+i)", "\\left(1+i\\right)^5"]
         ]);
       });
       describe("isFactorised and equivSymbolic", function() {

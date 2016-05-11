@@ -1669,7 +1669,7 @@
       var node = Model.create(visit(root, {
         name: "normalize",
         numeric: function (node) {
-          if (!option("dontConvertDecimalToFraction") && isDecimal(node)) {
+          if (isRepeating(node) || !option("dontConvertDecimalToFraction") && isDecimal(node)) {
             node = decimalToFraction(node);
           } else if (isNeg(node)) {
             // FIXME what's this doing?
@@ -1764,11 +1764,16 @@
             node = negate(args[0]);
             break;
           case Model.PERCENT:
-            node = multiplyNode([
-              binaryNode(Model.POW, [
-                numberNode("100"),
-                nodeMinusOne
-              ]), args[0]]);
+            if (args[0].op === Model.NUM) {
+              var mv = mathValue(args[0]);
+              node = numberNode(divide(mv, 100));
+            } else {
+              node = multiplyNode([
+                binaryNode(Model.POW, [
+                  numberNode("100"),
+                  nodeMinusOne
+                ]), args[0]]);
+            }
             break;
           case Model.PM:
             if (isNeg(mathValue(args[0], true))) {
@@ -3786,7 +3791,7 @@
       return visit(root, {
         name: "mathValue",
         numeric: function (node) {
-          if (isUndefined(node)) {
+          if (isUndefined(node) || isRepeating(node)) {
             return null;
           }
           return toDecimal(node.args[0]);
@@ -3815,7 +3820,9 @@
           // Allow decimal if the option 'allowDecimal' is set to true or
           // if at least one of the operands is a decimal.
           var val = bigOne;
+          var hasDecimal = false;
           forEach(node.args, function (n) {
+            hasDecimal = hasDecimal || isDecimal(n); // && !isRepeating(n);
             var mv = mathValue(n, env, true);
             if (val !== null && mv != null) {
               val = val.multiply(mv);
@@ -3823,7 +3830,10 @@
               val = null;
             }
           });
-          if (allowDecimal || isInteger(val)) {
+          if (allowDecimal || isInteger(val) ||
+              hasDecimal && option("dontConvertDecimalToFraction")) {
+            // The last alternative is a secret handshake that says we are in
+            // isSimplified so mutliply decimals.
             return val;
           }
           return null;
@@ -5841,9 +5851,7 @@
 
   Model.fn.isSimplified = function isSimplified(node, resume) {
     var n1, n2, nid1, nid2, result;
-    var dontExpandPowers = option("dontExpandPowers", true);
     var dontFactorDenominators = option("dontFactorDenominators", true);
-    var dontFactorTerms = option("dontFactorTerms", true);
     var dontConvertDecimalToFraction = option("dontConvertDecimalToFraction", true);
     var dontSimplifyImaginary = option("dontSimplifyImaginary", true);
     var inverseResult = option("inverseResult");
@@ -5874,9 +5882,7 @@
       nid2 = ast.intern(n2);
       result = nid1 === nid2;
     }
-    option("dontExpandPowers", dontExpandPowers);
     option("dontFactorDenominators", dontFactorDenominators);
-    option("dontFactorTerms", dontFactorTerms);
     option("dontConvertDecimalToFraction", dontConvertDecimalToFraction);
     option("dontSimplifyImaginary", dontSimplifyImaginary);
     if (result) {
