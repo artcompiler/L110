@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 592c243
+ * Mathcore unversioned - 5c1e908
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -1629,7 +1629,7 @@ var Model = function() {
               expr = binaryNode(Model.ADD, [t, expr]);
               expr.isMixedFraction = true
             }else {
-              if(Model.option("ignoreCoefficientOne") && (args.length === 1 && isOneOrMinusOne(args[0]))) {
+              if(Model.option("ignoreCoefficientOne") && (args.length === 1 && (isOneOrMinusOne(args[0]) && isPolynomialTerm(args[0], expr)))) {
                 if(isOne(args[0])) {
                   args.pop()
                 }else {
@@ -1640,8 +1640,14 @@ var Model = function() {
                   args.pop();
                   expr = n0
                 }else {
-                  if(isPolynomialTerm(args[args.length - 1], expr)) {
-                    expr.isPolynomial = true
+                  if(!isChemCore() && isPolynomialTerm(args[args.length - 1], expr)) {
+                    expr.isPolynomial = true;
+                    var t = args.pop();
+                    if(!t.isPolynomial) {
+                      expr = binaryNode(Model.MUL, [t, expr]);
+                      expr.isImplicit = t.isImplicit;
+                      t.isImplicit = undefined
+                    }
                   }else {
                     expr.isImplicit = true
                   }
@@ -1659,7 +1665,7 @@ var Model = function() {
             }
           }
         }
-        if(expr.op === Model.MUL && (!expr.isScientific && !expr.isBinomial)) {
+        if(expr.op === Model.MUL && (!expr.isScientific && (!expr.isBinomial && (args.length && (!args[args.length - 1].isImplicit && (!args[args.length - 1].isPolynomial && (expr.isImplicit && expr.isPolynomial))))))) {
           args = args.concat(expr.args)
         }else {
           args.push(expr)
@@ -1690,7 +1696,7 @@ var Model = function() {
       if(n0.op === Model.SUB && n0.args.length === 1) {
         n0 = n0.args[0]
       }
-      if(!n0.lbrk && (!n1.lbrk && (n0.op === Model.NUM && isVar(n1) || isVar(n0) && n1.op === Model.NUM))) {
+      if(!n0.lbrk && (!n1.lbrk && (n0.op === Model.NUM && isVar(n1) || (isVar(n0) && n1.op === Model.NUM || (n0.op === Model.NUM && n1.op === Model.NUM || isVar(n0) && isVar(n1)))))) {
         return true
       }
       return false
@@ -5595,6 +5601,20 @@ var BigDecimal = function(MathContext) {
     function isEmptyNode(node) {
       return node.op === Model.VAR && node.args[0] === "0"
     }
+    function flattenNestedMultiplyNodes(node, doSimplify) {
+      var args = [];
+      if(node.op !== Model.MUL || node.isScientific) {
+        return node
+      }
+      forEach(node.args, function(n) {
+        if(n.op === Model.MUL) {
+          args = args.concat(n.args)
+        }else {
+          args.push(n)
+        }
+      });
+      return binaryNode(Model.MUL, args)
+    }
     function normalizeSyntax(root, ref) {
       var options = Model.options ? Model.options : {};
       if(!ref || !ref.args) {
@@ -5636,6 +5656,8 @@ var BigDecimal = function(MathContext) {
         });
         return binaryNode(Model.ADD, args)
       }, multiplicative:function(node) {
+        ref = flattenNestedMultiplyNodes(ref);
+        node = flattenNestedMultiplyNodes(node);
         var args = [];
         if(ref && (ref.op === Model.FORMAT && checkNumberFormat(ref.args[0], node))) {
           return normalNumber
@@ -6373,6 +6395,139 @@ var BigDecimal = function(MathContext) {
       }
       node.sortNid = nid;
       sortedNodes[rootNid] = node;
+      return node
+    }
+    var sortedLiteralNodes = [];
+    function sortLiteral(root) {
+      Assert.checkTimeout();
+      if(!root || !root.args) {
+        assert(false, "Should not get here. Illformed node.");
+        return 0
+      }
+      var nid = ast.intern(root);
+      if(root.sortLiteralNid === nid) {
+        return root
+      }
+      var cachedNode;
+      if((cachedNode = sortedLiteralNodes[nid]) !== undefined) {
+        return cachedNode
+      }
+      var rootNid = nid;
+      var node = visit(root, {name:"sortLiteral", numeric:function(node) {
+        return node
+      }, additive:function(node) {
+        var args = [];
+        forEach(node.args, function(n, i) {
+          if(i > 0 && node.op === Model.SUB) {
+            n = negate(n)
+          }
+          args.push(sortLiteral(n))
+        });
+        var op = node.op === Model.SUB ? Model.ADD : node.op;
+        node = binaryNode(op, args, true);
+        if(node.op === Model.PM || node.op === Model.BACKSLASH) {
+          return node
+        }
+        var id0, id1;
+        var n0, n1;
+        for(var i = 0;i < node.args.length - 1;i++) {
+          n0 = node.args[i];
+          n1 = node.args[i + 1];
+          id0 = ast.intern(n0);
+          id1 = ast.intern(n1);
+          if(id0 < id1) {
+            node.args[i] = n1;
+            node.args[i + 1] = n0
+          }
+        }
+        return node
+      }, multiplicative:function(node) {
+        var args = [];
+        forEach(node.args, function(n, i) {
+          args.push(sortLiteral(n))
+        });
+        node = binaryNode(node.op, args);
+        if(node.op === Model.FRAC || node.op === Model.COEFF) {
+          return node
+        }
+        var id0, id1;
+        var n0, n1;
+        for(var i = 0;i < node.args.length - 1;i++) {
+          n0 = node.args[i];
+          n1 = node.args[i + 1];
+          id0 = ast.intern(n0);
+          id1 = ast.intern(n1);
+          if(id0 < id1) {
+            node.args[i] = n1;
+            node.args[i + 1] = n0
+          }
+        }
+        return node
+      }, unary:function(node) {
+        var args = [];
+        forEach(node.args, function(n) {
+          args = args.concat(sortLiteral(n))
+        });
+        return newNode(node.op, args)
+      }, exponential:function(node) {
+        var args = [];
+        forEach(node.args, function(n, i) {
+          args.push(sortLiteral(n))
+        });
+        node = binaryNode(node.op, args);
+        return node
+      }, variable:function(node) {
+        return node
+      }, comma:function(node) {
+        var args = [];
+        forEach(node.args, function(n) {
+          args.push(sortLiteral(n))
+        });
+        switch(node.op) {
+          case Model.COMMA:
+            args.sort(function(a, b) {
+              a = JSON.stringify(a);
+              b = JSON.stringify(b);
+              if(a < b) {
+                return-1
+              }
+              if(a > b) {
+                return 1
+              }
+              return 0
+            });
+            break;
+          default:
+            break
+        }
+        return newNode(node.op, args)
+      }, equals:function(node) {
+        forEach(node.args, function(n, i) {
+          node.args[i] = sortLiteral(n)
+        });
+        if(node.op === Model.COLON || (node.op === Model.RIGHTARROW || (node.op === Model.GT || (node.op === Model.GE || (node.op === Model.LT || node.op === Model.LE))))) {
+          return node
+        }
+        var id0, id1;
+        var n0, n1;
+        for(var i = 0;i < node.args.length - 1;i++) {
+          n0 = node.args[i];
+          n1 = node.args[i + 1];
+          id0 = ast.intern(n0);
+          id1 = ast.intern(n1);
+          if(id0 < id1) {
+            node.args[i] = n1;
+            node.args[i + 1] = n0
+          }
+        }
+        return node
+      }});
+      while(nid !== ast.intern(node)) {
+        nid = ast.intern(node);
+        node = sortLiteral(node)
+      }
+      node.sortNid = nid;
+      sortedLiteralNodes[rootNid] = node;
       return node
     }
     function normalizeLiteral(root) {
@@ -8925,6 +9080,7 @@ var BigDecimal = function(MathContext) {
     this.variables = variables;
     this.variablePart = variablePart;
     this.sort = sort;
+    this.sortLiteral = sortLiteral;
     this.simplify = simplify;
     this.dummy = dummy;
     this.expand = expand;
@@ -8967,6 +9123,16 @@ var BigDecimal = function(MathContext) {
       Assert.setLocation(node.location)
     }
     var result = visitor.sort(node);
+    Assert.setLocation(prevLocation);
+    return result
+  }
+  function sortLiteral(node) {
+    var visitor = new Visitor(ast);
+    var prevLocation = Assert.location;
+    if(node.location) {
+      Assert.setLocation(node.location)
+    }
+    var result = visitor.sortLiteral(node);
     Assert.setLocation(prevLocation);
     return result
   }
@@ -9420,8 +9586,8 @@ var BigDecimal = function(MathContext) {
     n1 = normalizeLiteral(n1);
     n2 = normalizeLiteral(n2);
     if(ignoreOrder) {
-      n1 = sort(n1);
-      n2 = sort(n2)
+      n1 = sortLiteral(n1);
+      n2 = sortLiteral(n2)
     }
     var nid1 = ast.intern(n1);
     var nid2 = ast.intern(n2);

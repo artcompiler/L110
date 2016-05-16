@@ -1,7 +1,5 @@
-/* -*- Mode: js; js-indent-level: 2; indent-tabs-mode: nil; tab-width: 2 -*- */
-/* vim: set shiftwidth=2 tabstop=2 autoindent cindent expandtab: */
 /*
- * Copyright 2014 Learnosity Ltd. All Rights Reserved.
+ * Copyright 2016 Learnosity Ltd. All Rights Reserved.
  *
  */
 "use strict";
@@ -1302,6 +1300,22 @@
       return node.op === Model.VAR && node.args[0] === "0";
     }
 
+    function flattenNestedMultiplyNodes(node, doSimplify) {
+      var args = [];
+      if (node.op !== Model.MUL || node.isScientific) {
+        // Scientific notation is a special case that needs to keep its shape.
+        return node;
+      }
+      forEach(node.args, function (n) {
+        if (n.op === Model.MUL) {
+          args = args.concat(n.args);
+        } else {
+          args.push(n);
+        }
+      });
+      return binaryNode(Model.MUL, args);
+    }
+
     function normalizeSyntax(root, ref) {
       var options = Model.options ? Model.options : {};
       if (!ref || !ref.args) {
@@ -1355,6 +1369,8 @@
           return binaryNode(Model.ADD, args);
         },
         multiplicative: function(node) {
+          ref = flattenNestedMultiplyNodes(ref);
+          node = flattenNestedMultiplyNodes(node);
           var args = [];
           if (ref && ref.op === Model.FORMAT &&
               checkNumberFormat(ref.args[0], node)) {
@@ -2167,6 +2183,167 @@
       }
       node.sortNid = nid;
       sortedNodes[rootNid] = node;
+      return node;
+    }
+
+    var sortedLiteralNodes = [];
+    function sortLiteral(root) {
+      Assert.checkTimeout();
+      if (!root || !root.args) {
+        assert(false, "Should not get here. Illformed node.");
+        return 0;
+      }
+      var nid = ast.intern(root);
+      if (root.sortLiteralNid === nid) {
+        return root;
+      }
+      var cachedNode;
+      if ((cachedNode = sortedLiteralNodes[nid]) !== undefined) {
+        return cachedNode;
+      }
+      var rootNid = nid;
+      var node = visit(root, {
+        name: "sortLiteral",
+        numeric: function (node) {
+          return node;
+        },
+        additive: function (node) {
+          // Sort by descending degree
+          var args = [];
+          forEach(node.args, function (n, i) {
+            if (i > 0 && node.op === Model.SUB) {
+              n = negate(n);
+            }
+            args.push(sortLiteral(n));
+          });
+          var op = node.op === Model.SUB ? Model.ADD : node.op;
+          node = binaryNode(op, args, true);
+          if (node.op === Model.PM ||
+              node.op === Model.BACKSLASH) {
+            // Don't sort these kinds of nodes.
+            return node;
+          }
+          var id0, id1;
+          var n0, n1;
+          for (var i = 0; i < node.args.length - 1; i++) {
+            n0 = node.args[i];
+            n1 = node.args[i + 1];
+            id0 = ast.intern(n0);
+            id1 = ast.intern(n1);
+            if (id0 < id1) {
+              // Swap adjacent elements
+              node.args[i] = n1;
+              node.args[i + 1] = n0;
+            }
+          }
+          return node;
+        },
+        multiplicative: function (node) {
+          // Sort by ascending degree
+          var args = [];
+          forEach(node.args, function (n, i) {
+            args.push(sortLiteral(n));
+          });
+          node = binaryNode(node.op, args);
+          if (node.op === Model.FRAC ||
+              node.op === Model.COEFF) {
+            // Don't sort numerators and denominator or coefficients
+            return node;
+          }
+          var id0, id1;
+          var n0, n1;
+          for (var i = 0; i < node.args.length - 1; i++) {
+            n0 = node.args[i];
+            n1 = node.args[i + 1];
+            id0 = ast.intern(n0);
+            id1 = ast.intern(n1);
+            if (id0 < id1) {
+              // Swap adjacent elements
+              node.args[i] = n1;
+              node.args[i + 1] = n0;
+            }
+          }
+          return node;
+        },
+        unary: function(node) {
+          var args = [];
+          forEach(node.args, function (n) {
+            args = args.concat(sortLiteral(n));
+          });
+          return newNode(node.op, args);
+        },
+        exponential: function (node) {
+          var args = [];
+          forEach(node.args, function (n, i) {
+            args.push(sortLiteral(n));
+          });
+          node = binaryNode(node.op, args);
+          return node;
+        },
+        variable: function(node) {
+          return node;
+        },
+        comma: function(node) {
+          var args = [];
+          forEach(node.args, function (n) {
+            args.push(sortLiteral(n));
+          });
+          switch (node.op) {
+          case Model.COMMA:
+            // If its a bare comma expression then sort.
+            args.sort(function (a, b) {
+              a = JSON.stringify(a);
+              b = JSON.stringify(b);
+              if (a < b) {
+                return -1;
+              }
+              if (a > b) {
+                return 1;
+              }
+              return 0;
+            });
+            break;
+          default:
+            break;
+          }
+          return newNode(node.op, args);
+        },
+        equals: function(node) {
+          forEach(node.args, function (n, i) {
+            node.args[i] = sortLiteral(n);
+          });
+          if (node.op === Model.COLON ||
+              node.op === Model.RIGHTARROW ||
+              node.op === Model.GT ||
+              node.op === Model.GE ||
+              node.op === Model.LT ||
+              node.op === Model.LE ) {
+            // If already normalized or ratio or chem, then don't sort toplevel terms.
+            return node;
+          }
+          var id0, id1;
+          var n0, n1;
+          for (var i = 0; i < node.args.length - 1; i++) {
+            n0 = node.args[i];
+            n1 = node.args[i + 1];
+            id0 = ast.intern(n0);
+            id1 = ast.intern(n1);
+            if (id0 < id1) {
+              // Swap adjacent elements
+              node.args[i] = n1;
+              node.args[i + 1] = n0;
+            }
+          }
+          return node;
+        }
+      });
+      // If the node has changed, sort again
+      while (nid !== ast.intern(node)) {
+        nid = ast.intern(node);
+        node = sortLiteral(node);
+      }
+      node.sortNid = nid;
+      sortedLiteralNodes[rootNid] = node;
       return node;
     }
 
@@ -5075,6 +5252,7 @@
     this.variables = variables;
     this.variablePart = variablePart;
     this.sort = sort;
+    this.sortLiteral = sortLiteral;
     this.simplify = simplify;
     this.dummy = dummy;
     this.expand = expand;
@@ -5124,6 +5302,17 @@
       Assert.setLocation(node.location);
     }
     var result = visitor.sort(node);
+    Assert.setLocation(prevLocation);
+    return result;
+  }
+
+  function sortLiteral(node) {
+    var visitor = new Visitor(ast);
+    var prevLocation = Assert.location;
+    if (node.location) {
+      Assert.setLocation(node.location);
+    }
+    var result = visitor.sortLiteral(node);
     Assert.setLocation(prevLocation);
     return result;
   }
@@ -5625,9 +5814,11 @@
     n1 = normalizeLiteral(n1);
     n2 = normalizeLiteral(n2);
     if (ignoreOrder) {
-      n1 = sort(n1);
-      n2 = sort(n2);
+      n1 = sortLiteral(n1);
+      n2 = sortLiteral(n2);
     }
+//    console.log("equivLiteral() n1=" + JSON.stringify(stripNids(n1), null, 2));
+//    console.log("equivLiteral() n2=" + JSON.stringify(stripNids(n2), null, 2));
     var nid1 = ast.intern(n1);
     var nid2 = ast.intern(n2);
     var result = nid1 === nid2;

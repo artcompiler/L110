@@ -154,7 +154,7 @@ define(["mathcore"], function (MathCore) {
           ["x < 0.5x + 0.5x"],
         ]);
       });
-      describe("equivLiteral ignoreCoefficientOne", function() {
+      describe("equivLiteral ignoreCoefficientOne ignoreOrder", function() {
         function run(tests) {
           forEach(tests, function (v, i) {
             it(v[0] + " | " + v[1], function() {
@@ -162,6 +162,7 @@ define(["mathcore"], function (MathCore) {
                 method: "equivLiteral",
                 options: {
                   ignoreCoefficientOne: true,
+                  ignoreOrder: true,
                 },
                 value: v[0]
               }, v[1])).toBe(true);
@@ -169,8 +170,12 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["1\sin(1x)", "\sin(x)"],
           ["1x", "x"],
           ["1x^2+2x+3", "x^2+2x+3"],
+          ["(2)(1)(3)", "(3)(1)(2)"],
+          ["(1)(2)(3)", "(3)(1)(2)"],
+          ["1(2)(3)", "(3)(1)(2)"],
         ]);
       });
       describe("NOT equivLiteral ignoreCoefficientOne", function() {
@@ -188,6 +193,7 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["1x", "(1)x"],
           ["1\\frac{1}{2}", "\\frac{1}{2}"],
           ["1x+1\\frac{1}{2}", "x+\\frac{1}{2}"],
         ]);
@@ -254,6 +260,16 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["3t(t+8)(t-2)", "(t+8)(t-2)3t"],
+          ["3t(t)(u)", "(t)(u)3t"],
+          ["3t(t+8)(t-2)", "(t+8)(t-2)3t"],
+          ["3t(t)", "(t)3t"],
+          ["(x+\\sqrt{x})(x-\\sqrt{x})", "(x-\\sqrt{x})(x+\\sqrt{x})"],
+          ["(x-(3+\\sqrt{x}))(x-(3-\\sqrt{x}))", "(x-(3-\\sqrt{x}))(x-(3+\\sqrt{x}))"],
+          ["(2x+6)(x-(3+\\sqrt{11}))(x-(3-\\sqrt{11}))", "(x-(3-\\sqrt{11}))(2x+6)(x-(3+\\sqrt{11}))"],
+          ["(2x)(y+1)", "(y+1)(2x)"],
+          ["(2x)(x+1)", "(x+1)(2x)"],
+          ["(2x)(x+1)", "2x(x+1)"],
           ["-3x^2+2", "2-3x^2"],
           ["-3\\times(x+1)+2", "2-3\\times(x+1)"],
           ["2x+3y", "3y+2x"],
@@ -290,6 +306,7 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["3tt", "t3t"],
           ["2x^2", "x^22"],
           ["2x", "x2"],
           ["2x", "2(x)"],

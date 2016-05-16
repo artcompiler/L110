@@ -115,26 +115,6 @@ var forEach = function forEach(array, fun) {
 define(["mathcore"], function (MathCore) {
   describe("Math Core", function() {
     describe("Debug", function() {
-      describe("calculate", function() {
-        function run(tests) {
-          forEach(tests, function (v, i) {
-            it(v[0], function() {
-              expect(MathCore.evaluate({
-                method: "calculate"
-              }, v[0])).toBe(v[1]);
-            });
-          });
-        }
-        run([
-          ["\\cosh{0}", "1"],
-          ["\\sinh{0}", "0"],
-          ["\\tanh{\\infty}", "1"],
-          ["\\sin \\pi", "0"],
-          ["\\sin 0", "0"],
-          ["\\sqrt{9}", "3"],
-          ["1/3", "0.3333333333"],
-        ]);
-      });
     });
   });
 });
