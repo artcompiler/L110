@@ -1668,6 +1668,7 @@
     // the basic structure of the expression is preserved. Also, flattens binary
     // trees into N-ary nodes.
     var normalizedNodes = [];
+    //var normalizeLevel = 0;
     function normalize(root) {
       if (!root || !root.args) {
         assert(false, "Should not get here. Illformed node.");
@@ -1682,6 +1683,10 @@
         return cachedNode;
       }
       var rootNid = nid;
+      // if (normalizeLevel === 0) {
+      //   console.log("normalize() node: " + JSON.stringify(stripNids(root), null, 2));
+      // }
+      // normalizeLevel++;
       var node = Model.create(visit(root, {
         name: "normalize",
         numeric: function (node) {
@@ -1834,6 +1839,10 @@
           case Model.POW:
             if (isMinusOne(node.args[0]) && toNumber(mathValue(node.args[1], true)) === 0.5) {
               return nodeImaginary;
+            } else if (isOne(node.args[0])) {
+              return nodeOne;
+            } else if (isMinusOne(node.args[0]) && isMinusOne(node.args[1])) {
+              return nodeMinusOne;
             }
             // Fall through.
           default:
@@ -1895,6 +1904,7 @@
           return node;
         }
       }), root.location);
+      // normalizeLevel--;
       // If the node has changed, simplify again
       while (nid !== ast.intern(node)) {
         nid = ast.intern(node);
@@ -3121,6 +3131,7 @@
     }
 
     var simplifiedNodes = [];
+    // var simplifyLevel = 0;
     function simplify(root, env, resume) {
     // var level = 0;
       if (!root || !root.args) {
@@ -3132,10 +3143,10 @@
       if (root.simplifyNid === nid) {
         return root;
       }
-      // if (level === 0) {
-      //   console.log("node: " + JSON.stringify(stripNids(root), null, 2));
+      // if (simplifyLevel === 0) {
+      //   console.log("simplify() node: " + JSON.stringify(stripNids(root), null, 2));
       // }
-      // level++;
+      // simplifyLevel++;
       var node = Model.create(visit(root, {
         name: "simplify",
         numeric: function (node) {
@@ -3888,7 +3899,7 @@
           return newNode(node.op, args);
         }
       }), root.location);
-      // level--;
+      // simplifyLevel--;
       // If the node has changed, simplify again
       while (nid !== ast.intern(node)) {
         nid = ast.intern(node);
@@ -4377,6 +4388,7 @@
     }
 
     var expandedNodes = [];
+    // var expandLevel = 0;
     function expand(root, env) {
       if (!root || !root.args) {
         assert(false, "Should not get here. Illformed node.");
@@ -4391,6 +4403,10 @@
         return cachedNode;
       }
       var rootNid = nid;
+      // if (expandLevel === 0) {
+      //   console.log("expand() node: " + JSON.stringify(stripNids(root), null, 2));
+      // }
+      // expandLevel++;
       var node = Model.create(visit(root, {
         name: "expand",
         numeric: function (node) {
@@ -4600,7 +4616,15 @@
                     var invert = isNeg(emv);
                     for (var i = 0; i < ea; i++) {
                       if (invert) {
-                        args.push(binaryNode(Model.POW, [n, nodeMinusOne]));
+                        if (n.op === Model.POW && isMinusOne(n.args[1])) {
+                          // x^{-1}^{-1} -> x
+                          args.push(n.args[0]);
+                        } else if ((isOne(n) || isMinusOne(n)) && isMinusOne(emv)) {
+                          // 1^{-1} -> 1, -1^{-1} -> -1
+                          args.push(n);
+                        } else {
+                          args.push(binaryNode(Model.POW, [n, nodeMinusOne]));
+                        }
                       } else {
                         args.push(n);
                       }
@@ -4669,6 +4693,7 @@
           return newNode(node.op, args);
         }
       }), root.location);
+      // expandLevel--;
       // If the node has changed, simplify again
       while (nid !== ast.intern(node)) {
         nid = ast.intern(node);
@@ -4898,8 +4923,9 @@
               args.push(scale(n));
             }
           });
-          if (!isOne(mv2)) {
-            args.unshift(numberNode(mv2, true));
+          var n;
+          if (!isOne((n = numberNode(mv2, true)))) {
+            args.unshift(n);
           }
           return multiplyNode(args);
         },
@@ -5817,8 +5843,6 @@
       n1 = sortLiteral(n1);
       n2 = sortLiteral(n2);
     }
-//    console.log("equivLiteral() n1=" + JSON.stringify(stripNids(n1), null, 2));
-//    console.log("equivLiteral() n2=" + JSON.stringify(stripNids(n2), null, 2));
     var nid1 = ast.intern(n1);
     var nid2 = ast.intern(n2);
     var result = nid1 === nid2;
@@ -5886,8 +5910,8 @@
       var nid2r = ast.intern(n2r);
       var result = nid1l === nid2l && nid1r === nid2r;
     } else {
-      n1 = scale(normalize(simplify(expand(normalize(n1)))));
-      n2 = scale(normalize(simplify(expand(normalize(n2)))));
+      n1 = scale(expand(normalize(simplify(expand(normalize(n1))))));
+      n2 = scale(expand(normalize(simplify(expand(normalize(n2))))));
       var nid1 = ast.intern(n1);
       var nid2 = ast.intern(n2);
       var result = nid1 === nid2;

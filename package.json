@@ -8,15 +8,14 @@
   },
   "dependencies": {
     "express": "~3.4.x",
-    "underscore": "1.4.x",
     "requirejs": "latest",
-    "jsdom": "1.0.2",
     "speech-rule-engine": "*",
-    "yargs": "*",
-    "MathJax": "https://github.com/mathjax/MathJax/tarball/mathjax-node"
+    "underscore": "1.4.x",
+    "mathjax-node": "0.5.1",
+    "yargs": "*"
   },
   "engines": {
-    "node": "0.10.x"
+    "node": "latest"
   },
   "repository": {
     "type": "git",
@@ -29,7 +28,9 @@
   ],
   "author": "Jeff Dyer",
   "babel": {
-    "presets": ["es2015"]
+    "presets": [
+      "es2015"
+    ]
   },
   "devDependencies": {
     "browserify": "latest",

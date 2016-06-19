@@ -6071,6 +6071,14 @@ var BigDecimal = function(MathContext) {
           case Model.POW:
             if(isMinusOne(node.args[0]) && toNumber(mathValue(node.args[1], true)) === 0.5) {
               return nodeImaginary
+            }else {
+              if(isOne(node.args[0])) {
+                return nodeOne
+              }else {
+                if(isMinusOne(node.args[0]) && isMinusOne(node.args[1])) {
+                  return nodeMinusOne
+                }
+              }
             }
           ;
           default:
@@ -8512,7 +8520,15 @@ var BigDecimal = function(MathContext) {
                       var invert = isNeg(emv);
                       for(var i = 0;i < ea;i++) {
                         if(invert) {
-                          args.push(binaryNode(Model.POW, [n, nodeMinusOne]))
+                          if(n.op === Model.POW && isMinusOne(n.args[1])) {
+                            args.push(n.args[0])
+                          }else {
+                            if((isOne(n) || isMinusOne(n)) && isMinusOne(emv)) {
+                              args.push(n)
+                            }else {
+                              args.push(binaryNode(Model.POW, [n, nodeMinusOne]))
+                            }
+                          }
                         }else {
                           args.push(n)
                         }
@@ -8775,8 +8791,9 @@ var BigDecimal = function(MathContext) {
             args.push(scale(n))
           }
         });
-        if(!isOne(mv2)) {
-          args.unshift(numberNode(mv2, true))
+        var n;
+        if(!isOne(n = numberNode(mv2, true))) {
+          args.unshift(n)
         }
         return multiplyNode(args)
       }, additive:function(node) {
@@ -9652,8 +9669,8 @@ var BigDecimal = function(MathContext) {
         var nid2r = ast.intern(n2r);
         var result = nid1l === nid2l && nid1r === nid2r
       }else {
-        n1 = scale(normalize(simplify(expand(normalize(n1)))));
-        n2 = scale(normalize(simplify(expand(normalize(n2)))));
+        n1 = scale(expand(normalize(simplify(expand(normalize(n1))))));
+        n2 = scale(expand(normalize(simplify(expand(normalize(n2))))));
         var nid1 = ast.intern(n1);
         var nid2 = ast.intern(n2);
         var result = nid1 === nid2;

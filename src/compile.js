@@ -2,7 +2,7 @@
 /* vim: set shiftwidth=2 tabstop=2 autoindent cindent expandtab: */
 /* Copyright (c) 2014, Art Compiler LLC */
 var _ = require("underscore");
-var mjAPI = require("./mj-single.js");
+var mjAPI = require("mathjax-node/lib/mj-single.js");
 import MathCore from "./mathcore.js";
 
 var transformer = function() {
