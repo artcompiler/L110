@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 5c1e908
+ * Mathcore unversioned - 5725209
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -8769,7 +8769,7 @@ var BigDecimal = function(MathContext) {
       }
       var node = Model.create(visit(root, {name:"scale", exponential:function(node) {
         var mv, nd;
-        if((mv = mathValue(node, true)) && (nd = numberNode(mv, true))) {
+        if((mv = mathValue(node, true)) && (nd = numberNode(String(mv), true))) {
           return nd
         }
         var args = [];
@@ -8779,7 +8779,7 @@ var BigDecimal = function(MathContext) {
         return newNode(node.op, args)
       }, multiplicative:function(node) {
         var mv, nd;
-        if((mv = mathValue(node, true)) && (nd = numberNode(mv, true))) {
+        if((mv = mathValue(node, true)) && (nd = numberNode(String(mv), true))) {
           return nd
         }
         var args = [];
@@ -8795,11 +8795,15 @@ var BigDecimal = function(MathContext) {
         if(!isOne(n = numberNode(mv2, true))) {
           args.unshift(n)
         }
-        return multiplyNode(args)
+        node = multiplyNode(args);
+        if((mv = mathValue(node, true)) && (nd = numberNode(String(mv), true))) {
+          return nd
+        }
+        return node
       }, additive:function(node) {
-        var mv;
-        if(mv = mathValue(node, true)) {
-          return numberNode(mv, true)
+        var mv, nd;
+        if((mv = mathValue(node, true)) && (nd = numberNode(String(mv), true))) {
+          return nd
         }
         var lc, args = [];
         if(isPolynomial(node) && !isOne(abs(leadingCoeff(node)))) {
@@ -8821,7 +8825,11 @@ var BigDecimal = function(MathContext) {
         if(!isZero(mv2)) {
           args.unshift(numberNode(mv2, true))
         }
-        return binaryNode(Model.ADD, args)
+        node = binaryNode(Model.ADD, args);
+        if((mv = mathValue(node, true)) && (nd = numberNode(String(mv), true))) {
+          return nd
+        }
+        return node
       }, unary:function(node) {
         var mv;
         if(mv = mathValue(node, true)) {

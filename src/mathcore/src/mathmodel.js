@@ -4899,7 +4899,7 @@
         exponential: function (node) {
           var mv, nd;
           if ((mv = mathValue(node, true)) &&
-              (nd = numberNode(mv, true))) {
+              (nd = numberNode(String(mv), true))) {
             return nd;
           }
           var args = [];
@@ -4911,7 +4911,7 @@
         multiplicative: function (node) {
           var mv, nd;
           if ((mv = mathValue(node, true)) &&
-              (nd = numberNode(mv, true))) {
+              (nd = numberNode(String(mv), true))) {
             return nd;
           }
           var args = [];
@@ -4927,12 +4927,18 @@
           if (!isOne((n = numberNode(mv2, true)))) {
             args.unshift(n);
           }
-          return multiplyNode(args);
+          node = multiplyNode(args);
+          if ((mv = mathValue(node, true)) &&
+              (nd = numberNode(String(mv), true))) {
+            return nd;
+          }
+          return node;
         },
         additive: function (node) {
-          var mv;
-          if ((mv = mathValue(node, true))) {
-            return numberNode(mv, true);
+          var mv, nd;
+          if ((mv = mathValue(node, true)) &&
+              (nd = numberNode(String(mv), true))) {
+            return nd;
           }
           var lc, args = [];
           if (isPolynomial(node) && !isOne(abs(leadingCoeff(node)))) {
@@ -4956,7 +4962,12 @@
           if (!isZero(mv2)) {
             args.unshift(numberNode(mv2, true));
           }
-          return binaryNode(Model.ADD, args);
+          node = binaryNode(Model.ADD, args);
+          if ((mv = mathValue(node, true)) &&
+              (nd = numberNode(String(mv), true))) {
+            return nd;
+          }
+          return node;
         },
         unary: function(node) {
           var mv;

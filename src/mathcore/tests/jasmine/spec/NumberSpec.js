@@ -166,6 +166,25 @@ define(["mathcore"], function (MathCore) {
           ["", ""]
         ]);
       });
+      describe("equivSymbolic", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivSymbolic",
+                options: {
+                  decimalPlaces: 4
+                },
+                value: v[0]
+              }, v[1])).toBe(true);
+            });
+          });
+        }
+        run([
+          ["\\pi", "3.14159"],
+          ["\\pi+\\pi", "3.14159+3.14159"],
+        ]);
+      });
       describe("NOT equivValue", function() {
         function run(tests) {
           forEach(tests, function (v, i) {
