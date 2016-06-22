@@ -170,7 +170,7 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
-          ["1\sin(1x)", "\sin(x)"],
+          ["\\sin(1x)", "\\sin(x)"],
           ["1x", "x"],
           ["1x^2+2x+3", "x^2+2x+3"],
           ["(2)(1)(3)", "(3)(1)(2)"],
@@ -1119,7 +1119,8 @@ define(["mathcore"], function (MathCore) {
           ["\\frac{n!}{k!(n-k)!} = \\binom{n}{k}", "\\frac{n!}{k!(n-k)!} = \\binom{n}{k}"],
           ["R^+", "R^+"],
           ["0.98^c={50.99}\\degree", "0.98^c={50.99}\\degree"],
-          ["sin(u-v)=sin(u)cos(u)-cos(u)sin(v)", "sin(u-v)=sin(u)cos(u)-cos(u)sin(v)"],
+          ["\\sin(u-v)=\\sin(u)\\cos(u)-\\cos(u)\\sin(v)",
+           "\\sin(u-v)=\\sin(u)\\cos(u)-\\cos(u)\\sin(v)"],
           ["x<\\frac{1}{2}", "x<\\frac{1}{2}"],
           ["\\frac{\\left(-1\\right)^nn!}{x^{n+1}}", "\\frac{\\left(-1\\right)^nn!}{x^{n+1}}"],
           ["f'(x)=3\\times x^2", "f'(x)=3\\times x^2"],

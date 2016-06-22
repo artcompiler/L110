@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 5725209
+ * Mathcore unversioned - d06cce7
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -1080,6 +1080,21 @@ var Model = function() {
     function isMinusOne(node) {
       return node.op === Model.SUB && (node.args.length === 1 && (node.args[0].op === Model.NUM && (node.args[0].args.length === 1 && node.args[0].args[0] === "1")))
     }
+    function isUnit(node) {
+      var env = Model.env;
+      if(node.op === Model.POW) {
+        return isInteger(node.args[1]) && isUnit(node.args[0])
+      }
+      return node.op === Model.VAR && (node.args.length === 1 && (env[node.args[0]] && env[node.args[0]].type === "unit"))
+    }
+    function foldUnit(n, u) {
+      if(n.op === Model.POW) {
+        var b = n.args[0];
+        var e = n.args[1];
+        return binaryNode(Model.POW, [binaryNode(Model.MUL, [b, u]), e])
+      }
+      return binaryNode(Model.MUL, [n, u])
+    }
     function primaryExpr() {
       var e;
       var tk;
@@ -1621,35 +1636,40 @@ var Model = function() {
           expr = unaryNode(Model.M, [expr])
         }else {
           if(!explicitOperator) {
-            if(args.length > 0 && isMixedFraction(args[args.length - 1], expr)) {
+            if(args.length > 0 && isUnit(expr)) {
               t = args.pop();
-              if(isNeg(t)) {
-                expr = binaryNode(Model.MUL, [nodeMinusOne, expr])
-              }
-              expr = binaryNode(Model.ADD, [t, expr]);
-              expr.isMixedFraction = true
+              expr = foldUnit(t, expr)
             }else {
-              if(Model.option("ignoreCoefficientOne") && (args.length === 1 && (isOneOrMinusOne(args[0]) && isPolynomialTerm(args[0], expr)))) {
-                if(isOne(args[0])) {
-                  args.pop()
-                }else {
-                  expr = negate(expr)
+              if(args.length > 0 && isMixedFraction(args[args.length - 1], expr)) {
+                t = args.pop();
+                if(isNeg(t)) {
+                  expr = binaryNode(Model.MUL, [nodeMinusOne, expr])
                 }
+                expr = binaryNode(Model.ADD, [t, expr]);
+                expr.isMixedFraction = true
               }else {
-                if(args.length > 0 && (n0 = isRepeatingDecimal([args[args.length - 1], expr]))) {
-                  args.pop();
-                  expr = n0
-                }else {
-                  if(!isChemCore() && isPolynomialTerm(args[args.length - 1], expr)) {
-                    expr.isPolynomial = true;
-                    var t = args.pop();
-                    if(!t.isPolynomial) {
-                      expr = binaryNode(Model.MUL, [t, expr]);
-                      expr.isImplicit = t.isImplicit;
-                      t.isImplicit = undefined
-                    }
+                if(Model.option("ignoreCoefficientOne") && (args.length === 1 && (isOneOrMinusOne(args[0]) && isPolynomialTerm(args[0], expr)))) {
+                  if(isOne(args[0])) {
+                    args.pop()
                   }else {
-                    expr.isImplicit = true
+                    expr = negate(expr)
+                  }
+                }else {
+                  if(args.length > 0 && (n0 = isRepeatingDecimal([args[args.length - 1], expr]))) {
+                    args.pop();
+                    expr = n0
+                  }else {
+                    if(!isChemCore() && isPolynomialTerm(args[args.length - 1], expr)) {
+                      expr.isPolynomial = true;
+                      var t = args.pop();
+                      if(!t.isPolynomial) {
+                        expr = binaryNode(Model.MUL, [t, expr]);
+                        expr.isImplicit = t.isImplicit;
+                        t.isImplicit = undefined
+                      }
+                    }else {
+                      expr.isImplicit = true
+                    }
                   }
                 }
               }
@@ -6567,8 +6587,7 @@ var BigDecimal = function(MathContext) {
             assert(args.length > 0);
             args.push(binaryNode(Model.COEFF, [args.pop(), normalizeLiteral(n)], flatten))
           }else {
-            if(n.isImplicit) {
-              assert(args.length > 0);
+            if(n.isImplicit && args.length > 0) {
               args.push(binaryNode(Model.MUL, [args.pop(), normalizeLiteral(n)], flatten))
             }else {
               args.push(normalizeLiteral(n))
@@ -9999,9 +10018,9 @@ var MathCore = function() {
   var env = {"g":{type:"unit", value:u, base:"g"}, "s":{type:"unit", value:u, base:"s"}, "m":{type:"unit", value:u, base:"m"}, "L":{type:"unit", value:u, base:"L"}, "kg":{type:"unit", value:k, base:"g"}, "km":{type:"unit", value:k, base:"m"}, "ks":{type:"unit", value:k, base:"s"}, "kL":{type:"unit", value:k, base:"L"}, "cg":{type:"unit", value:c, base:"g"}, "cm":{type:"unit", value:c, base:"m"}, "cs":{type:"unit", value:c, base:"s"}, "cL":{type:"unit", value:c, base:"L"}, "mg":{type:"unit", value:m, 
   base:"g"}, "mm":{type:"unit", value:m, base:"m"}, "ms":{type:"unit", value:m, base:"s"}, "mL":{type:"unit", value:m, base:"L"}, "\\mug":{type:"unit", value:mu, base:"g"}, "\\mus":{type:"unit", value:mu, base:"s"}, "\\mum":{type:"unit", value:mu, base:"m"}, "\\muL":{type:"unit", value:mu, base:"L"}, "ng":{type:"unit", value:n, base:"g"}, "nm":{type:"unit", value:n, base:"m"}, "ns":{type:"unit", value:n, base:"s"}, "nL":{type:"unit", value:n, base:"L"}, "in":{type:"unit", value:1 / 12, base:"ft"}, 
   "ft":{type:"unit", value:u, base:"ft"}, "yd":{type:"unit", value:3, base:"ft"}, "mi":{type:"unit", value:5280, base:"ft"}, "fl":{type:"unit", value:1, base:"fl"}, "cup":{type:"unit", value:8, base:"fl"}, "pt":{type:"unit", value:16, base:"fl"}, "qt":{type:"unit", value:32, base:"fl"}, "gal":{type:"unit", value:128, base:"fl"}, "oz":{type:"unit", value:1 / 16, base:"lb"}, "lb":{type:"unit", value:1, base:"lb"}, "st":{type:"unit", value:1 / 1614, base:"lb"}, "qtr":{type:"unit", value:28, base:"lb"}, 
-  "cwt":{type:"unit", value:112, base:"lb"}, "t":{type:"unit", value:2240, base:"lb"}, "$":{type:"unit", value:u, base:"$"}, "i":{type:"unit", value:null, base:"i"}, "min":{type:"unit", value:60, base:"s"}, "hr":{type:"unit", value:3600, base:"s"}, "day":{type:"unit", value:24 * 3600, base:"s"}, "\\radian":{type:"unit", value:u, base:"radian"}, "\\degree":{type:"unit", value:Math.PI / 180, base:"radian"}, "\\degree K":{type:"unit", value:u, base:"\\degree K"}, "\\degree C":{type:"unit", value:u, 
-  base:"\\degree C"}, "\\degree F":{type:"unit", value:u, base:"\\degree F"}, "R":{name:"reals"}, "matrix":{}, "pmatrix":{}, "bmatrix":{}, "Bmatrix":{}, "vmatrix":{}, "Vmatrix":{}, "array":{}, "\\alpha":{type:"var"}, "\\beta":{type:"var"}, "\\gamma":{type:"var"}, "\\delta":{type:"var"}, "\\epsilon":{type:"var"}, "\\zeta":{type:"var"}, "\\eta":{type:"var"}, "\\theta":{type:"var"}, "\\iota":{type:"var"}, "\\kappa":{type:"var"}, "\\lambda":{type:"var"}, "\\mu":{type:"const", value:mu}, "\\nu":{type:"var"}, 
-  "\\xi":{type:"var"}, "\\pi":{type:"const", value:Math.PI}, "e":{type:"const", value:Math.E}, "\\rho":{type:"var"}, "\\sigma":{type:"var"}, "\\tau":{type:"var"}, "\\upsilon":{type:"var"}, "\\phi":{type:"var"}, "\\chi":{type:"var"}, "\\psi":{type:"var"}, "\\omega":{type:"var"}};
+  "cwt":{type:"unit", value:112, base:"lb"}, "$":{type:"unit", value:u, base:"$"}, "min":{type:"unit", value:60, base:"s"}, "hr":{type:"unit", value:3600, base:"s"}, "day":{type:"unit", value:24 * 3600, base:"s"}, "\\radian":{type:"unit", value:u, base:"radian"}, "\\degree":{type:"unit", value:Math.PI / 180, base:"radian"}, "\\degree K":{type:"unit", value:u, base:"\\degree K"}, "\\degree C":{type:"unit", value:u, base:"\\degree C"}, "\\degree F":{type:"unit", value:u, base:"\\degree F"}, "R":{name:"reals"}, 
+  "matrix":{}, "pmatrix":{}, "bmatrix":{}, "Bmatrix":{}, "vmatrix":{}, "Vmatrix":{}, "array":{}, "\\alpha":{type:"var"}, "\\beta":{type:"var"}, "\\gamma":{type:"var"}, "\\delta":{type:"var"}, "\\epsilon":{type:"var"}, "\\zeta":{type:"var"}, "\\eta":{type:"var"}, "\\theta":{type:"var"}, "\\iota":{type:"var"}, "\\kappa":{type:"var"}, "\\lambda":{type:"var"}, "\\mu":{type:"const", value:mu}, "\\nu":{type:"var"}, "\\xi":{type:"var"}, "\\pi":{type:"const", value:Math.PI}, "e":{type:"const", value:Math.E}, 
+  "\\rho":{type:"var"}, "\\sigma":{type:"var"}, "\\tau":{type:"var"}, "\\upsilon":{type:"var"}, "\\phi":{type:"var"}, "\\chi":{type:"var"}, "\\psi":{type:"var"}, "\\omega":{type:"var"}};
   function evaluate(spec, solution, resume) {
     try {
       assert(spec, message(3001, [spec]));

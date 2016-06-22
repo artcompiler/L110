@@ -2389,8 +2389,7 @@
             if (n.isPolynomial) {
               assert(args.length > 0);
               args.push(binaryNode(Model.COEFF, [args.pop(), normalizeLiteral(n)], flatten));
-            } else if (n.isImplicit) {
-              assert(args.length > 0);
+            } else if (n.isImplicit && args.length > 0) {
               args.push(binaryNode(Model.MUL, [args.pop(), normalizeLiteral(n)], flatten));
             } else {
               args.push(normalizeLiteral(n));
