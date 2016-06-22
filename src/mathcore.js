@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - d06cce7
+ * Mathcore unversioned - 21ec6d8
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -1092,6 +1092,12 @@ var Model = function() {
         var b = n.args[0];
         var e = n.args[1];
         return binaryNode(Model.POW, [binaryNode(Model.MUL, [b, u]), e])
+      }else {
+        if(n.op === Model.FRAC && n.isSlash) {
+          var nu = n.args[0];
+          var d = n.args[1];
+          return binaryNode(Model.FRAC, [nu, binaryNode(Model.MUL, [d, u])])
+        }
       }
       return binaryNode(Model.MUL, [n, u])
     }
@@ -1565,7 +1571,8 @@ var Model = function() {
       while((t = hd()) === TK_SLASH) {
         next();
         node = newNode(Model.FRAC, [node, subscriptExpr()]);
-        node.isFraction = isSimpleFraction(node)
+        node.isFraction = isSimpleFraction(node);
+        node.isSlash = true
       }
       return node
     }

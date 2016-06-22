@@ -115,6 +115,44 @@ var forEach = function forEach(array, fun) {
 define(["mathcore"], function (MathCore) {
   describe("Math Core", function() {
     describe("Debug", function() {
+      describe("equivSymbolic", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivSymbolic",
+                value: v[0]
+              }, v[1])).toBe(true);
+            });
+          });
+        }
+        run([
+          ["840in / 60in", "14"],
+          ["840in^3 / 60in^2", "14in"],
+          ["\\frac{840in}{60in}", "14"],
+          ["840in^3 \\div 60in^3", "14"],
+          ["840in^3 \\div {60in^3}", "14"],
+          ["840 \\div 60", "14"],
+        ]);
+      });
+      describe("equivLiteral", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivLiteral",
+                value: v[0],
+                options: {
+                  ignoreOrder: true,
+                },
+              }, v[1])).toBe(true);
+            });
+          });
+        }
+        run([
+          ["840in \\div 60in", "840in \\div 60in"],
+        ]);
+      });
     });
   });
 });
