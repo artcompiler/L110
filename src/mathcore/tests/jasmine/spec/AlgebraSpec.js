@@ -354,6 +354,7 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["10 \\text{to} 1", "10 : 1"],
           ["10 to 1", "10 : 1"],
           ["\\frac{2}{2x+2y}", "\\frac{1}{x+y}"],
           ["2x", "x2"],

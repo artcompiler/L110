@@ -1877,13 +1877,16 @@ var Model = function() {
       return expr
     }
     function isRelational(t) {
-      return t === TK_LT || (t === TK_LE || (t === TK_GT || (t === TK_GE || (t === TK_IN || (t === TK_TO || t === TK_COLON)))))
+      return t === TK_LT || (t === TK_LE || (t === TK_GT || (t === TK_GE || (t === TK_IN || (t === TK_TO || (t === TK_COLON || t === TK_VAR && lexeme() === "to"))))))
     }
     function relationalExpr() {
       var t = hd();
       var expr = additiveExpr();
       var args = [];
       while(isRelational(t = hd())) {
+        if(t === TK_VAR && lexeme() === "to") {
+          t = TK_COLON
+        }
         next();
         var expr2 = additiveExpr();
         expr = newNode(tokenToOperator[t], [expr, expr2]);
@@ -2009,6 +2012,7 @@ var Model = function() {
       "\\ln":TK_LN, "\\lg":TK_LG, "\\log":TK_LOG, "\\left":null, "\\right":null, "\\big":null, "\\Big":null, "\\bigg":null, "\\Bigg":null, "\\ ":null, "\\quad":null, "\\qquad":null, "\\text":TK_TEXT, "\\textrm":TK_TEXT, "\\textit":TK_TEXT, "\\textbf":TK_TEXT, "\\lt":TK_LT, "\\le":TK_LE, "\\gt":TK_GT, "\\ge":TK_GE, "\\ne":TK_NE, "\\approx":TK_APPROX, "\\exists":TK_EXISTS, "\\in":TK_IN, "\\forall":TK_FORALL, "\\lim":TK_LIM, "\\exp":TK_EXP, "\\to":TK_TO, "\\sum":TK_SUM, "\\int":TK_INT, "\\prod":TK_PROD, 
       "\\%":TK_PERCENT, "\\rightarrow":TK_RIGHTARROW, "\\longrightarrow":TK_RIGHTARROW, "\\binom":TK_BINOM, "\\begin":TK_BEGIN, "\\end":TK_END, "\\colon":TK_COLON, "\\vert":TK_VERTICALBAR, "\\lvert":TK_VERTICALBAR, "\\rvert":TK_VERTICALBAR, "\\mid":TK_VERTICALBAR, "\\format":TK_FORMAT, "\\overline":TK_OVERLINE, "\\overset":TK_OVERSET, "\\underset":TK_UNDERSET, "\\backslash":TK_BACKSLASH, "\\mathbf":TK_MATHBF, "\\abs":TK_ABS, "\\dot":TK_DOT};
       var identifiers = keys(env);
+      identifiers.push("to");
       function isAlphaCharCode(c) {
         return c >= 65 && c <= 90 || c >= 97 && c <= 122
       }
