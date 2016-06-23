@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 21ec6d8
+ * Mathcore unversioned - 4d0395e
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -2113,6 +2113,12 @@ var Model = function() {
                 return TK_GE
               }
               return TK_GT;
+            case 116:
+              if(src.charCodeAt(curIndex) === 111) {
+                curIndex++;
+                return TK_COLON
+              }
+            ;
             default:
               if(isAlphaCharCode(c) || c === "'".charCodeAt(0)) {
                 return variable(c)
