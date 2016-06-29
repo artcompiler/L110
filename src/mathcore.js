@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 4d0395e
+ * Mathcore unversioned - 467cd44
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -8464,7 +8464,7 @@ var BigDecimal = function(MathContext) {
             lterms = terms(lnode);
             rterms = terms(rnode)
           }
-          if((!isAggregate(lnode) && lterms.length > 1 || !isAggregate(rnode) && rterms.length > 1) && ((lnode.args.length < 64 || rnode.args.length < 2) && (lnode.args.length < 2 || rnode.args.length < 64))) {
+          if(lterms && (rterms && ((!isAggregate(lnode) && lterms.length > 1 || !isAggregate(rnode) && rterms.length > 1) && lterms.length * rterms.length < 64))) {
             return multiplyTerms(lterms, rterms, expo)
           }
           var result = [];
@@ -8847,7 +8847,7 @@ var BigDecimal = function(MathContext) {
           forEach(node.args, function(n) {
             args.push(fractionNode(n, lc))
           });
-          node = binaryNode(Model.ADD, args)
+          node = newNode(Model.ADD, [multiplyNode([lc, binaryNode(Model.ADD, args)])])
         }
         var args = [];
         var mv2 = bigZero;
@@ -8861,7 +8861,11 @@ var BigDecimal = function(MathContext) {
         if(!isZero(mv2)) {
           args.unshift(numberNode(mv2, true))
         }
-        node = binaryNode(Model.ADD, args);
+        if(args.length === 1) {
+          node = args[0]
+        }else {
+          node = binaryNode(Model.ADD, args)
+        }
         if((mv = mathValue(node, true)) && (nd = numberNode(String(mv), true))) {
           return nd
         }
@@ -9041,7 +9045,7 @@ var BigDecimal = function(MathContext) {
       var cc = [];
       forEach(tt, function(v) {
         var d = degree(v, true);
-        if(d === Number.POSITIVE_INFINITY || (d < 0 || d !== Math.floor(d))) {
+        if(d === Number.POSITIVE_INFINITY || (d < 0 || (d !== Math.floor(d) || (d > 10 || mathValue(constantPart(v), true) === null)))) {
           notPolynomial = true;
           return
         }

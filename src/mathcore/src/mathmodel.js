@@ -4473,10 +4473,10 @@
               lterms = terms(lnode);
               rterms = terms(rnode);
             }
-            if ((!isAggregate(lnode) && lterms.length > 1 ||
+            if (lterms && rterms &&
+                (!isAggregate(lnode) && lterms.length > 1 ||
                  !isAggregate(rnode) && rterms.length > 1) &&
-                (lnode.args.length < 64 || rnode.args.length < 2) &&
-                (lnode.args.length < 2 || rnode.args.length < 64)) {
+                lterms.length * rterms.length < 64) {
               // (x + 2)(x - 3)
               // Limit the number of terms to avoid runaway expansion.
               return multiplyTerms(lterms, rterms, expo);
@@ -4946,7 +4946,9 @@
             forEach(node.args, function (n) {
               args.push(fractionNode(n, lc));
             });
-            node = binaryNode(Model.ADD, args);
+            // This is a bit of a hack, making a unary additive node to continue
+            // in this block.
+            node = newNode(Model.ADD, [multiplyNode([lc, binaryNode(Model.ADD, args)])]);
           }
           var args = [];
           var mv2 = bigZero;
@@ -4961,7 +4963,11 @@
           if (!isZero(mv2)) {
             args.unshift(numberNode(mv2, true));
           }
-          node = binaryNode(Model.ADD, args);
+          if (args.length === 1) {
+            node = args[0];
+          } else {
+            node = binaryNode(Model.ADD, args);
+          }
           if ((mv = mathValue(node, true)) &&
               (nd = numberNode(String(mv), true))) {
             return nd;
@@ -5181,7 +5187,11 @@
       var cc = [];
       forEach(tt, function (v) {
         var d = degree(v, true);
-        if (d === Number.POSITIVE_INFINITY || d < 0 || d !== Math.floor(d)) {   // non-positive integer power
+        if (d === Number.POSITIVE_INFINITY ||
+            d < 0 ||
+            d !== Math.floor(d) ||   // non-positive integer power
+            d > 10 ||
+            mathValue(constantPart(v), true) === null) {
           notPolynomial = true;
           return;
         }
