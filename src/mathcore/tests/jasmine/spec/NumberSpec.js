@@ -150,8 +150,6 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
-          ["840in \\div 60in", "14"],
-          ["840in^3 \\div 60in^3", "14"],
           ["840in^3 \\div {60in^3}", "14"],
           ["840 \\div 60", "14"],
           ["\\frac{4}{15^{7225318}}", "0"],

@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 467cd44
+ * Mathcore unversioned - 372bf82
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -1643,40 +1643,35 @@ var Model = function() {
           expr = unaryNode(Model.M, [expr])
         }else {
           if(!explicitOperator) {
-            if(args.length > 0 && isUnit(expr)) {
+            if(args.length > 0 && isMixedFraction(args[args.length - 1], expr)) {
               t = args.pop();
-              expr = foldUnit(t, expr)
+              if(isNeg(t)) {
+                expr = binaryNode(Model.MUL, [nodeMinusOne, expr])
+              }
+              expr = binaryNode(Model.ADD, [t, expr]);
+              expr.isMixedFraction = true
             }else {
-              if(args.length > 0 && isMixedFraction(args[args.length - 1], expr)) {
-                t = args.pop();
-                if(isNeg(t)) {
-                  expr = binaryNode(Model.MUL, [nodeMinusOne, expr])
-                }
-                expr = binaryNode(Model.ADD, [t, expr]);
-                expr.isMixedFraction = true
-              }else {
-                if(Model.option("ignoreCoefficientOne") && (args.length === 1 && (isOneOrMinusOne(args[0]) && isPolynomialTerm(args[0], expr)))) {
-                  if(isOne(args[0])) {
-                    args.pop()
-                  }else {
-                    expr = negate(expr)
-                  }
+              if(Model.option("ignoreCoefficientOne") && (args.length === 1 && (isOneOrMinusOne(args[0]) && isPolynomialTerm(args[0], expr)))) {
+                if(isOne(args[0])) {
+                  args.pop()
                 }else {
-                  if(args.length > 0 && (n0 = isRepeatingDecimal([args[args.length - 1], expr]))) {
-                    args.pop();
-                    expr = n0
-                  }else {
-                    if(!isChemCore() && isPolynomialTerm(args[args.length - 1], expr)) {
-                      expr.isPolynomial = true;
-                      var t = args.pop();
-                      if(!t.isPolynomial) {
-                        expr = binaryNode(Model.MUL, [t, expr]);
-                        expr.isImplicit = t.isImplicit;
-                        t.isImplicit = undefined
-                      }
-                    }else {
-                      expr.isImplicit = true
+                  expr = negate(expr)
+                }
+              }else {
+                if(args.length > 0 && (n0 = isRepeatingDecimal([args[args.length - 1], expr]))) {
+                  args.pop();
+                  expr = n0
+                }else {
+                  if(!isChemCore() && isPolynomialTerm(args[args.length - 1], expr)) {
+                    expr.isPolynomial = true;
+                    var t = args.pop();
+                    if(!t.isPolynomial) {
+                      expr = binaryNode(Model.MUL, [t, expr]);
+                      expr.isImplicit = t.isImplicit;
+                      t.isImplicit = undefined
                     }
+                  }else {
+                    expr.isImplicit = true
                   }
                 }
               }
@@ -6604,7 +6599,8 @@ var BigDecimal = function(MathContext) {
             assert(args.length > 0);
             args.push(binaryNode(Model.COEFF, [args.pop(), normalizeLiteral(n)], flatten))
           }else {
-            if(n.isImplicit && args.length > 0) {
+            if(n.isImplicit) {
+              assert(args.length > 0);
               args.push(binaryNode(Model.MUL, [args.pop(), normalizeLiteral(n)], flatten))
             }else {
               args.push(normalizeLiteral(n))
