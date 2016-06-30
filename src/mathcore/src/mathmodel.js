@@ -4144,6 +4144,14 @@
             }
             return toDecimal(n);
           }
+          if (allowDecimal) {
+            if (node.args[0] === "\\pi") {
+              return toDecimal(Math.PI);
+            }
+            if (node.args[0] === "e") {
+              return toDecimal(Math.E);
+            }
+          }
           return null;
         },
         comma: function(node) {

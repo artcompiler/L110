@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 372bf82
+ * Mathcore unversioned - cda97f0
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -8184,6 +8184,14 @@ var BigDecimal = function(MathContext) {
               break
           }
           return toDecimal(n)
+        }
+        if(allowDecimal) {
+          if(node.args[0] === "\\pi") {
+            return toDecimal(Math.PI)
+          }
+          if(node.args[0] === "e") {
+            return toDecimal(Math.E)
+          }
         }
         return null
       }, comma:function(node) {

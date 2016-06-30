@@ -115,6 +115,25 @@ var forEach = function forEach(array, fun) {
 define(["mathcore"], function (MathCore) {
   describe("Math Core", function() {
     describe("Debug", function() {
+      describe("equivSymbolic", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivSymbolic",
+                value: v[0],
+                options: {
+                  strict: true
+                }
+              }, v[1])).toBe(true);
+            });
+          });
+        }
+        run([
+          ["3.14159265358979323846264338327950+3.141592","\\pi+\\pi"],
+          ["840in^3 \\div\\ 60{in^3}", "14"],
+        ]);
+      });
     });
   });
 });
