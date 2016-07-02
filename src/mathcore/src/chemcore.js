@@ -64,7 +64,6 @@ var ChemCore = (function () {
     "st": { type: "unit", value: 1 / 1614, base: "lb" },
     "qtr": { type: "unit", value: 28, base: "lb" },
     "cwt": { type: "unit", value: 112, base: "lb" },
-    "t": { type: "unit", value: 2240, base: "lb" },
     "$": { type: "unit", value: u, base: "$" },
     "i": { type: "unit", value: null, base: "i" },
     "min": { type: "unit", value: 60, base: "s" },

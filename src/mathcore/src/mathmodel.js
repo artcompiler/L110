@@ -3911,16 +3911,16 @@
     }
 
     function leadingCoeff(node) {
-      var tt, c;
+      var tt, cp;
       switch (node.op) {
       case Model.ADD:
-        c = constantPart(node.args[0]);
+        cp = constantPart(node.args[0]);
         break;
       default:
-        c = constantPart(node);
+        cp = constantPart(node);
         break;
       }
-      return c;
+      return cp;
     }
 
     function sign(node) {
@@ -4951,9 +4951,14 @@
           var lc, args = [];
           if (isPolynomial(node) && !isOne(abs(leadingCoeff(node)))) {
             // Normalize leading coefficient to one. Skip if already 1 or -1.
-            lc = leadingCoeff(node);
-            forEach(node.args, function (n) {
-              args.push(fractionNode(n, lc));
+            forEach(node.args, function (n, i) {
+              if (i === 0) {
+                lc = constantPart(n);
+                args.push(variablePart(n));
+              } else {
+                assert(lc);
+                args.push(fractionNode(n, lc));
+              }
             });
             // This is a bit of a hack, making a unary additive node to continue
             // in this block.

@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - cda97f0
+ * Mathcore unversioned - f13e278
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -7961,16 +7961,16 @@ var BigDecimal = function(MathContext) {
       return node
     }
     function leadingCoeff(node) {
-      var tt, c;
+      var tt, cp;
       switch(node.op) {
         case Model.ADD:
-          c = constantPart(node.args[0]);
+          cp = constantPart(node.args[0]);
           break;
         default:
-          c = constantPart(node);
+          cp = constantPart(node);
           break
       }
-      return c
+      return cp
     }
     function sign(node) {
       var s = 0;
@@ -8847,9 +8847,14 @@ var BigDecimal = function(MathContext) {
         }
         var lc, args = [];
         if(isPolynomial(node) && !isOne(abs(leadingCoeff(node)))) {
-          lc = leadingCoeff(node);
-          forEach(node.args, function(n) {
-            args.push(fractionNode(n, lc))
+          forEach(node.args, function(n, i) {
+            if(i === 0) {
+              lc = constantPart(n);
+              args.push(variablePart(n))
+            }else {
+              assert(lc);
+              args.push(fractionNode(n, lc))
+            }
           });
           node = newNode(Model.ADD, [multiplyNode([lc, binaryNode(Model.ADD, args)])])
         }
@@ -10043,9 +10048,9 @@ var MathCore = function() {
   var env = {"g":{type:"unit", value:u, base:"g"}, "s":{type:"unit", value:u, base:"s"}, "m":{type:"unit", value:u, base:"m"}, "L":{type:"unit", value:u, base:"L"}, "kg":{type:"unit", value:k, base:"g"}, "km":{type:"unit", value:k, base:"m"}, "ks":{type:"unit", value:k, base:"s"}, "kL":{type:"unit", value:k, base:"L"}, "cg":{type:"unit", value:c, base:"g"}, "cm":{type:"unit", value:c, base:"m"}, "cs":{type:"unit", value:c, base:"s"}, "cL":{type:"unit", value:c, base:"L"}, "mg":{type:"unit", value:m, 
   base:"g"}, "mm":{type:"unit", value:m, base:"m"}, "ms":{type:"unit", value:m, base:"s"}, "mL":{type:"unit", value:m, base:"L"}, "\\mug":{type:"unit", value:mu, base:"g"}, "\\mus":{type:"unit", value:mu, base:"s"}, "\\mum":{type:"unit", value:mu, base:"m"}, "\\muL":{type:"unit", value:mu, base:"L"}, "ng":{type:"unit", value:n, base:"g"}, "nm":{type:"unit", value:n, base:"m"}, "ns":{type:"unit", value:n, base:"s"}, "nL":{type:"unit", value:n, base:"L"}, "in":{type:"unit", value:1 / 12, base:"ft"}, 
   "ft":{type:"unit", value:u, base:"ft"}, "yd":{type:"unit", value:3, base:"ft"}, "mi":{type:"unit", value:5280, base:"ft"}, "fl":{type:"unit", value:1, base:"fl"}, "cup":{type:"unit", value:8, base:"fl"}, "pt":{type:"unit", value:16, base:"fl"}, "qt":{type:"unit", value:32, base:"fl"}, "gal":{type:"unit", value:128, base:"fl"}, "oz":{type:"unit", value:1 / 16, base:"lb"}, "lb":{type:"unit", value:1, base:"lb"}, "st":{type:"unit", value:1 / 1614, base:"lb"}, "qtr":{type:"unit", value:28, base:"lb"}, 
-  "cwt":{type:"unit", value:112, base:"lb"}, "$":{type:"unit", value:u, base:"$"}, "min":{type:"unit", value:60, base:"s"}, "hr":{type:"unit", value:3600, base:"s"}, "day":{type:"unit", value:24 * 3600, base:"s"}, "\\radian":{type:"unit", value:u, base:"radian"}, "\\degree":{type:"unit", value:Math.PI / 180, base:"radian"}, "\\degree K":{type:"unit", value:u, base:"\\degree K"}, "\\degree C":{type:"unit", value:u, base:"\\degree C"}, "\\degree F":{type:"unit", value:u, base:"\\degree F"}, "R":{name:"reals"}, 
-  "matrix":{}, "pmatrix":{}, "bmatrix":{}, "Bmatrix":{}, "vmatrix":{}, "Vmatrix":{}, "array":{}, "\\alpha":{type:"var"}, "\\beta":{type:"var"}, "\\gamma":{type:"var"}, "\\delta":{type:"var"}, "\\epsilon":{type:"var"}, "\\zeta":{type:"var"}, "\\eta":{type:"var"}, "\\theta":{type:"var"}, "\\iota":{type:"var"}, "\\kappa":{type:"var"}, "\\lambda":{type:"var"}, "\\mu":{type:"const", value:mu}, "\\nu":{type:"var"}, "\\xi":{type:"var"}, "\\pi":{type:"const", value:Math.PI}, "e":{type:"const", value:Math.E}, 
-  "\\rho":{type:"var"}, "\\sigma":{type:"var"}, "\\tau":{type:"var"}, "\\upsilon":{type:"var"}, "\\phi":{type:"var"}, "\\chi":{type:"var"}, "\\psi":{type:"var"}, "\\omega":{type:"var"}};
+  "cwt":{type:"unit", value:112, base:"lb"}, "$":{type:"unit", value:u, base:"$"}, "i":{type:"unit", value:null, base:"i"}, "min":{type:"unit", value:60, base:"s"}, "hr":{type:"unit", value:3600, base:"s"}, "day":{type:"unit", value:24 * 3600, base:"s"}, "\\radian":{type:"unit", value:u, base:"radian"}, "\\degree":{type:"unit", value:Math.PI / 180, base:"radian"}, "\\degree K":{type:"unit", value:u, base:"\\degree K"}, "\\degree C":{type:"unit", value:u, base:"\\degree C"}, "\\degree F":{type:"unit", 
+  value:u, base:"\\degree F"}, "R":{name:"reals"}, "matrix":{}, "pmatrix":{}, "bmatrix":{}, "Bmatrix":{}, "vmatrix":{}, "Vmatrix":{}, "array":{}, "\\alpha":{type:"var"}, "\\beta":{type:"var"}, "\\gamma":{type:"var"}, "\\delta":{type:"var"}, "\\epsilon":{type:"var"}, "\\zeta":{type:"var"}, "\\eta":{type:"var"}, "\\theta":{type:"var"}, "\\iota":{type:"var"}, "\\kappa":{type:"var"}, "\\lambda":{type:"var"}, "\\mu":{type:"const", value:mu}, "\\nu":{type:"var"}, "\\xi":{type:"var"}, "\\pi":{type:"const", 
+  value:Math.PI}, "e":{type:"const", value:Math.E}, "\\rho":{type:"var"}, "\\sigma":{type:"var"}, "\\tau":{type:"var"}, "\\upsilon":{type:"var"}, "\\phi":{type:"var"}, "\\chi":{type:"var"}, "\\psi":{type:"var"}, "\\omega":{type:"var"}};
   function evaluate(spec, solution, resume) {
     try {
       assert(spec, message(3001, [spec]));
