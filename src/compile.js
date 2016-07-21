@@ -352,7 +352,7 @@ var transformer = function() {
           }, response, function (err, val) {
             delete options.strict;
             if (err && err.length) {
-              err = errs.concat(error(err, node.elts[0]));
+              errs = errs.concat(error(err, node.elts[0]));
             }
             response = escapeStr(response);
             reference = escapeStr(reference);
@@ -380,7 +380,7 @@ var transformer = function() {
         }, response, function (err, val) {
           delete options.strict;
           if (err && err.length) {
-            err = errs.concat(error(err, node.elts[0]));
+            errs = errs.concat(error(err, node.elts[0]));
           }
           response = escapeStr(response);
           resume(errs, {
@@ -405,7 +405,7 @@ var transformer = function() {
         }, response, function (err, val) {
           delete options.strict;
           if (err && err.length) {
-            err = errs.concat(error(err, node.elts[0]));
+            errs = errs.concat(error(err, node.elts[0]));
           }
           response = escapeStr(response);
           resume(errs, {
@@ -430,7 +430,7 @@ var transformer = function() {
         }, response, function (err, val) {
           delete options.strict;
           if (err && err.length) {
-            err = errs.concat(error(err, node.elts[0]));
+            errs = errs.concat(error(err, node.elts[0]));
           }
           response = escapeStr(response);
           resume(errs, {
@@ -455,7 +455,7 @@ var transformer = function() {
         }, response, function (err, val) {
           delete options.strict;
           if (err && err.length) {
-            err = errs.concat(error(err, node.elts[0]));
+            errs = errs.concat(error(err, node.elts[0]));
           }
           response = escapeStr(response);
           resume(errs, {
@@ -480,7 +480,7 @@ var transformer = function() {
         }, response, function (err, val) {
           delete options.strict;
           if (err && err.length) {
-            err = errs.concat(error(err, node.elts[0]));
+            errs = errs.concat(error(err, node.elts[0]));
           }
           response = escapeStr(response);
           resume(errs, {

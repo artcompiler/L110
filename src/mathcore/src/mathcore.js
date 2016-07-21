@@ -155,7 +155,10 @@ var MathCore = (function () {
       var stack = e.stack;
       var location = e.location;
       console.log("ERROR evaluateVerbose stack=" + stack);
-      resume([e.stack], undefined);
+      resume([e.stack], {
+        errorCode: errorCode,
+        msg: msg,
+      });
     }
     function parseErrorCode(e) {
       var code = +e.slice(0, indexOf(e, ":"));
