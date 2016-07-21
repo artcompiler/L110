@@ -155,7 +155,7 @@ var MathCore = (function () {
       var stack = e.stack;
       var location = e.location;
       console.log("ERROR evaluateVerbose stack=" + stack);
-      resume([e.stack], {
+      resume([e.message], {
         errorCode: errorCode,
         msg: msg,
       });
