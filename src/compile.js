@@ -5,6 +5,12 @@ var _ = require("underscore");
 var mjAPI = require("mathjax-node/lib/mj-single.js");
 import MathCore from "./mathcore.js";
 
+function error(str, nid) {
+  return {
+    str: str,
+    nid: nid,
+  };
+}
 var transformer = function() {
   function print(str) {
     console.log(str);
@@ -46,12 +52,6 @@ var transformer = function() {
   };
   var nodePool;
   function reset() {
-  }
-  function error(str, nid) {
-    return {
-      str: str,
-      nid: nid,
-    };
   }
   function transform(pool, resume) {
     reset();
@@ -729,17 +729,21 @@ var renderer = function() {
 
   function render(node, resume) {
     node = node[0];
-    tex2SVG(String(node.response), function (err, val) {
-      node.responseSVG = escapeXML(val);
-      if (node.value) {
-        tex2SVG(String(node.value), function (err, val) {
-          node.valueSVG = escapeXML(val);
+    if (node.response == undefined) {
+      resume([error("ERROR Invalid input: " + JSON.stringify(node))]);
+    } else {
+      tex2SVG(String(node.response), function (err, val) {
+        node.responseSVG = escapeXML(val);
+        if (node.value) {
+          tex2SVG(String(node.value), function (err, val) {
+            node.valueSVG = escapeXML(val);
+            resume(null, node);
+          });
+        } else {
           resume(null, node);
-        });
-      } else {
-        resume(null, node);
-      }
-    });
+        }
+      });
+    }
   }
 
   function visit(node, padding) {
@@ -801,7 +805,7 @@ exports.compiler = function () {
     } catch (x) {
       console.log("ERROR with code");
       console.log(x.stack);
-      resume("Compiler error", {
+      resume([error("Internal compiler error")], {
         score: 0
       });
     }
