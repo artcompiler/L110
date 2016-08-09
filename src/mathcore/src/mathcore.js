@@ -239,6 +239,14 @@ var MathCore = (function () {
       }
       assert(false, message(3007, [p, JSON.stringify(v)]));
       break;
+    case "compatibility":
+      if (typeof v === "undefined" ||
+          typeof v === "string" ||
+          v instanceof Array) {
+        break;
+      }
+      assert(false, message(3007, [p, v]));
+      break;
     default:
       assert(false, message(3006, [p]));
       break;

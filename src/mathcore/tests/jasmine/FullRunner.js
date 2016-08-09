@@ -35,6 +35,7 @@ require(['jasmine-html'], function (jasmine) {
 	"spec/MathCoreSpec",
 	"spec/SyntaxSpec",
 	"spec/ErrorSpec",
+	"spec/CompatSpec",
     ];
     require(specs, function () {
         execJasmine();

@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - d04e4b0
+ * Mathcore unversioned - 9a63ce5
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -551,8 +551,8 @@ var Model = function() {
     return render(node)
   };
   var OpStr = {ADD:"+", SUB:"-", MUL:"mul", TIMES:"times", COEFF:"coeff", DIV:"div", FRAC:"frac", EQL:"=", ATAN2:"atan2", SQRT:"sqrt", VEC:"vec", PM:"pm", SIN:"sin", COS:"cos", TAN:"tan", SEC:"sec", COT:"cot", CSC:"csc", ARCSIN:"arcsin", ARCCOS:"arccos", ARCTAN:"arctan", SINH:"sinh", COSH:"cosh", TANH:"tanh", SECH:"sech", COTH:"coth", CSCH:"csch", ARCSINH:"arcsinh", ARCCOSH:"arccosh", ARCTANH:"arctanh", LOG:"log", LN:"ln", LG:"lg", VAR:"var", NUM:"num", CST:"cst", COMMA:",", POW:"^", SUBSCRIPT:"_", 
-  ABS:"abs", PAREN:"()", HIGHLIGHT:"hi", LT:"lt", LE:"le", GT:"gt", GE:"ge", NE:"ne", APPROX:"approx", INTERVAL:"interval", LIST:"list", EXISTS:"exists", IN:"in", FORALL:"forall", LIM:"lim", EXP:"exp", TO:"to", SUM:"sum", INT:"int", PROD:"prod", PERCENT:"%", M:"M", RIGHTARROW:"->", FACT:"fact", BINOM:"binom", ROW:"row", COL:"col", COLON:"colon", MATRIX:"matrix", FORMAT:"format", OVERSET:"overset", UNDERSET:"underset", OVERLINE:"overline", DEGREE:"degree", BACKSLASH:"backslash", MATHBF:"mathbf", DOT:"dot", 
-  NONE:"none"};
+  ABS:"abs", PAREN:"()", HIGHLIGHT:"hi", LT:"lt", LE:"le", GT:"gt", GE:"ge", NE:"ne", NGTR:"ngtr", NLESS:"nless", APPROX:"approx", INTERVAL:"interval", LIST:"list", EXISTS:"exists", IN:"in", FORALL:"forall", LIM:"lim", EXP:"exp", TO:"to", SUM:"sum", INT:"int", PROD:"prod", PERCENT:"%", M:"M", RIGHTARROW:"->", FACT:"fact", BINOM:"binom", ROW:"row", COL:"col", COLON:"colon", MATRIX:"matrix", FORMAT:"format", OVERSET:"overset", UNDERSET:"underset", OVERLINE:"overline", DEGREE:"degree", BACKSLASH:"backslash", 
+  MATHBF:"mathbf", DOT:"dot", NONE:"none"};
   forEach(keys(OpStr), function(v, i) {
     Model[v] = OpStr[v]
   });
@@ -841,6 +841,8 @@ var Model = function() {
     var TK_ARCSINH = 311;
     var TK_ARCCOSH = 312;
     var TK_ARCTANH = 313;
+    var TK_NGTR = 314;
+    var TK_NLESS = 315;
     var T0 = TK_NONE, T1 = TK_NONE;
     var tokenToOperator = {};
     tokenToOperator[TK_SLASH] = OpStr.FRAC;
@@ -883,6 +885,8 @@ var Model = function() {
     tokenToOperator[TK_GT] = OpStr.GT;
     tokenToOperator[TK_GE] = OpStr.GE;
     tokenToOperator[TK_NE] = OpStr.NE;
+    tokenToOperator[TK_NGTR] = OpStr.NGTR;
+    tokenToOperator[TK_NLESS] = OpStr.NLESS;
     tokenToOperator[TK_APPROX] = OpStr.APPROX;
     tokenToOperator[TK_EXISTS] = OpStr.EXISTS;
     tokenToOperator[TK_IN] = OpStr.IN;
@@ -1872,7 +1876,7 @@ var Model = function() {
       return expr
     }
     function isRelational(t) {
-      return t === TK_LT || (t === TK_LE || (t === TK_GT || (t === TK_GE || (t === TK_IN || (t === TK_TO || (t === TK_COLON || t === TK_VAR && lexeme() === "to"))))))
+      return t === TK_LT || (t === TK_LE || (t === TK_GT || (t === TK_GE || (t === TK_NGTR || (t === TK_NLESS || (t === TK_IN || (t === TK_TO || (t === TK_COLON || t === TK_VAR && lexeme() === "to"))))))))
     }
     function relationalExpr() {
       var t = hd();
@@ -2004,8 +2008,8 @@ var Model = function() {
       var curIndex = 0;
       var lexeme = "";
       var lexemeToToken = {"\\cdot":TK_MUL, "\\times":TK_MUL, "\\div":TK_DIV, "\\dfrac":TK_FRAC, "\\frac":TK_FRAC, "\\sqrt":TK_SQRT, "\\vec":TK_VEC, "\\pm":TK_PM, "\\sin":TK_SIN, "\\cos":TK_COS, "\\tan":TK_TAN, "\\sec":TK_SEC, "\\cot":TK_COT, "\\csc":TK_CSC, "\\arcsin":TK_ARCSIN, "\\arccos":TK_ARCCOS, "\\arctan":TK_ARCTAN, "\\sinh":TK_SINH, "\\cosh":TK_COSH, "\\tanh":TK_TANH, "\\sech":TK_SECH, "\\coth":TK_COTH, "\\csch":TK_CSCH, "\\arcsinh":TK_ARCSINH, "\\arccosh":TK_ARCCOSH, "\\arctanh":TK_ARCTANH, 
-      "\\ln":TK_LN, "\\lg":TK_LG, "\\log":TK_LOG, "\\left":null, "\\right":null, "\\big":null, "\\Big":null, "\\bigg":null, "\\Bigg":null, "\\ ":null, "\\quad":null, "\\qquad":null, "\\text":TK_TEXT, "\\textrm":TK_TEXT, "\\textit":TK_TEXT, "\\textbf":TK_TEXT, "\\lt":TK_LT, "\\le":TK_LE, "\\gt":TK_GT, "\\ge":TK_GE, "\\ne":TK_NE, "\\approx":TK_APPROX, "\\exists":TK_EXISTS, "\\in":TK_IN, "\\forall":TK_FORALL, "\\lim":TK_LIM, "\\exp":TK_EXP, "\\to":TK_TO, "\\sum":TK_SUM, "\\int":TK_INT, "\\prod":TK_PROD, 
-      "\\%":TK_PERCENT, "\\rightarrow":TK_RIGHTARROW, "\\longrightarrow":TK_RIGHTARROW, "\\binom":TK_BINOM, "\\begin":TK_BEGIN, "\\end":TK_END, "\\colon":TK_COLON, "\\vert":TK_VERTICALBAR, "\\lvert":TK_VERTICALBAR, "\\rvert":TK_VERTICALBAR, "\\mid":TK_VERTICALBAR, "\\format":TK_FORMAT, "\\overline":TK_OVERLINE, "\\overset":TK_OVERSET, "\\underset":TK_UNDERSET, "\\backslash":TK_BACKSLASH, "\\mathbf":TK_MATHBF, "\\abs":TK_ABS, "\\dot":TK_DOT};
+      "\\ln":TK_LN, "\\lg":TK_LG, "\\log":TK_LOG, "\\left":null, "\\right":null, "\\big":null, "\\Big":null, "\\bigg":null, "\\Bigg":null, "\\ ":null, "\\quad":null, "\\qquad":null, "\\text":TK_TEXT, "\\textrm":TK_TEXT, "\\textit":TK_TEXT, "\\textbf":TK_TEXT, "\\lt":TK_LT, "\\le":TK_LE, "\\gt":TK_GT, "\\ge":TK_GE, "\\ne":TK_NE, "\\ngtr":TK_NGTR, "\\nless":TK_NLESS, "\\approx":TK_APPROX, "\\exists":TK_EXISTS, "\\in":TK_IN, "\\forall":TK_FORALL, "\\lim":TK_LIM, "\\exp":TK_EXP, "\\to":TK_TO, "\\sum":TK_SUM, 
+      "\\int":TK_INT, "\\prod":TK_PROD, "\\%":TK_PERCENT, "\\rightarrow":TK_RIGHTARROW, "\\longrightarrow":TK_RIGHTARROW, "\\binom":TK_BINOM, "\\begin":TK_BEGIN, "\\end":TK_END, "\\colon":TK_COLON, "\\vert":TK_VERTICALBAR, "\\lvert":TK_VERTICALBAR, "\\rvert":TK_VERTICALBAR, "\\mid":TK_VERTICALBAR, "\\format":TK_FORMAT, "\\overline":TK_OVERLINE, "\\overset":TK_OVERSET, "\\underset":TK_UNDERSET, "\\backslash":TK_BACKSLASH, "\\mathbf":TK_MATHBF, "\\abs":TK_ABS, "\\dot":TK_DOT};
       var identifiers = keys(env);
       identifiers.push("to");
       function isAlphaCharCode(c) {
@@ -4949,6 +4953,10 @@ var BigDecimal = function(MathContext) {
         ;
         case Model.NE:
         ;
+        case Model.NGTR:
+        ;
+        case Model.NLESS:
+        ;
         case Model.APPROX:
         ;
         case Model.COLON:
@@ -6134,11 +6142,15 @@ var BigDecimal = function(MathContext) {
           args.push(n)
         });
         node = binaryNode(node.op, args);
-        if(node.op === Model.GT || node.op === Model.GE) {
+        if(node.op === Model.GT || (node.op === Model.GE || node.op === Model.NLESS)) {
           node.op = node.op === Model.GT ? Model.LT : Model.LE;
           var t = node.args[0];
           node.args[0] = node.args[1];
           node.args[1] = t
+        }else {
+          if(node.op === Model.NGTR) {
+            node.op = Model.LE
+          }
         }
         node = sort(node);
         if(node.op !== Model.COLON && !isZero(mathValue(node.args[1], true))) {
@@ -6387,7 +6399,7 @@ var BigDecimal = function(MathContext) {
         forEach(node.args, function(n, i) {
           node.args[i] = sort(n)
         });
-        if(node.op === Model.COLON || (node.op === Model.RIGHTARROW || (node.op === Model.GT || (node.op === Model.GE || (node.op === Model.LT || node.op === Model.LE))))) {
+        if(node.op === Model.COLON || (node.op === Model.RIGHTARROW || (node.op === Model.GT || (node.op === Model.GE || (node.op === Model.LT || (node.op === Model.LE || (node.op === Model.NGTR || node.op === Model.NLESS))))))) {
           return node
         }
         var d0, d1;
@@ -6545,7 +6557,7 @@ var BigDecimal = function(MathContext) {
         forEach(node.args, function(n, i) {
           node.args[i] = sortLiteral(n)
         });
-        if(node.op === Model.COLON || (node.op === Model.RIGHTARROW || (node.op === Model.GT || (node.op === Model.GE || (node.op === Model.LT || node.op === Model.LE))))) {
+        if(node.op === Model.COLON || (node.op === Model.RIGHTARROW || (node.op === Model.GT || (node.op === Model.GE || (node.op === Model.LT || (node.op === Model.LE || (node.op === Model.NGTR || node.op === Model.NLESS))))))) {
           return node
         }
         var id0, id1;
@@ -6595,15 +6607,19 @@ var BigDecimal = function(MathContext) {
         var args = [];
         var flatten = true;
         forEach(node.args, function(n) {
-          if(n.isPolynomial) {
-            assert(args.length > 0);
-            args.push(binaryNode(Model.COEFF, [args.pop(), normalizeLiteral(n)], flatten))
+          if(Model.option("compatibility") === "v1.37") {
+            args.push(normalizeLiteral(n))
           }else {
-            if(n.isImplicit) {
+            if(n.isPolynomial) {
               assert(args.length > 0);
-              args.push(binaryNode(Model.MUL, [args.pop(), normalizeLiteral(n)], flatten))
+              args.push(binaryNode(Model.COEFF, [args.pop(), normalizeLiteral(n)], flatten))
             }else {
-              args.push(normalizeLiteral(n))
+              if(n.isImplicit) {
+                assert(args.length > 0);
+                args.push(binaryNode(Model.MUL, [args.pop(), normalizeLiteral(n)], flatten))
+              }else {
+                args.push(normalizeLiteral(n))
+              }
             }
           }
         });
@@ -6640,12 +6656,12 @@ var BigDecimal = function(MathContext) {
         forEach(node.args, function(n) {
           args.push(normalizeLiteral(n))
         });
-        if(option("ignoreOrder") && (node.op === Model.GT || node.op === Model.GE)) {
+        if(option("ignoreOrder") && (node.op === Model.GT || (node.op === Model.GE || node.op === Model.NGTR))) {
           assert(args.length === 2, "Internal error: comparisons have only two operands");
           var t = args[0];
           args[0] = args[1];
           args[1] = t;
-          node.op = node.op === Model.GT ? Model.LT : Model.LE;
+          node.op = node.op === Model.GT ? Model.LT : node.op === Model.GE ? Model.LE : Model.NLESS;
           node.args = args
         }else {
           node.args = args
@@ -9677,12 +9693,15 @@ var BigDecimal = function(MathContext) {
       case Model.GE:
       ;
       case Model.LE:
-        kind = Model.GE;
-        break;
+      ;
       case Model.GT:
       ;
       case Model.LT:
-        kind = Model.GT;
+      ;
+      case Model.NGTR:
+      ;
+      case Model.NLESS:
+        kind = Model.GE;
         break;
       default:
         kind = 0;
@@ -9773,7 +9792,7 @@ var BigDecimal = function(MathContext) {
     })
   }
   function isComparison(op) {
-    return op === Model.LT || (op === Model.LE || (op === Model.GT || (op === Model.GE || (op === Model.NE || (op === Model.APPROX || op === Model.EQL)))))
+    return op === Model.LT || (op === Model.LE || (op === Model.GT || (op === Model.GE || (op === Model.NE || (op === Model.NGTR || (op === Model.NLESS || (op === Model.APPROX || op === Model.EQL)))))))
   }
   Model.fn.isTrue = function(n1) {
     var prevLocation = Assert.location;
@@ -10009,6 +10028,8 @@ var BigDecimal = function(MathContext) {
         case "dontConvertDecimalToFraction":
         ;
         case "strict":
+        ;
+        case "compatibility":
           opt = undefined;
           break;
         default:
@@ -10182,6 +10203,12 @@ var MathCore = function() {
           break
         }
         assert(false, message(3007, [p, JSON.stringify(v)]));
+        break;
+      case "compatibility":
+        if(typeof v === "undefined" || (typeof v === "string" || v instanceof Array)) {
+          break
+        }
+        assert(false, message(3007, [p, v]));
         break;
       default:
         assert(false, message(3006, [p]));

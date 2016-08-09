@@ -1402,6 +1402,9 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["y \\nless x", "x \\ngtr y"],
+          ["y \\ngtr x", "x \\nless y"],
+          ["3 \\ngtr x", "x \\nless 3"],
           ["x+y", "y+x"],
           ["x \\lt 10", "x < 10"],
           ["x \\le 10", "x <= 10"],
@@ -1421,6 +1424,15 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["x \\nless 2", "x \\ge 2"],
+          ["2 \\ngtr x",  "x \\nless 2"],
+          ["x \\ngtr 2", "2 \\ge x"],
+          ["2 \\nless x", "2 \\ge x"],
+          ["x \\nless 2", "2 \\le x"],
+          ["2 \\ngtr x", "2 \\le x"],
+          ["x \\ngtr y", "x \\le y"],
+          ["y \\ngtr x", "x \\nless y"],
+          ["y \\nless x", "x \\ngtr y"],
           ["3 \\gt x \\ge 2", "2 \\le x \\lt 3"],
           ["3 \\gt x \\ge 1", "1 \\le x \\lt 3"],
           ["3 \\ge x \\ge -1", "-1 \\le x \\le 3"],

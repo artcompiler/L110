@@ -115,33 +115,6 @@ var forEach = function forEach(array, fun) {
 define(["mathcore"], function (MathCore) {
   describe("Math Core", function() {
     describe("Debug", function() {
-      describe("equivSymbolic", function() {
-        function run(tests) {
-          forEach(tests, function (v, i) {
-            it(v[0] + " | " + v[1], function() {
-              expect(MathCore.evaluate({
-                method: "equivSymbolic",
-                value: v[0],
-                options: {
-                  strict: true
-                }
-              }, v[1])).toBe(true);
-            });
-          });
-        }
-        run([
-<<<<<<< HEAD
-          ["3.14159265358979323846264338327950+3.141592","\\pi+\\pi"],
-          ["840in^3 \\div\\ 60{in^3}", "14"],
-=======
-          ["\\frac{6+8i}{1-\\sqrt{3}i}=\\frac{3-4\\sqrt{3}}{2}+\\frac{4+3\\sqrt{3}}{2}i",
-           "\\frac{6+8i}{1-\\sqrt{3}i}=\\frac{3-4\\sqrt{3}}{2}+\\frac{4+3\\sqrt{3}}{2}i"],
-          ["4(12x-1\\frac{1}{2})","4(12x-1\\frac{1}{2})"],
-//          ["3.14159265358979323846264338327950+3.141592","\\pi+\\pi"],
-//          ["840in^3 \\div\\ 60{in^3}", "14"],
->>>>>>> 7270d73bc56912347b97ec7d45e8dd51b76262fc
-        ]);
-      });
     });
   });
 });

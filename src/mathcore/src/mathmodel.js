@@ -527,6 +527,8 @@
       case Model.GT:
       case Model.GE:
       case Model.NE:
+      case Model.NGTR:
+      case Model.NLESS:
       case Model.APPROX:
       case Model.COLON:
       case Model.RIGHTARROW:
@@ -1868,12 +1870,16 @@
             args.push(n);
           });
           node = binaryNode(node.op, args);
-          if (node.op === Model.GT || node.op === Model.GE) {
-            // Normalize inequalities to LT and LE
+          if (node.op === Model.GT || node.op === Model.GE || node.op === Model.NLESS) {
+            // Normalize inequalities to LT and LE. (GE || NLESS) --> LE
             node.op = node.op === Model.GT ? Model.LT : Model.LE;
+            // Swap args.
             var t = node.args[0];
             node.args[0] = node.args[1];
             node.args[1] = t;
+          } else if (node.op === Model.NGTR) {
+            // Normalize NGTR --> LE. Don't need to swap args.
+            node.op = Model.LE;
           }
           node = sort(node);   // sort so that the lnodes after reconstruction compare
           // Doesn't seem to help, yet.
@@ -2143,7 +2149,9 @@
               node.op === Model.GT ||
               node.op === Model.GE ||
               node.op === Model.LT ||
-              node.op === Model.LE ) {
+              node.op === Model.LE ||
+              node.op === Model.NGTR ||
+              node.op === Model.NLESS) {
             // If already normalized or ratio or chem, then don't sort toplevel terms.
             return node;
           }
@@ -2327,7 +2335,9 @@
               node.op === Model.GT ||
               node.op === Model.GE ||
               node.op === Model.LT ||
-              node.op === Model.LE ) {
+              node.op === Model.LE ||
+              node.op === Model.NGTR ||
+              node.op === Model.NLESS) {
             // If already normalized or ratio or chem, then don't sort toplevel terms.
             return node;
           }
@@ -2386,14 +2396,18 @@
           var args = [];
           var flatten = true;
           forEach(node.args, function (n) {
-            if (n.isPolynomial) {
-              assert(args.length > 0);
-              args.push(binaryNode(Model.COEFF, [args.pop(), normalizeLiteral(n)], flatten));
-            } else if (n.isImplicit) {
-              assert(args.length > 0);
-              args.push(binaryNode(Model.MUL, [args.pop(), normalizeLiteral(n)], flatten));
-            } else {
+            if (Model.option("compatibility") === "v1.37") {
               args.push(normalizeLiteral(n));
+            } else {
+              if (n.isPolynomial) {
+                assert(args.length > 0);
+                args.push(binaryNode(Model.COEFF, [args.pop(), normalizeLiteral(n)], flatten));
+              } else if (n.isImplicit) {
+                assert(args.length > 0);
+                args.push(binaryNode(Model.MUL, [args.pop(), normalizeLiteral(n)], flatten));
+              } else {
+                args.push(normalizeLiteral(n));
+              }
             }
           });
           // Only have explicit mul left, so convert to times.
@@ -2437,13 +2451,14 @@
           });
           if (option("ignoreOrder") &&
               (node.op === Model.GT ||
-               node.op === Model.GE)) {
+               node.op === Model.GE ||
+               node.op === Model.NGTR)) {
             // Swap adjacent elements and reverse the operator.
             assert(args.length === 2, "Internal error: comparisons have only two operands");
             var t = args[0];
             args[0] = args[1];
             args[1] = t;
-            node.op = node.op === Model.GT ? Model.LT : Model.LE;
+            node.op = node.op === Model.GT ? Model.LT : node.op === Model.GE ? Model.LE : Model.NLESS;
             node.args = args;
           } else {
             node.args = args;
@@ -5891,11 +5906,11 @@
       break;
     case Model.GE:
     case Model.LE:
-      kind = Model.GE;
-      break;
     case Model.GT:
     case Model.LT:
-      kind = Model.GT;
+    case Model.NGTR:
+    case Model.NLESS:
+      kind = Model.GE;
       break;
     default:
       kind = 0;
@@ -6000,6 +6015,8 @@
       op === Model.GT ||
       op === Model.GE ||
       op === Model.NE ||
+      op === Model.NGTR ||
+      op === Model.NLESS ||
       op === Model.APPROX ||
       op === Model.EQL;
   }
@@ -6264,6 +6281,7 @@
       case "dontFactorTerms":
       case "dontConvertDecimalToFraction":
       case "strict":
+      case "compatibility":
         opt = undefined;
         break;
       default:
