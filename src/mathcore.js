@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 9a63ce5
+ * Mathcore unversioned - 393be6a
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -8236,7 +8236,7 @@ var BigDecimal = function(MathContext) {
         return 0
       }
       return getUnique(visit(root, {name:"units", exponential:function(node) {
-        return units(node.args[0], env)
+        return newNode(Model.POW, [units(node.args[0], env), node.args[1]])
       }, multiplicative:function(node) {
         var uu = [];
         forEach(node.args, function(n) {

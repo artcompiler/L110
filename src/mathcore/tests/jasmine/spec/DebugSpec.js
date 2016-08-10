@@ -115,6 +115,37 @@ var forEach = function forEach(array, fun) {
 define(["mathcore"], function (MathCore) {
   describe("Math Core", function() {
     describe("Debug", function() {
+      describe("NOT equivValue", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivValue",
+                value: v[0]
+              }, v[1])).not.toBe(true);
+            });
+          });
+        }
+        run([
+          ["2m", "2m^2"],
+          ["1m^2", "1000cm^2"],
+        ]);
+      });
+      describe("equivValue", function() {
+        function run(tests) {
+          forEach(tests, function (v, i) {
+            it(v[0] + " | " + v[1], function() {
+              expect(MathCore.evaluate({
+                method: "equivValue",
+                value: v[0]
+              }, v[1])).toBe(true);
+            });
+          });
+        }
+        run([
+          ["1m^2", "10000cm^2"],
+        ]);
+      });
     });
   });
 });

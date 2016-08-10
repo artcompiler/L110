@@ -4201,7 +4201,7 @@
       return getUnique(visit(root, {
         name: "units",
         exponential: function (node) {
-          return units(node.args[0], env);
+          return newNode(Model.POW, [units(node.args[0], env), node.args[1]]);
         },
         multiplicative: function (node) {
           var uu = [];
@@ -5676,8 +5676,8 @@
       n2b = simplify(expand(normalize(n2)));
       var v2 = mathValue(n2b, env, true);
     }
-    // If either value is undefined, then we have no match.
     if (isUndefined(n1b) || isUndefined(n2b)) {
+      // If either value is undefined, then we have no match.
       result = false;
       return inverseResult ? !result : result;
     }
