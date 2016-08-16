@@ -2192,7 +2192,9 @@
           var coeffs = isPolynomial(node);
           assert(coeffs.length === 2);
           console.log("normalizeCalculate() coeffs=" + coeffs);
-          return multiplyNode([nodeMinusOne, numberNode(coeffs[0])]);
+          var c0 = coeffs[0] ? coeffs[0] : "1";
+          var c1 = coeffs[1] ? coeffs[1] : "1";
+          return fractionNode(multiplyNode([nodeMinusOne, numberNode(c0)]), numberNode(c1));
         }
       }), root.location);
       // normalizeCalculateLevel--;
