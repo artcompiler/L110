@@ -832,17 +832,17 @@ var Model = function() {
     var TK_APPROX = 302;
     var TK_ABS = 303;
     var TK_DOT = 304;
-    var TK_SINH = 305;
-    var TK_COSH = 306;
-    var TK_TANH = 307;
-    var TK_SECH = 308;
-    var TK_COTH = 309;
-    var TK_CSCH = 310;
-    var TK_ARCSINH = 311;
-    var TK_ARCCOSH = 312;
-    var TK_ARCTANH = 313;
-    var TK_NGTR = 314;
-    var TK_NLESS = 315;
+    var TK_NGTR = 305;
+    var TK_NLESS = 306;
+    var TK_SINH = 307;
+    var TK_COSH = 308;
+    var TK_TANH = 309;
+    var TK_SECH = 310;
+    var TK_COTH = 311;
+    var TK_CSCH = 312;
+    var TK_ARCSINH = 313;
+    var TK_ARCCOSH = 314;
+    var TK_ARCTANH = 315;
     var T0 = TK_NONE, T1 = TK_NONE;
     var tokenToOperator = {};
     tokenToOperator[TK_SLASH] = OpStr.FRAC;
@@ -8312,7 +8312,7 @@ var BigDecimal = function(MathContext) {
         return 0
       }
       return getUnique(visit(root, {name:"units", exponential:function(node) {
-        return newNode(Model.POW, [units(node.args[0], env), node.args[1]])
+        return units(node.args[0], env)
       }, multiplicative:function(node) {
         var uu = [];
         forEach(node.args, function(n) {

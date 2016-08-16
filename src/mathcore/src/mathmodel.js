@@ -4278,7 +4278,7 @@
       return getUnique(visit(root, {
         name: "units",
         exponential: function (node) {
-          return newNode(Model.POW, [units(node.args[0], env), node.args[1]]);
+          return units(node.args[0], env);
         },
         multiplicative: function (node) {
           var uu = [];
