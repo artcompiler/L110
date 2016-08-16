@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 393be6a
+ * Mathcore unversioned - dc06bce
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -4679,7 +4679,7 @@ var BigDecimal = function(MathContext) {
     }
   }
   function isMinusOne(n) {
-    if(n === null) {
+    if(n === null || (n === undefined || typeof n === "string")) {
       return false
     }else {
       if(n instanceof BigDecimal) {
@@ -5962,6 +5962,82 @@ var BigDecimal = function(MathContext) {
       }
       return binaryNode(node.op, [larg, rarg])
     }
+    function eraseCommonExpressions(n1, n2) {
+      n1 = cancelFactors(n1);
+      n2 = cancelFactors(n2);
+      if(n1.op !== n2.op || n1.op !== Model.MUL) {
+        return[n1, n2]
+      }
+      var changed = false;
+      var nn1 = {};
+      var nn2 = {};
+      forEach(n1.args, function(n, i) {
+        var mv = mathValue(n, true);
+        var key = mv !== null ? String(mv) : "nid$" + ast.intern(n);
+        if(!nn1[key]) {
+          nn1[key] = []
+        }
+        nn1[key].push(n)
+      });
+      forEach(n2.args, function(n, i) {
+        var mv = mathValue(n, true);
+        var key = mv !== null ? String(mv) : "nid$" + ast.intern(n);
+        if(!nn2[key]) {
+          nn2[key] = []
+        }
+        nn2[key].push(n)
+      });
+      var nKeys = keys(nn1);
+      var dKeys = keys(nn2);
+      if(nKeys.length === 0 || (dKeys.length === 0 || dKeys.length === 1 && dKeys[0] === "-1")) {
+        return[n1, n2]
+      }
+      forEach(nKeys, function(k) {
+        if(!isNaN(+k)) {
+          return
+        }
+        var nn = nn1[k];
+        var dd = nn2[k];
+        if(dd) {
+          var count = dd.length > nn.length ? nn.length : dd.length;
+          nn1[k] = nn.slice(count);
+          nn2[k] = dd.slice(count);
+          changed = true
+        }
+      });
+      if(!changed) {
+        return[n1, n2]
+      }
+      var args = [];
+      forEach(nKeys, function(k) {
+        args = args.concat(nn1[k])
+      });
+      if(args.length === 0) {
+        n1 = nodeOne
+      }else {
+        if(args.length === 1) {
+          args.push(nodeOne);
+          n1 = newNode(n1.op, args)
+        }else {
+          n1 = newNode(n1.op, args)
+        }
+      }
+      var args = [];
+      forEach(dKeys, function(k) {
+        args = args.concat(nn2[k])
+      });
+      if(args.length === 0) {
+        n2 = nodeOne
+      }else {
+        if(args.length === 1) {
+          args.push(nodeOne);
+          n2 = newNode(n2.op, args)
+        }else {
+          n2 = newNode(n2.op, args)
+        }
+      }
+      return[n1, n2]
+    }
     var normalizedNodes = [];
     function normalize(root) {
       if(!root || !root.args) {
@@ -6578,7 +6654,7 @@ var BigDecimal = function(MathContext) {
         nid = ast.intern(node);
         node = sortLiteral(node)
       }
-      node.sortNid = nid;
+      node.sortLiteralNid = nid;
       sortedLiteralNodes[rootNid] = node;
       return node
     }
@@ -8902,6 +8978,9 @@ var BigDecimal = function(MathContext) {
         }
         return unaryNode(node.op, [scale(node.args[0])])
       }, numeric:function(node) {
+        if(isUndefined(node)) {
+          return node
+        }
         return numberNode(node.args[0], true)
       }, variable:function(node) {
         if(node.args[0] === "\\pi") {
@@ -9183,9 +9262,8 @@ var BigDecimal = function(MathContext) {
     this.hasLikeFactors = hasLikeFactors;
     this.factorGroupingKey = factorGroupingKey;
     this.hint = hint;
-    this.m2e = m2e
+    this.eraseCommonExpressions = eraseCommonExpressions
   }
-  var ast = new Ast;
   var visitor = new Visitor(ast);
   function degree(node, notAbsolute) {
     return visitor.degree(node, notAbsolute)
@@ -9364,6 +9442,9 @@ var BigDecimal = function(MathContext) {
     var result = visitor.scale(node);
     Assert.setLocation(prevLocation);
     return result
+  }
+  function eraseCommonExpressions(n1, n2) {
+    return visitor.eraseCommonExpressions(n1, n2)
   }
   var env = Model.env;
   function precision(bd) {
@@ -9709,13 +9790,13 @@ var BigDecimal = function(MathContext) {
     }
     return kind
   }
-  Model.fn.equivSymbolic = function(n1, n2, resume) {
+  Model.fn.equivSymbolic = function equivSymbolic(n1, n2, resume) {
     var n1o = n1;
     var n2o = n2;
     var result;
     var inverseResult = option("inverseResult");
     if(!inverseResult && !option("strict")) {
-      var ignoreOrder = option("ignoreOrder", true);
+      var ignoreOrder = option("ignoreOrder", false);
       try {
         var result = Model.fn.equivLiteral(n1, n2);
         option("ignoreOrder", ignoreOrder)
@@ -9735,16 +9816,23 @@ var BigDecimal = function(MathContext) {
         var n1r = n1.args[1];
         var n2l = n2.args[0];
         var n2r = n2.args[1];
-        n1l = scale(normalize(simplify(expand(normalize(n1l)))));
-        n2l = scale(normalize(simplify(expand(normalize(n2l)))));
-        var nid1l = ast.intern(n1l);
-        var nid2l = ast.intern(n2l);
-        n1r = scale(normalize(simplify(expand(normalize(n1r)))));
-        n2r = scale(normalize(simplify(expand(normalize(n2r)))));
-        var nid1r = ast.intern(n1r);
-        var nid2r = ast.intern(n2r);
-        var result = nid1l === nid2l && nid1r === nid2r
+        var nn = eraseCommonExpressions(normalize(n1l), normalize(n2l));
+        n1l = nn[0];
+        n2l = nn[1];
+        var nn = eraseCommonExpressions(normalize(n1r), normalize(n2r));
+        n1r = nn[0];
+        n2r = nn[1];
+        option("inverseResult", false);
+        var result1 = equivSymbolic(Model.create(n1l), Model.create(n2l));
+        var result2 = equivSymbolic(Model.create(n1r), Model.create(n2r));
+        option("inverseResult", inverseResult);
+        var result = result1 && result2
       }else {
+        var nn = eraseCommonExpressions(normalize(n1), normalize(n2));
+        n1 = nn[0];
+        n2 = nn[1];
+        var n1o = n1;
+        var n2o = n2;
         n1 = scale(expand(normalize(simplify(expand(normalize(n1))))));
         n2 = scale(expand(normalize(simplify(expand(normalize(n2))))));
         var nid1 = ast.intern(n1);
@@ -10046,7 +10134,7 @@ var BigDecimal = function(MathContext) {
     (function() {
     })()
   }
-})(new Ast);
+})(Model.prototype);
 var MathCore = function() {
   Assert.reserveCodeRange(3E3, 3999, "mathcore");
   var messages = Assert.messages;

@@ -127,6 +127,7 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["2000000\mum", "2m"],
           ["2m", "2m^2"],
           ["1m^2", "1000cm^2"],
         ]);

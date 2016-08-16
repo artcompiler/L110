@@ -354,6 +354,7 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["-3", "-3\\times\\frac{-1+2i}{-1+2i}"],
           ["2h=10-t", "10=1t+2h"],
           ["10 \\text{to} 1", "10 : 1"],
           ["10 to 1", "10 : 1"],
@@ -1691,6 +1692,12 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["-\\frac{24x}{(3x^2-5)^5}",
+           "\\frac{-24x}{(3x^2-5)^5}"],
+          ["\\frac{dy}{dx}=-\\frac{24x}{\\left(3x^2-5\\right)^5}",
+          "\\frac{dy}{dx}=\\frac{-24x}{\\left(3x^2-5\\right)^5}"],
+          ["\\frac{dy}{dx}=-\\frac{24x}{\\left(3x^2-5\\right)^5}",
+           "\\frac{dy}{dx}=-24x\\left(3x^2-5\\right)^{-5}"],
           ["OP=OA+AP", "OP=OA+AP"],
           ["1/2=1/2", "2/4=2/4"],
           ["x>y", "\\frac{2x}{2}>y"],
