@@ -1998,6 +1998,213 @@
       return node;
     }
 
+    //var normalizeCalculateLevel = 0;
+    function normalizeCalculate(root) {
+      if (!root || !root.args) {
+        assert(false, "Should not get here. Illformed node.");
+        return 0;
+      }
+      var nid = ast.intern(root);
+      if (root.normalizeCalculateNid === nid) {
+        return root;
+      }
+      var rootNid = nid;
+      // if (normalizeCalculateLevel === 0) {
+      //   console.log("normalizeCalculate() node: " + JSON.stringify(stripNids(root), null, 2));
+      // }
+      // normalizeCalculateLevel++;
+      var node = Model.create(visit(root, {
+        name: "normalizeCalculate",
+        numeric: function (node) {
+          if (isRepeating(node) || !option("dontConvertDecimalToFraction") && isDecimal(node)) {
+            node = decimalToFraction(node);
+          } else if (isNeg(node)) {
+            // FIXME what's this doing?
+            node = numberNode(node.args[0]);  // NormalizeCalculate negatives
+          }
+          return node;
+        },
+        additive: function (node) {
+          if (node.op === Model.SUB) {
+            assert(node.args.length === 2);
+            node = binaryNode(Model.ADD, [node.args[0], negate(node.args[1])], true /*flatten*/);
+          } else if (node.op === Model.PM) {
+            assert(node.args.length === 2, "Operator \pm can only be used on binary nodes");
+            node = binaryNode(Model.ADD, [
+              node.args[0],
+              unaryNode(Model.PM, [node.args[1]])
+            ]);
+          }
+          var args = [];
+          if (node.op === Model.MATRIX) {
+            // Don't flatten matrix nodes.
+            return node;
+          }
+          node = flattenNestedNodes(node);
+          return sort(node);
+        },
+        multiplicative: function(node) {
+          assert(node.op !== Model.DIV, "Divsion should be eliminated during parsing");
+          if (node.op === Model.FRAC) {
+            node = newNode(Model.MUL, [node.args[0], newNode(Model.POW, [node.args[1], nodeMinusOne])]);
+          }
+          var args = [];
+          // Flatten nested multiplication.
+          // FIXME can't use flattenNestedNode because of slight differences
+          var hasPM;
+          forEach(node.args, function (n) {
+            n = normalizeCalculate(n);
+            if (ast.intern(n) === ast.intern(nodeOne)) {
+              // If number node one, then erase it. Can't use mathValue here,
+              // because it simplifies constant expressions.
+              return;
+            }
+            if (args.length > 0 && isMinusOne(args[args.length-1])) {
+              if (isMinusOne(n)) {
+                // Double negative, so erase both.
+                args.pop();
+                return;
+              }
+              if (isPositiveInfinity(n)) {
+                // Collapse.
+                args.pop();
+                args.push(nodeNegativeInfinity);
+                return;
+              }
+              if (isNegativeInfinity(n)) {
+                // Collapse.
+                args.pop();
+                args.push(nodePositiveInfinity);
+                return;
+              }
+            }
+            if (n.op === Model.MUL) {
+              // Flatten
+              args = args.concat(n.args);
+            } else if (n.op === Model.PM) {
+              hasPM = true;
+              args.push(n.args[0]);
+            } else {
+              args.push(n);
+            }
+          });
+          if (args.length === 0) {
+            node = nodeOne;
+          } else if (args.length === 1) {
+            node = args[0];
+          } else {
+            node = sort(binaryNode(node.op, args));
+          }
+          if (hasPM) {
+            node = unaryNode(Model.PM, [node]);
+          }
+          return node;
+        },
+        unary: function(node) {
+          var args = [];
+          forEach(node.args, function (n) {
+            args = args.concat(normalizeCalculate(n));
+          });
+          node = newNode(node.op, args);
+          switch (node.op) {
+          case Model.SUB:
+            node = negate(args[0]);
+            break;
+          case Model.PERCENT:
+            if (args[0].op === Model.NUM) {
+              var mv = mathValue(args[0]);
+              node = numberNode(divide(mv, 100));
+            } else {
+              node = multiplyNode([
+                binaryNode(Model.POW, [
+                  numberNode("100"),
+                  nodeMinusOne
+                ]), args[0]]);
+            }
+            break;
+          case Model.PM:
+            if (isNeg(mathValue(args[0], true))) {
+              var args = node.args.slice(0);
+              node = newNode(node.op, [negate(args.shift())].concat(args));
+            }
+            break;
+          case Model.FACT:
+            var mv = mathValue(args[0]);
+            if (mv) {
+              node = numberNode(factorial(mv));
+            } else {
+              node = unaryNode(node.op, [args[0]]);
+            }
+            break;
+          default:
+            // Do nothing.
+            break;
+          }
+          return node;
+        },
+        variable: function(node) {
+          if (node.args[0] === "i" && !option("dontSimplifyImaginary")) {
+            node = nodeImaginary;
+          }
+          if (node.args[0] === "\\infty") {
+            node = nodePositiveInfinity;
+          }
+          return node;
+        },
+        exponential: function(node) {
+          var args = [];
+          switch(node.op) {
+          case Model.LOG:
+            // log_e has special meaning so don't normalizeCalculate 'e' in that case.
+            if (ast.intern(node.args[0]) === ast.intern(nodeE)) {
+              args.push(nodeE);
+            } else {
+              args.push(normalizeCalculate(node.args[0]));
+            }
+            break;
+          case Model.POW:
+            if (isMinusOne(node.args[0]) && toNumber(mathValue(node.args[1], true)) === 0.5) {
+              return nodeImaginary;
+            } else if (isOne(node.args[0])) {
+              return nodeOne;
+            } else if (isMinusOne(node.args[0]) && isMinusOne(node.args[1])) {
+              return nodeMinusOne;
+            }
+            // Fall through.
+          default:
+            args.push(normalizeCalculate(node.args[0]));
+            break;
+          }
+          args.push(normalizeCalculate(node.args[1]));
+          return binaryNode(node.op, args);
+        },
+        comma: function(node) {
+          var vals = [];
+          forEach(node.args, function (n) {
+            vals = vals.concat(normalizeCalculate(n));
+          });
+          var node = newNode(node.op, vals);
+          return sort(node);
+        },
+        equals: function(node) {
+          assert(node.args.length === 2, message(2006));
+          assert(isZero(node.args[1]));
+          var coeffs = isPolynomial(node);
+          assert(coeffs.length === 2);
+          console.log("normalizeCalculate() coeffs=" + coeffs);
+          return multiplyNode([nodeMinusOne, numberNode(coeffs[0])]);
+        }
+      }), root.location);
+      // normalizeCalculateLevel--;
+      // If the node has changed, simplify again
+      while (nid !== ast.intern(node)) {
+        nid = ast.intern(node);
+        node = normalizeCalculate(node);
+      }
+      node.normalizeCalculateNid = nid;
+      return node;
+    }
+
     var sortedNodes = [];
     function sort(root) {
       Assert.checkTimeout();
@@ -5402,6 +5609,7 @@
     this.normalizeExpanded = normalizeExpanded;
     this.normalizeLiteral = normalizeLiteral;
     this.normalizeSyntax = normalizeSyntax;
+    this.normalizeCalculate = normalizeCalculate;
     this.degree = degree;
     this.constantPart = constantPart;
     this.variables = variables;
@@ -5509,6 +5717,11 @@
     }
     var result = visitor.normalizeExpanded(node);
     Assert.setLocation(prevLocation);
+    return result;
+  }
+
+  function normalizeCalculate(node) {
+    var result = visitor.normalizeCalculate(node);
     return result;
   }
 
@@ -6144,7 +6357,9 @@
     if (n1.location) {
       Assert.setLocation(n1.location);
     }
-    var result = stripTrailingZeros(scale(numberNode(mathValue(normalize(n1), Model.env, true))));
+    var node = normalizeCalculate(simplify(expand(normalize(n1))));
+    console.log("calculate() node=" + JSON.stringify(node, null, 2));
+    var result = stripTrailingZeros(scale(numberNode(mathValue(node, Model.env, true))));
     result = typeof result === "string" ? result : "ERROR";
     Assert.setLocation(prevLocation);
     return result;
