@@ -6359,7 +6359,7 @@
     if (n1.location) {
       Assert.setLocation(n1.location);
     }
-    var node = normalizeCalculate(simplify(expand(normalize(n1))));
+    var node = normalizeCalculate(scale(expand(normalize(simplify(expand(normalize(n1)))))));
     console.log("calculate() node=" + JSON.stringify(node, null, 2));
     var result = stripTrailingZeros(scale(numberNode(mathValue(node, Model.env, true))));
     result = typeof result === "string" ? result : "ERROR";
