@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 962e961
+ * Mathcore unversioned - 787ea0f
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -6421,7 +6421,6 @@ var BigDecimal = function(MathContext) {
         assert(isZero(node.args[1]));
         var coeffs = isPolynomial(node);
         assert(coeffs.length === 2);
-        console.log("normalizeCalculate() coeffs=" + coeffs);
         var c0 = coeffs[0] ? coeffs[0] : "1";
         var c1 = coeffs[1] ? coeffs[1] : "1";
         return fractionNode(multiplyNode([nodeMinusOne, numberNode(c0)]), numberNode(c1))
@@ -8201,14 +8200,16 @@ var BigDecimal = function(MathContext) {
             return newNode(node.op, args)
           }
           var ff = factors(args[0], {}, true, true, true);
+          var erasedMinus = false;
           if(isMinusOne(ff[0])) {
-            ff.shift()
+            ff.shift();
+            erasedMinus = true
           }
           var args0 = [];
           var foundZero = false;
           forEach(ff, function(n) {
             var mv = mathValue(n, true);
-            if(foundZero || (mv !== null && (!isZero(mv) && ff.length > 1) || (n.op === Model.VAR && (units(n).length > 0 && ff.length > 1) || (n.op === Model.POW && (units(n.args[0]).length > 0 && (mathValue(n.args[0]) !== null && ff.length > 1)) || n.op === Model.POW && isNeg(n.args[1]))))) {
+            if(erasedMinus && isInequality(node.op) || (mv !== null && (!isZero(mv) && ff.length > 1) || (n.op === Model.VAR && (units(n).length > 0 && ff.length > 1) || (n.op === Model.POW && (units(n.args[0]).length > 0 && (mathValue(n.args[0]) !== null && ff.length > 1)) || n.op === Model.POW && isNeg(n.args[1]))))) {
               if(args0.length > 0 && (node.op !== Model.EQL && (node.op !== Model.APPROX && isNeg(n)))) {
                 args0.push(expand(multiplyNode([nodeMinusOne, args0.pop()])))
               }
@@ -10071,6 +10072,9 @@ var BigDecimal = function(MathContext) {
   function isComparison(op) {
     return op === Model.LT || (op === Model.LE || (op === Model.GT || (op === Model.GE || (op === Model.NE || (op === Model.NGTR || (op === Model.NLESS || (op === Model.APPROX || op === Model.EQL)))))))
   }
+  function isInequality(op) {
+    return op === Model.LT || (op === Model.LE || (op === Model.GT || (op === Model.GE || (op === Model.NE || (op === Model.NGTR || op === Model.NLESS)))))
+  }
   Model.fn.isTrue = function(n1) {
     var prevLocation = Assert.location;
     if(n1.location) {
@@ -10103,7 +10107,6 @@ var BigDecimal = function(MathContext) {
       Assert.setLocation(n1.location)
     }
     var node = normalizeCalculate(scale(expand(normalize(simplify(expand(normalize(n1)))))));
-    console.log("calculate() node=" + JSON.stringify(node, null, 2));
     var result = stripTrailingZeros(scale(numberNode(mathValue(node, Model.env, true))));
     result = typeof result === "string" ? result : "ERROR";
     Assert.setLocation(prevLocation);
@@ -10162,6 +10165,7 @@ var BigDecimal = function(MathContext) {
   Model.fn.isSimplified = function isSimplified(node, resume) {
     var n1, n2, nid1, nid2, result;
     var dontFactorDenominators = option("dontFactorDenominators", true);
+    var dontFactorTerms = option("dontFactorTerms", true);
     var dontConvertDecimalToFraction = option("dontConvertDecimalToFraction", true);
     var dontSimplifyImaginary = option("dontSimplifyImaginary", true);
     var inverseResult = option("inverseResult");
@@ -10193,6 +10197,7 @@ var BigDecimal = function(MathContext) {
       }
     }
     option("dontFactorDenominators", dontFactorDenominators);
+    option("dontFactorTerms", dontFactorTerms);
     option("dontConvertDecimalToFraction", dontConvertDecimalToFraction);
     option("dontSimplifyImaginary", dontSimplifyImaginary);
     if(result) {

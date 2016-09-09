@@ -688,6 +688,7 @@ define(["mathcore"], function (MathCore) {
           });
         }
         run([
+          ["x \\le -3", "x \\ge -3"],
           ["4(e^{-x+4}-1)", "(e^{-x}*e^5-1)"],
           ["4(e^{-x+4}-1)", "(e^{-x}*e^4-1)"],
           ["4(e^{-x+4}-1)", "(e^{-x+4}-1)"],
@@ -828,7 +829,6 @@ define(["mathcore"], function (MathCore) {
           });
         };
         run([
-          ["\\frac{x+1}{2}"],
           ["x^2y^2"],
           ["35%"],
           [".35"],
@@ -858,7 +858,12 @@ define(["mathcore"], function (MathCore) {
           ["1/2"],
           ["x^2"],
           ["x"],
-          ["10x(1+x)"],
+          ["\\frac{2}{2x+2y}"],
+          ["5x^2+5x+10"],
+          ["219+3x"],
+          ["219+3c"],
+          ["3x+219"],
+          ["3c+219"],
         ]);
       });
       describe("NOT isSimplified", function() {
@@ -872,12 +877,8 @@ define(["mathcore"], function (MathCore) {
           });
         };
         run([
-          ["\\frac{2}{2x+2y}"],
-          ["5x^2+5x+10"],
-          ["219+3x"],
-          ["219+3c"],
-          ["3x+219"],
-          ["3c+219"],
+          ["10x(1+x)"],
+          ["\\frac{x+1}{2}"],
           ["1+5i+10i^2+10i^3+5i^4+i^5"],
           ["1+5i+10i^2"],
           ["1+5i+3i+10i^2"],
@@ -1761,10 +1762,10 @@ define(["mathcore"], function (MathCore) {
       describe("isSimplified and equivSymbolic", function() {
         function run(tests) {
           forEach(tests, function (v, i) {
-            it("isSimplified: " + v[0], function() {
+            it("NOT isSimplified: " + v[0], function() {
               expect(MathCore.evaluate({
                 method: "isSimplified"
-              }, v[0])).toBe(true);
+              }, v[0])).not.toBe(true);
             });
             it("equivSymbolic: " + v[0] + " | " + v[1], function() {
               expect(MathCore.evaluate({
