@@ -1,3 +1,0 @@
-[submodule "lib/big"]
-	path = lib/big
-	url = https://github.com/MikeMcl/big.js.git
