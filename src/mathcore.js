@@ -1,5 +1,9 @@
 /*
+<<<<<<< HEAD
  * Mathcore unversioned - 2c15f3a
+=======
+ * Mathcore unversioned - 787ea0f
+>>>>>>> a5dc446c711ee51d07598c1da9cd45de835476c4
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
