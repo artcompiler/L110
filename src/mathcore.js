@@ -1,9 +1,5 @@
 /*
-<<<<<<< HEAD
- * Mathcore unversioned - 2c15f3a
-=======
- * Mathcore unversioned - 787ea0f
->>>>>>> a5dc446c711ee51d07598c1da9cd45de835476c4
+ * Mathcore unversioned - f869e8e
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -8059,9 +8055,8 @@ var BigDecimal = function(MathContext) {
             node = multiplyNode([node.args[0], nodeMinusOne]);
             break;
           case Model.ABS:
-            var mv = mathValue(node.args[0]);
-            if(mv !== null) {
-              node = numberNode(abs(mv))
+            if(isNeg(constantPart(node.args[0]))) {
+              node = unaryNode(Model.ABS, [negate(node.args[0])])
             }
             break;
           case Model.M:
