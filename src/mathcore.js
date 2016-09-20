@@ -8055,8 +8055,8 @@ var BigDecimal = function(MathContext) {
             node = multiplyNode([node.args[0], nodeMinusOne]);
             break;
           case Model.ABS:
-            if(isNeg(constantPart(node.args[0]))) {
-              node = unaryNode(Model.ABS, [negate(node.args[0])])
+            if(sign(node.args[0]) < 0) {
+              node = simplify(expand(unaryNode(Model.ABS, [negate(node.args[0])])))
             }
             break;
           case Model.M:
