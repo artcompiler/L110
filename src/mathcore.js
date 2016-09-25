@@ -4382,7 +4382,7 @@ var BigDecimal = function(MathContext) {
   messages[2006] = "More that two equals symbols in equation.";
   messages[2007] = "Tolerances are not supported in lists.";
   messages[2008] = "deprecated";
-  messages[2009] = "Units must be specified on none or both values for equivValue.";
+  messages[2009] = "[unused]";
   messages[2010] = "Invalid option name %1.";
   messages[2011] = "Invalid option value %2 for option %1.";
   messages[2012] = "Expressions with comparison or equality operators cannot be compared with equivValue.";
@@ -5119,66 +5119,65 @@ var BigDecimal = function(MathContext) {
         return nodeZero
       }
       return visit(root, {name:"constantPart", exponential:function(node) {
-        var vars = variables(node.args[0], env);
-        vars = vars.concat(variables(node.args[1], env));
-        if(vars.length === 0) {
+        if(variablePart(node) === null) {
           return node
-        }else {
-          return nodeOne
         }
+        return nodeOne
       }, multiplicative:function(node) {
-        var args = node.args;
-        var val = bigOne;
-        var ff = [];
-        forEach(args, function(n) {
-          var vars = variables(n);
-          if(vars.length === 0) {
+        var args = [];
+        forEach(node.args, function(n) {
+          var cp = constantPart(n);
+          if(!isOne(cp)) {
             var mv = mathValue(n, env, true);
             if(isOne(mv)) {
             }else {
               if(isZero(mv)) {
-                ff.push(nodeZero)
+                args.push(nodeZero)
               }else {
-                ff.push(n)
+                args.push(n)
               }
             }
           }
         });
-        if(ff.length === 0) {
+        if(args.length === 0) {
           return nodeOne
         }else {
-          if(ff.length === 1) {
-            return ff[0]
+          if(args.length === 1) {
+            return args[0]
           }
         }
-        return multiplyNode(ff)
+        return multiplyNode(args)
       }, additive:function(node) {
-        var vars = variables(node);
-        if(vars.length !== 0) {
-          node = nodeOne
-        }
-        return node
-      }, unary:function(node) {
-        var vars = variables(node.args[0], env);
-        if(vars.length === 0) {
+        var result = some(node.args, function(n) {
+          return variablePart(n) !== null
+        });
+        if(!result) {
           return node
-        }else {
-          return nodeOne
         }
+        return nodeOne
+      }, unary:function(node) {
+        var result = some(node.args, function(n) {
+          return variablePart(n) !== null
+        });
+        if(!result) {
+          return node
+        }
+        return nodeOne
       }, numeric:function(node) {
         return node
       }, variable:function(node) {
+        if(variablePart(node) === null) {
+          return node
+        }
         return nodeOne
       }, comma:function(node) {
-        var vars = variables(node.args[0], env);
-        if(vars.length === 0) {
+        if(variablePart(node) === null) {
           return node
-        }else {
-          return nodeOne
         }
-        return null
+        return nodeOne
       }, equals:function(node) {
-        return null
+        assert(false);
+        return nodeOne
       }})
     }
     function variables(root) {
@@ -5407,29 +5406,31 @@ var BigDecimal = function(MathContext) {
         return null
       }
       return visit(root, {name:"variablePart", exponential:function(node) {
-        if(variables(node.args[0]).length > 0 || variables(node.args[1]).length > 0) {
+        if(variablePart(node.args[0]) || variablePart(node.args[1])) {
           return node
         }
         return null
       }, multiplicative:function(node) {
-        var args = node.args;
-        var vals = [];
-        forEach(args, function(n) {
+        var args = [];
+        forEach(node.args, function(n) {
           var v = variablePart(n);
           if(v !== null) {
-            vals.push(v)
+            args.push(v)
           }
         });
-        if(vals.length === 0) {
+        if(args.length === 0) {
           return null
         }else {
-          if(vals.length === 1) {
-            return vals[0]
+          if(args.length === 1) {
+            return args[0]
           }
         }
-        return multiplyNode(vals)
+        return multiplyNode(args)
       }, additive:function(node) {
-        if(variables(node).length > 0) {
+        var result = some(node.args, function(n) {
+          return variablePart(n) !== null
+        });
+        if(result) {
           return node
         }
         return null
@@ -5442,9 +5443,16 @@ var BigDecimal = function(MathContext) {
       }, numeric:function(node) {
         return null
       }, variable:function(node) {
-        return node
+        var val;
+        if(mathValue(node, true) === null) {
+          return node
+        }
+        return null
       }, comma:function(node) {
-        var vars = variables(node.args[0], env);
+        var vars = [];
+        forEach(node.args, function(n) {
+          vars = vars.concat(variables(n, env))
+        });
         if(vars.length !== 0) {
           return node
         }
@@ -8289,17 +8297,21 @@ var BigDecimal = function(MathContext) {
     function log(b, x) {
       return Math.log(x) / Math.log(b)
     }
-    function mathValue(root, env, allowDecimal) {
-      if(allowDecimal === undefined && typeof env === "boolean") {
-        allowDecimal = env;
-        env = {}
-      }
+    function mathValue(root, env, allowDecimal, normalizeUnits) {
       if(!root) {
         return null
       }
       if(!root || !root.args) {
         assert(false, "Should not get here. Illformed node.");
         return 0
+      }
+      if(env === undefined) {
+        env = Model.env
+      }else {
+        if(allowDecimal === undefined && typeof env === "boolean") {
+          allowDecimal = env;
+          env = Model.env
+        }
       }
       return visit(root, {name:"mathValue", numeric:function(node) {
         if(isUndefined(node) || isRepeating(node)) {
@@ -8312,7 +8324,7 @@ var BigDecimal = function(MathContext) {
         }
         var val = bigZero;
         forEach(node.args, function(n) {
-          var mv = mathValue(n, env, true);
+          var mv = mathValue(n, env, true, normalizeUnits);
           if(mv && val) {
             val = val.add(mv)
           }else {
@@ -8329,7 +8341,7 @@ var BigDecimal = function(MathContext) {
         var hasDecimal = false;
         forEach(node.args, function(n) {
           hasDecimal = hasDecimal || isDecimal(n);
-          var mv = mathValue(n, env, true);
+          var mv = mathValue(n, env, true, normalizeUnits);
           if(val !== null && mv != null) {
             val = val.multiply(mv)
           }else {
@@ -8343,13 +8355,13 @@ var BigDecimal = function(MathContext) {
       }, unary:function(node) {
         switch(node.op) {
           case Model.SUB:
-            var val = mathValue(node.args[0], env, allowDecimal);
+            var val = mathValue(node.args[0], env, allowDecimal, normalizeUnits);
             if(val === null) {
               return null
             }
             return val.multiply(bigMinusOne);
           case Model.FACT:
-            var n = mathValue(node.args[0], env, allowDecimal);
+            var n = mathValue(node.args[0], env, allowDecimal, normalizeUnits);
             if(n) {
               return toDecimal(factorial(n))
             }else {
@@ -8363,7 +8375,7 @@ var BigDecimal = function(MathContext) {
                 assert(n.op === Model.VAR, "Internal error: invalid arguments to the M tag");
                 var sym = Model.env[n.args[0]];
                 assert(sym && sym.mass, "Internal error: missing chemical symbol");
-                var count = n.args[1] ? toNumber(mathValue(n.args[1], env, allowDecimal)) : 1;
+                var count = n.args[1] ? toNumber(mathValue(n.args[1], env, allowDecimal, normalizeUnits)) : 1;
                 args.push(numberNode(sym.mass * count))
               })
             }else {
@@ -8371,12 +8383,12 @@ var BigDecimal = function(MathContext) {
               assert(n.op === Model.VAR, "Internal error: invalid arguments to the M tag");
               var sym = Model.env[n.args[0]];
               assert(sym && sym.mass, "Internal error: missing chemical symbol");
-              var count = n.args[1] ? toNumber(mathValue(n.args[1], env, allowDecimal)) : 1;
+              var count = n.args[1] ? toNumber(mathValue(n.args[1], env, allowDecimal, normalizeUnits)) : 1;
               args.push(numberNode(sym.mass * count))
             }
-            return mathValue(makeTerm(args), env, allowDecimal);
+            return mathValue(makeTerm(args), env, allowDecimal, normalizeUnits);
           case Model.ABS:
-            return abs(mathValue(node.args[0], env, allowDecimal));
+            return abs(mathValue(node.args[0], env, allowDecimal, normalizeUnits));
           case Model.SIN:
           ;
           case Model.COS:
@@ -8408,26 +8420,26 @@ var BigDecimal = function(MathContext) {
                 if(isNegativeInfinity(node.args[0])) {
                   val = Number.NEGATIVE_INFINITY
                 }else {
-                  val = mathValue(toRadians(node.args[0]), env, allowDecimal)
+                  val = mathValue(toRadians(node.args[0]), env, allowDecimal, normalizeUnits)
                 }
               }
               return trig(val, node.op)
             }
             return null;
           case Model.ADD:
-            return mathValue(node.args[0], env, allowDecimal);
+            return mathValue(node.args[0], env, allowDecimal, normalizeUnits);
           case Model.DEGREE:
-            return mathValue(toRadians(node.args[0]), env, allowDecimal);
+            return mathValue(toRadians(node.args[0]), env, allowDecimal, normalizeUnits);
           default:
             return null
         }
       }, exponential:function(node) {
         var args = node.args.slice(0).reverse();
-        var val = mathValue(args.shift(), env, allowDecimal);
+        var val = mathValue(args.shift(), env, allowDecimal, normalizeUnits);
         var op = node.op;
         if(op === Model.POW) {
           forEach(args, function(n) {
-            var mv = mathValue(n, env, true);
+            var mv = mathValue(n, env, true, normalizeUnits);
             if(val !== null && mv != null) {
               val = pow(mv, val)
             }else {
@@ -8440,7 +8452,7 @@ var BigDecimal = function(MathContext) {
             var mv;
             var emv = val;
             var base = args[0];
-            var bmv = mathValue(base, true);
+            var bmv = mathValue(base, true, normalizeUnits);
             if(emv !== null) {
               if(bmv !== null) {
                 val = logBase(bmv, emv)
@@ -8458,26 +8470,11 @@ var BigDecimal = function(MathContext) {
         return null
       }, variable:function(node) {
         var val, n;
-        if(env && (val = env[node.args[0]])) {
-          switch(val.type) {
-            case "unit":
-            ;
-            case "const":
-              n = val.value;
-              break;
-            default:
-              n = val;
-              break
-          }
-          return toDecimal(n)
+        if((val = env[node.args[0]]) && (val.type === "const" || val.type === "unit" && normalizeUnits)) {
+          n = val.value
         }
-        if(allowDecimal) {
-          if(node.args[0] === "\\pi") {
-            return toDecimal(Math.PI)
-          }
-          if(node.args[0] === "e") {
-            return toDecimal(Math.E)
-          }
+        if(n && (allowDecimal || isInteger(n))) {
+          return toDecimal(n)
         }
         return null
       }, comma:function(node) {
@@ -8505,8 +8502,12 @@ var BigDecimal = function(MathContext) {
         assert(false, "Should not get here. Illformed node.");
         return 0
       }
-      return getUnique(visit(root, {name:"units", exponential:function(node) {
-        return units(node.args[0], env)
+      return visit(root, {name:"units", exponential:function(node) {
+        var uu = units(node.args[0], env);
+        if(uu.length > 0) {
+          return[node]
+        }
+        return[]
       }, multiplicative:function(node) {
         var uu = [];
         forEach(node.args, function(n) {
@@ -8527,7 +8528,7 @@ var BigDecimal = function(MathContext) {
         var val, env = Model.env;
         if(env && (val = env[node.args[0]])) {
           if(val.type === "unit") {
-            return[node.args[0]]
+            return[node]
           }
         }
         return[]
@@ -8543,7 +8544,7 @@ var BigDecimal = function(MathContext) {
           uu = uu.concat(units(n, env))
         });
         return uu
-      }}))
+      }})
     }
     function dummy(root, env, resume) {
       console.log("dummy() root=" + JSON.stringify(root, null, 2));
@@ -9171,11 +9172,15 @@ var BigDecimal = function(MathContext) {
         }
         return numberNode(node.args[0], true)
       }, variable:function(node) {
-        if(node.args[0] === "\\pi") {
-          node = numberNode(Math.PI, true)
-        }
-        if(node.args[0] === "e") {
-          node = numberNode(Math.E, true)
+        var val;
+        if(val = Model.env[node.args[0]]) {
+          if(val.type === "unit" && val.value !== 1) {
+            node = multiplyNode([numberNode(val.value, true), variableNode(val.base)])
+          }else {
+            if(val.type === "const") {
+              node = numberNode(val.value, true)
+            }
+          }
         }
         return node
       }, comma:function(node) {
@@ -9325,7 +9330,7 @@ var BigDecimal = function(MathContext) {
         var nn = variables(node);
         assert(nn.length === 1);
         var env = {};
-        env[nn[0]] = r;
+        env[nn[0]] = {type:"const", value:r};
         var x = toNumber(mathValue(node, env, true));
         return x === 0 && (field === "integer" && r === (r | 0) || field === "real")
       })
@@ -9534,12 +9539,12 @@ var BigDecimal = function(MathContext) {
     var result = visitor.normalizeCalculate(node);
     return result
   }
-  function mathValue(node, env, allowDecimal) {
+  function mathValue(node, env, allowDecimal, normalizeUnits) {
     var prevLocation = Assert.location;
     if(node.location) {
       Assert.setLocation(node.location)
     }
-    var result = visitor.mathValue(node, env, allowDecimal);
+    var result = visitor.mathValue(node, env, allowDecimal, normalizeUnits);
     Assert.setLocation(prevLocation);
     return result
   }
@@ -9693,12 +9698,12 @@ var BigDecimal = function(MathContext) {
     var n2unit = n2units[0];
     var n1new, n2new;
     if(n1unit === undefined && n2unit !== undefined) {
-      n1new = multiplyNode([n1, variableNode(n2unit)]);
+      n1new = multiplyNode([n1, variableNode(n2unit.args[0])]);
       n2new = n2
     }else {
       if(n2unit === undefined && n1unit !== undefined) {
         n1new = n1;
-        n2new = multiplyNode([n2, variableNode(n1unit)])
+        n2new = multiplyNode([n2, variableNode(n1unit.args[0])])
       }else {
         n1new = n1;
         n2new = n2
@@ -9746,20 +9751,20 @@ var BigDecimal = function(MathContext) {
     if(n1.op === Model.PM && n1.args.length > 1) {
       n1b = simplify(expand(normalize(n1.args[0])));
       n1t = simplify(expand(normalize(n1.args[1])));
-      var v1 = mathValue(n1b, env, true);
-      var v1t = mathValue(n1t, env, true)
+      var v1 = mathValue(n1b, env, true, true);
+      var v1t = mathValue(n1t, env, true, true)
     }else {
       n1b = simplify(expand(normalize(n1)));
-      var v1 = mathValue(n1b, env, true)
+      var v1 = mathValue(n1b, env, true, true)
     }
     if(n2.op === Model.PM && n2.args.length > 1) {
       n2b = simplify(expand(normalize(n2.args[0])));
       n2t = simplify(expand(normalize(n2.args[1])));
-      var v2 = mathValue(n2b, env, true);
-      var v2t = mathValue(n2t, env, true)
+      var v2 = mathValue(n2b, env, true, true);
+      var v2t = mathValue(n2t, env, true, true)
     }else {
       n2b = simplify(expand(normalize(n2)));
-      var v2 = mathValue(n2b, env, true)
+      var v2 = mathValue(n2b, env, true, true)
     }
     if(isUndefined(n1b) || isUndefined(n2b)) {
       result = false;
@@ -9805,15 +9810,14 @@ var BigDecimal = function(MathContext) {
         return inverseResult ? !result : result
       })
     }
-    var v1 = mathValue(n1b, env, true);
-    var v2 = mathValue(n2b, env, true);
+    var v1 = mathValue(n1b, env, true, true);
+    var v2 = mathValue(n2b, env, true, true);
     assert(v1 !== null || isComparison(n1b.op), message(2005), "spec");
     assert(n1b.op !== Model.PM || v1t !== null, message(2005), "spec");
     assert(v2 !== null || isComparison(n2b.op), message(2005), "user");
     assert(n2b.op !== Model.PM || v2t !== null, message(2005), "user");
     Assert.clearLocation();
-    if(v1 !== null && v2 !== null) {
-      assert(baseUnit(n1b) === undefined && baseUnit(n2b) === undefined || baseUnit(n1b) !== undefined && baseUnit(n2b) !== undefined, message(2009));
+    if(v1 !== null && (v2 !== null && checkUnits(n1b, n2b))) {
       v2 = baseUnitConversion(n1b, n2b)(v2);
       if(!isZero(v2t)) {
         v2t = baseUnitConversion(n1b, n2b)(v2t)
@@ -9856,6 +9860,20 @@ var BigDecimal = function(MathContext) {
     }
     var result = false;
     return inverseResult ? !result : result;
+    function checkUnits(n1, n2) {
+      var u1 = units(n1);
+      var u2 = units(n2);
+      if(u1.length === 0 || u2.length === 0) {
+        if(u1.length === u2.length) {
+          return true
+        }else {
+          return false
+        }
+      }
+      var d1 = degree(u1[0]);
+      var d2 = degree(u2[0]);
+      return d1 === d2 ? true : false
+    }
     function baseUnit(node) {
       var env = Model.env;
       var prevLocation = Assert.location;
@@ -9865,8 +9883,15 @@ var BigDecimal = function(MathContext) {
       var uu = units(node, env);
       var baseUnits = [];
       forEach(uu, function(u) {
-        var unit = env[u];
-        assert(unit.type === "unit");
+        var unit;
+        if(u.op === Model.POW) {
+          assert(u.args[0].op === Model.VAR);
+          unit = env[u.args[0].args[0]]
+        }else {
+          assert(u.op === Model.VAR);
+          unit = env[u.args[0]]
+        }
+        assert(unit && unit.type === "unit");
         if(indexOf(baseUnits, unit.base) < 0) {
           baseUnits.push(unit.base)
         }
@@ -10225,8 +10250,10 @@ var BigDecimal = function(MathContext) {
       result = true
     }else {
       if(u2.length) {
-        result = every(u2, function(v) {
-          return indexOf(u1, v) >= 0
+        result = every(u2, function(v1) {
+          return some(u1, function(v2) {
+            return ast.intern(v1) === ast.intern(v2)
+          })
         })
       }
     }
@@ -10356,9 +10383,9 @@ var MathCore = function() {
   var env = {"g":{type:"unit", value:u, base:"g"}, "s":{type:"unit", value:u, base:"s"}, "m":{type:"unit", value:u, base:"m"}, "L":{type:"unit", value:u, base:"L"}, "kg":{type:"unit", value:k, base:"g"}, "km":{type:"unit", value:k, base:"m"}, "ks":{type:"unit", value:k, base:"s"}, "kL":{type:"unit", value:k, base:"L"}, "cg":{type:"unit", value:c, base:"g"}, "cm":{type:"unit", value:c, base:"m"}, "cs":{type:"unit", value:c, base:"s"}, "cL":{type:"unit", value:c, base:"L"}, "mg":{type:"unit", value:m, 
   base:"g"}, "mm":{type:"unit", value:m, base:"m"}, "ms":{type:"unit", value:m, base:"s"}, "mL":{type:"unit", value:m, base:"L"}, "\\mug":{type:"unit", value:mu, base:"g"}, "\\mus":{type:"unit", value:mu, base:"s"}, "\\mum":{type:"unit", value:mu, base:"m"}, "\\muL":{type:"unit", value:mu, base:"L"}, "ng":{type:"unit", value:n, base:"g"}, "nm":{type:"unit", value:n, base:"m"}, "ns":{type:"unit", value:n, base:"s"}, "nL":{type:"unit", value:n, base:"L"}, "in":{type:"unit", value:1 / 12, base:"ft"}, 
   "ft":{type:"unit", value:u, base:"ft"}, "yd":{type:"unit", value:3, base:"ft"}, "mi":{type:"unit", value:5280, base:"ft"}, "fl":{type:"unit", value:1, base:"fl"}, "cup":{type:"unit", value:8, base:"fl"}, "pt":{type:"unit", value:16, base:"fl"}, "qt":{type:"unit", value:32, base:"fl"}, "gal":{type:"unit", value:128, base:"fl"}, "oz":{type:"unit", value:1 / 16, base:"lb"}, "lb":{type:"unit", value:1, base:"lb"}, "st":{type:"unit", value:1 / 1614, base:"lb"}, "qtr":{type:"unit", value:28, base:"lb"}, 
-  "cwt":{type:"unit", value:112, base:"lb"}, "$":{type:"unit", value:u, base:"$"}, "i":{type:"unit", value:null, base:"i"}, "min":{type:"unit", value:60, base:"s"}, "hr":{type:"unit", value:3600, base:"s"}, "day":{type:"unit", value:24 * 3600, base:"s"}, "\\radian":{type:"unit", value:u, base:"radian"}, "\\degree":{type:"unit", value:Math.PI / 180, base:"radian"}, "\\degree K":{type:"unit", value:u, base:"\\degree K"}, "\\degree C":{type:"unit", value:u, base:"\\degree C"}, "\\degree F":{type:"unit", 
-  value:u, base:"\\degree F"}, "R":{name:"reals"}, "matrix":{}, "pmatrix":{}, "bmatrix":{}, "Bmatrix":{}, "vmatrix":{}, "Vmatrix":{}, "array":{}, "\\alpha":{type:"var"}, "\\beta":{type:"var"}, "\\gamma":{type:"var"}, "\\delta":{type:"var"}, "\\epsilon":{type:"var"}, "\\zeta":{type:"var"}, "\\eta":{type:"var"}, "\\theta":{type:"var"}, "\\iota":{type:"var"}, "\\kappa":{type:"var"}, "\\lambda":{type:"var"}, "\\mu":{type:"const", value:mu}, "\\nu":{type:"var"}, "\\xi":{type:"var"}, "\\pi":{type:"const", 
-  value:Math.PI}, "e":{type:"const", value:Math.E}, "\\rho":{type:"var"}, "\\sigma":{type:"var"}, "\\tau":{type:"var"}, "\\upsilon":{type:"var"}, "\\phi":{type:"var"}, "\\chi":{type:"var"}, "\\psi":{type:"var"}, "\\omega":{type:"var"}};
+  "cwt":{type:"unit", value:112, base:"lb"}, "$":{type:"unit", value:u, base:"$"}, "min":{type:"unit", value:60, base:"s"}, "hr":{type:"unit", value:3600, base:"s"}, "day":{type:"unit", value:24 * 3600, base:"s"}, "\\radian":{type:"unit", value:u, base:"\\radian"}, "\\degree":{type:"unit", value:Math.PI / 180, base:"\\radian"}, "\\degree K":{type:"unit", value:u, base:"\\degree K"}, "\\degree C":{type:"unit", value:u, base:"\\degree C"}, "\\degree F":{type:"unit", value:u, base:"\\degree F"}, "R":{name:"reals"}, 
+  "matrix":{}, "pmatrix":{}, "bmatrix":{}, "Bmatrix":{}, "vmatrix":{}, "Vmatrix":{}, "array":{}, "\\alpha":{type:"var"}, "\\beta":{type:"var"}, "\\gamma":{type:"var"}, "\\delta":{type:"var"}, "\\epsilon":{type:"var"}, "\\zeta":{type:"var"}, "\\eta":{type:"var"}, "\\theta":{type:"var"}, "\\iota":{type:"var"}, "\\kappa":{type:"var"}, "\\lambda":{type:"var"}, "\\mu":{type:"const", value:mu}, "\\nu":{type:"var"}, "\\xi":{type:"var"}, "\\pi":{type:"const", value:Math.PI}, "e":{type:"const", value:Math.E}, 
+  "\\rho":{type:"var"}, "\\sigma":{type:"var"}, "\\tau":{type:"var"}, "\\upsilon":{type:"var"}, "\\phi":{type:"var"}, "\\chi":{type:"var"}, "\\psi":{type:"var"}, "\\omega":{type:"var"}};
   function evaluate(spec, solution, resume) {
     try {
       assert(spec, message(3001, [spec]));
