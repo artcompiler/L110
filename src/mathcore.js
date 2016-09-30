@@ -8320,7 +8320,8 @@ var BigDecimal = function(MathContext) {
       if(env === undefined) {
         env = Model.env
       }else {
-        if(allowDecimal === undefined && typeof env === "boolean") {
+        if(typeof env === "boolean") {
+          normalizeUnits = allowDecimal;
           allowDecimal = env;
           env = Model.env
         }
@@ -9769,11 +9770,11 @@ var BigDecimal = function(MathContext) {
       var v1t = mathValue(n1t, env, true, true)
     }else {
       n1 = normalize(n1);
-      if(v1 = mathValue(n1, env, true, true)) {
+      if(v1 = mathValue(n1, true)) {
         n1b = scale(n1)
       }else {
         n1b = simplify(expand(n1));
-        v1 = mathValue(n1b, env, true, true)
+        v1 = mathValue(n1b, true, true)
       }
     }
     if(n2.op === Model.PM && n2.args.length > 1) {
@@ -9783,11 +9784,11 @@ var BigDecimal = function(MathContext) {
       var v2t = mathValue(n2t, env, true, true)
     }else {
       n2 = normalize(n2);
-      if(v2 = mathValue(n2, env, true, true)) {
+      if(v2 = mathValue(n2, true)) {
         n2b = scale(n2)
       }else {
         n2b = simplify(expand(n2));
-        v2 = mathValue(n2b, env, true, true)
+        v2 = mathValue(n2b, true, true)
       }
     }
     if(isUndefined(n1b) || isUndefined(n2b)) {
