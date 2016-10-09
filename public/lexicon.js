@@ -20,6 +20,8 @@ exports.globalLexicon = {
     "isUnit" : { "tk": 1, "name": "IS-UNIT", "cls": "function", "length": 2 , "arity": 2 },
     "isTrue" : { "tk": 1, "name": "IS-TRUE", "cls": "function", "length": 1 , "arity": 1 },
     "calculate" : { "tk": 1, "name": "CALCULATE", "cls": "function", "length": 1 , "arity": 1 },
+    "translate" : { "tk": 1, "name": "SPEAK", "cls": "function", "length": 2 , "arity": 2 },
+    "speak" : { "tk": 1, "name": "SPEAK", "cls": "function", "length": 1 , "arity": 1 },
     "validSyntax" : { "tk": 1, "name": "VALID-SYNTAX", "cls": "function", "length": 1 , "arity": 1 },
     "not" : { "tk": 1, "name": "NOT", "cls": "function", "length": 1 },
     "inverseResult" : { "tk": 1, "name": "NOT", "cls": "function", "length": 1 },

@@ -4,6 +4,7 @@
 var _ = require("underscore");
 var mjAPI = require("mathjax-node/lib/mj-single.js");
 import MathCore from "./mathcore.js";
+import {Core} from "./spokenmath.js";
 
 function error(str, nid) {
   return {
@@ -34,6 +35,8 @@ var transformer = function() {
     "IS-UNIT": isUnit,
     "IS-TRUE": isTrue,
     "CALCULATE": calculate,
+    "TRANSLATE": trans,
+    "SPEAK": speak,
     "VALID-SYNTAX": validSyntax,
     "INVERSE-RESULT": inverseResult,
     "DECIMAL-PLACES": decimalPlaces,
@@ -489,6 +492,53 @@ var transformer = function() {
             response: val.result,
             result: val.result,
             objectCode: composeValidation("calculate", options, val)
+          });
+        });
+      }
+    });
+  }
+  function translate(val, options, resume) {
+    var errs = [];
+    var source = val;
+    if (source) {
+      Core.translate(options, source, function (err, val) {
+        delete options.strict;
+        if (err && err.length) {
+          errs = errs.concat(error(err, node.elts[0]));
+        }
+        resume(errs, val);
+      });
+    }
+  }
+  function speak(node, options, resume) {
+    //options.dialect = "clearSpeak";
+    return trans(node, options, resume);
+  }
+  function trans(node, options, resume) {
+    var errs = [];
+    visit(node.elts[0], options, function (err, val) {
+      errs = errs.concat(err);
+      let latex = val;
+      let opts;
+      if (latex) {
+        if (options) {
+          // Add item options to global options.
+          opts = Object.assign({}, options, options);
+        } else {
+          opts = dialect.options;
+        }
+        translate(latex, opts, function (err, val) {
+          if (err && err.length) {
+            errs = errs.concat(error(err, node.elts[0]));
+          }
+          latex = escapeStr(latex);
+          val = "\\text{" + val + "}";
+          resume(errs, {
+            score: 1,
+            value: latex,
+            response: val,
+            result: val,
+            objectCode: composeValidation("speak", options, val)
           });
         });
       }
