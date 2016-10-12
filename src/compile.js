@@ -233,14 +233,12 @@ var transformer = function() {
         var response = val.result ? val.result : val;
         if (response) {
           options.strict = true;
-          options.keepTextWhitespace = true;
           MathCore.evaluateVerbose({
             method: "equivSyntax",
             options: options,
             value: reference,
           }, response, function (err, val) {
             delete options.strict;
-            delete options.keepTextWhitespace;
             if (err && err.length) {
               errs = errs.concat(error(err, node.elts[0]));
             }
@@ -267,12 +265,14 @@ var transformer = function() {
         delete options.hideExpected;
         if (response) {
           options.strict = true;
+          options.keepTextWhitespace = true;
           MathCore.evaluateVerbose({
             method: "equivLiteral",
             options: options,
             value: reference,
           }, response, function (err, val) {
             delete options.strict;
+            delete options.keepTextWhitespace;
             if (err && err.length) {
               errs = errs.concat(error(err, node.elts[0]));
             }
