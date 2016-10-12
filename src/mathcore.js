@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 3fe9fea
+ * Mathcore unversioned - 62e0087
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -2210,12 +2210,13 @@ var Model = function() {
             }
             lexeme = "";
             var c = src.charCodeAt(curIndex++);
+            var keepTextWhitespace = Model.option("keepTextWhitespace");
             while(c && c !== "}".charCodeAt(0)) {
               var ch = String.fromCharCode(c);
-              if(ch === "&" && indexOf(src.substring(curIndex), "nbsp;") === 0) {
+              if(!keepTextWhitespace && (ch === "&" && indexOf(src.substring(curIndex), "nbsp;") === 0)) {
                 curIndex += 5
               }else {
-                if(ch === " " || ch === "\t") {
+                if(!keepTextWhitespace && (ch === " " || ch === "\t")) {
                 }else {
                   lexeme += ch
                 }
@@ -5176,7 +5177,9 @@ var BigDecimal = function(MathContext) {
         }
         return nodeOne
       }, equals:function(node) {
-        assert(false);
+        if(variablePart(node) === null) {
+          return node
+        }
         return nodeOne
       }})
     }
@@ -5458,6 +5461,13 @@ var BigDecimal = function(MathContext) {
         }
         return null
       }, equals:function(node) {
+        var vars = [];
+        forEach(node.args, function(n) {
+          vars = vars.concat(variables(n, env))
+        });
+        if(vars.length !== 0) {
+          return node
+        }
         return null
       }})
     }
@@ -10546,6 +10556,8 @@ var MathCore = function() {
       case "compareSides":
       ;
       case "ignoreCoefficientOne":
+      ;
+      case "keepTextWhitespace":
       ;
       case "strict":
         if(typeof v === "undefined" || typeof v === "boolean") {
