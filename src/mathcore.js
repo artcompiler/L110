@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 62e0087
+ * Mathcore unversioned - 216a4e9
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -7821,6 +7821,7 @@ var BigDecimal = function(MathContext) {
         }
       }, multiplicative:function(node) {
         assert(node.op === Model.MUL, "simplify() multiplicative node not normalized: " + JSON.stringify(node));
+        node = cancelFactors(node);
         if(!env || !env.dontGroup) {
           node = groupLikes(node)
         }
