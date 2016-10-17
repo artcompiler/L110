@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 216a4e9
+ * Mathcore unversioned - 060fd05
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -6216,12 +6216,8 @@ var BigDecimal = function(MathContext) {
             if(isMinusOne(node.args[0]) && toNumber(mathValue(node.args[1], true)) === 0.5) {
               return nodeImaginary
             }else {
-              if(isOne(node.args[0])) {
-                return nodeOne
-              }else {
-                if(isMinusOne(node.args[0]) && isMinusOne(node.args[1])) {
-                  return nodeMinusOne
-                }
+              if(isMinusOne(node.args[0]) && isMinusOne(node.args[1])) {
+                return nodeMinusOne
               }
             }
           ;
