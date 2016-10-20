@@ -529,6 +529,7 @@ var transformer = function() {
         } else {
           opts = dialect.options;
         }
+        opts.keepTextWhitespace = true;
         translate(latex, opts, function (err, val) {
           if (err && err.length) {
             errs = errs.concat(error(err, node.elts[0]));
