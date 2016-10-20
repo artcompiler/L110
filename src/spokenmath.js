@@ -4011,14 +4011,7 @@ var Model = exports.Model = function () {
           c = src.charCodeAt(curIndex++);
           while (c && c !== "}".charCodeAt(0)) {
             var ch = String.fromCharCode(c);
-            if (ch === "&" && (0, _backward.indexOf)(src.substring(curIndex), "nbsp;") === 0) {
-              // Skip &nbsp;
-              curIndex += 5;
-            } else if (ch === " " || ch === "\t") {
-              // Skip space and tab
-            } else {
-              _lexeme += ch;
-            }
+            _lexeme += ch;
             c = src.charCodeAt(curIndex++);
           }
           if (tk !== TK_TYPE) {

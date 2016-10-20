@@ -529,11 +529,12 @@ var transformer = function() {
         } else {
           opts = dialect.options;
         }
-        opts.keepTextWhitespace = true;
+        console.log("speak() latex=" + latex);
         translate(latex, opts, function (err, val) {
           if (err && err.length) {
             errs = errs.concat(error(err, node.elts[0]));
           }
+          console.log("speak() val=" + val);
           latex = escapeStr(latex);
           val = "\\text{" + val + "}";
           resume(errs, {
