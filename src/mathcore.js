@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 956d93a
+ * Mathcore unversioned - ba88ebf
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -1540,7 +1540,7 @@ var Model = function() {
         default:
           if(t === TK_VAR && lexeme() === "$") {
             next();
-            if(hd()) {
+            if((t = hd()) && (t !== TK_RIGHTBRACE && t !== TK_SLASH)) {
               expr = multiplyNode([newNode(Model.VAR, ["$"]), postfixExpr()])
             }else {
               expr = newNode(Model.VAR, ["$"])
