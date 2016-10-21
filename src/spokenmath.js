@@ -1948,7 +1948,7 @@ var Core = exports.Core = function () {
       valueNode = value != undefined ? _model.Model.create(value, "spec") : undefined;
       _model.Model.popEnv();
     } catch (e) {
-      console.log(e.stack);
+      // console.log(e.stack);
       pendingError = e;
     }
     var evaluate = function evaluate(solution, resume) {
@@ -1974,7 +1974,7 @@ var Core = exports.Core = function () {
         _model.Model.popEnv();
         resume(null, result);
       } catch (e) {
-        console.log(e.stack);
+        // console.log(e.stack);
         var _message = e.message;
         resume({
           result: null,

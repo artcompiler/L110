@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 060fd05
+ * Mathcore unversioned - 956d93a
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -10059,6 +10059,52 @@ var BigDecimal = function(MathContext) {
         return true
       }
     }
+    if(isComparison(n1.op) && n1.op === n2.op) {
+      var n1a0 = n1.args[0];
+      var n1a1 = n1.args[1];
+      var n2a0 = n2.args[0];
+      var n2a1 = n2.args[1];
+      var n1a0id = ast.intern(n1a0);
+      var n1a1id = ast.intern(n1a1);
+      var n2a0id = ast.intern(n2a0);
+      var n2a1id = ast.intern(n2a1);
+      var mv;
+      if(n1a0.op === Model.VAR && (n2a0.op === Model.VAR && n1a0id === n2a0id)) {
+        if(n1a1.op !== Model.NUM && (mv = mathValue(normalize(n1a1), true))) {
+          n1 = newNode(n1.op, [n1a0, numberNode(mv, true)])
+        }
+        if(n2a1.op !== Model.NUM && (mv = mathValue(normalize(n2a1), true))) {
+          n2 = newNode(n2.op, [n2a0, numberNode(mv, true)])
+        }
+      }else {
+        if(n1a0.op === Model.VAR && (n2a1.op === Model.VAR && n1a0id === n2a1id)) {
+          if(n1a1.op !== Model.NUM && (mv = mathValue(normalize(n1a1), true))) {
+            n1 = newNode(n1.op, [n1a0, numberNode(mv, true)])
+          }
+          if(n2a0.op !== Model.NUM && (mv = mathValue(normalize(n2a0), true))) {
+            n2 = newNode(n2.op, [numberNode(mv, true), n2a1])
+          }
+        }else {
+          if(n1a1.op === Model.VAR && (n2a0.op === Model.VAR && n1a1id === n2a0id)) {
+            if(n1a0.op !== Model.NUM && (mv = mathValue(normalize(n1a0), true))) {
+              n1 = newNode(n1.op, [numberNode(mv, true), n1a1])
+            }
+            if(n2a1.op !== Model.NUM && (mv = mathValue(normalize(n2a1), true))) {
+              n2 = newNode(n2.op, [n2a0, numberNode(mv, true)])
+            }
+          }else {
+            if(n1a1.op === Model.VAR && (n2a1.op === Model.VAR && n1a1id === n2a1id)) {
+              if(n1a0.op !== Model.NUM && (mv = mathValue(normalize(n1a0), true))) {
+                n1 = newNode(n1.op, [numberNode(mv, true), n1a1])
+              }
+              if(n2a0.op !== Model.NUM && (mv = mathValue(normalize(n2a0), true))) {
+                n2 = newNode(n2.op, [numberNode(mv, true), n2a1])
+              }
+            }
+          }
+        }
+      }
+    }
     if(formulaKind(n1) !== formulaKind(n2)) {
       var result = false
     }else {
@@ -10174,11 +10220,14 @@ var BigDecimal = function(MathContext) {
       Assert.setLocation(n1.location)
     }
     n1 = normalize(n1);
-    var mv;
+    var mv, node;
     if(mv = mathValue(n1, true, true)) {
-      var node = scale(n1)
+      node = scale(n1)
     }else {
-      var node = normalizeCalculate(scale(expand(normalize(simplify(expand(n1))))))
+      var decimalPlaces = Model.option("decimalPlaces", 20);
+      node = normalizeCalculate(scale(expand(normalize(simplify(expand(n1))))));
+      Model.option("decimalPlaces", decimalPlaces);
+      node = scale(node)
     }
     var result = stripTrailingZeros(scale(numberNode(mathValue(node, Model.env, true, true))));
     Assert.setLocation(prevLocation);
