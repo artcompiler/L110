@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - ba88ebf
+ * Mathcore unversioned - 3a22633
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -9196,8 +9196,14 @@ var BigDecimal = function(MathContext) {
       }, variable:function(node) {
         var val;
         if(val = Model.env[node.args[0]]) {
-          if(val.type === "unit" && val.value !== 1) {
-            node = multiplyNode([numberNode(val.value, true), variableNode(val.base)])
+          if(val.type === "unit") {
+            if(val.base === "\\radian") {
+              node = numberNode(val.value)
+            }else {
+              if(val.value !== 1) {
+                node = multiplyNode([numberNode(val.value, true), variableNode(val.base)])
+              }
+            }
           }else {
             if(val.type === "const") {
               node = numberNode(val.value, true)
