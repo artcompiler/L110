@@ -829,7 +829,6 @@ var _rules2 = require("./rules.js");
       }
       return node;
     }
-
     function lookup(word) {
       if (!word) {
         return "";
@@ -851,7 +850,6 @@ var _rules2 = require("./rules.js");
       }
       return val;
     }
-
     function normalizeFormatObject(fmt) {
       // Normalize the fmt object to an array of objects
       var list = [];
@@ -884,7 +882,6 @@ var _rules2 = require("./rules.js");
       }
       return list;
     }
-
     function checkNumberType(fmt, node) {
       var fmtList = normalizeFormatObject(fmt);
       return fmtList.some(function (f) {
@@ -969,6 +966,47 @@ var _rules2 = require("./rules.js");
         }
       });
     }
+    function checkMatrixType(fmt, node) {
+      var fmtList = normalizeFormatObject(fmt);
+      return fmtList.some(function (f) {
+        var code = f.code;
+        var length = f.length;
+        switch (code) {
+          case "simpleSmallRowMatrix":
+          case "smallRowMatrix":
+            return node.op === _model.Model.MATRIX && node.m === 1 && node.n < 4;
+          case "simpleSmallColumnMatrix":
+          case "smallColumnMatrix":
+            return node.op === _model.Model.MATRIX && node.m < 4 && node.n === 1;
+          case "simpleSmallMatrix":
+          case "smallMatrix":
+            return node.op === _model.Model.MATRIX && node.m < 4 && node.n < 4;
+          case "matrix":
+            return node.op === _model.Model.MATRIX;
+          case "row":
+            return node.op === _model.Model.ROW;
+          case "column":
+            return node.op === _model.Model.COL;
+          default:
+            return false;
+        }
+      });
+    }
+    function isSimpleExpression(node) {
+      if (node.op === _model.Model.NUM || node.op === _model.Model.VAR || typeof node === "string") {
+        return true;
+      }
+      return false;
+    }
+    function hasSimpleExpressions(node) {
+      (0, _assert.assert)(node.op === _model.Model.MATRIX || node.op === _model.Model.ROW || node.op === _model.Model.COL);
+      return (0, _backward.every)(node.args, function (n) {
+        if (n.op === _model.Model.MATRIX || n.op === _model.Model.ROW || n.op === _model.Model.COL) {
+          return hasSimpleExpressions(n);
+        }
+        return isSimpleExpression(n);
+      });
+    }
     function matchType(pattern, node) {
       var types = _model.Model.option("types");
       if (pattern.op === _model.Model.TYPE && pattern.args[0].op === _model.Model.VAR) {
@@ -985,6 +1023,17 @@ var _rules2 = require("./rules.js");
             return checkNumberType(pattern.args[0], node);
           case "variable":
             return node.op === _model.Model.VAR;
+          case "simpleSmallRowMatrix":
+          case "simpleSmallColumnMatrix":
+          case "simpleSmallMatrix":
+            return checkMatrixType(pattern.args[0], node) && hasSimpleExpressions(node);
+          case "smallRowMatrix":
+          case "smallColumnMatrix":
+          case "smallMatrix":
+          case "matrix":
+          case "row":
+          case "column":
+            return checkMatrixType(pattern.args[0], node);
           default:
             var type = types[name];
             if (type) {
@@ -1067,14 +1116,36 @@ var _rules2 = require("./rules.js");
       }
       return str;
     }
-    function expand(template, args) {
+    function expand(template, args, env) {
       // Use first matched template for now.
       var str = template.str;
       if (str && args) {
         var count = str.split("%").length - 1;
         if (str.indexOf("%%") >= 0) {
           str = str.replace("%%", args[0].args[0]);
-        } else if (count === 2 && args.length > 2) {
+        }
+        if (str.indexOf("%*") >= 0) {
+          (function () {
+            var s = "";
+            (0, _backward.forEach)(args, function (arg) {
+              if (s !== "") {
+                s += " ";
+              }
+              // Replicate template for each argument.
+              s += str.replace("%*", arg.args[0]).replace("%M", arg.m).replace("%N", arg.n);
+            });
+            str = s; // Overwrite str.
+          })();
+        }
+        if (str.indexOf("%M") >= 0) {
+          (0, _assert.assert)(env.m);
+          str = str.replace("%M", env.m);
+        }
+        if (str.indexOf("%N") >= 0) {
+          (0, _assert.assert)(env.n);
+          str = str.replace("%N", env.n);
+        }
+        if (count === 2 && args.length > 2) {
           str = expandBinary(str, args);
         } else {
           (0, _backward.forEach)(args, function (arg, i) {
@@ -1279,10 +1350,11 @@ var _rules2 = require("./rules.js");
       if (str.indexOf("%%") >= 0) {
         return [node];
       }
-      var a = str.split("%");
-      var nn = a.filter(function (n) {
-        return n[0] === "%" || !isNaN(+n[0]);
-      });
+      // let a = str.split("%");  // ["..", "1..", "2.."]
+      // let nn = a.filter(n => {
+      //   // Include '%1', %M, %N
+      //   return !isNaN(+n[0]) || n[0] === "M" || n[0] === "N";
+      // });
       return node.args;
     }
     function translate(root, rules) {
@@ -1421,29 +1493,28 @@ var _rules2 = require("./rules.js");
         },
         comma: function comma(node) {
           if (node.op === _model.Model.MATRIX || node.op === _model.Model.ROW || node.op === _model.Model.COL) {
-            var _ret = function () {
-              var matches = match(patterns, node);
-              if (matches.length === 0) {
-                return {
-                  v: node
-                };
-              }
-              // Use first match for now.
-              var template = matchedTemplate(rules, matches, node.args.length);
-              var args = [];
-              var argRules = getRulesForArgs(template, rules);
-              var nodeArgs = getNodeArgsForTemplate(node, template);
-              (0, _backward.forEach)(nodeArgs, function (n, i) {
-                args = args.concat(translate(n, [globalRules, argRules]));
-              });
-              return {
-                v: expand(template, args)
-              };
-            }();
-
-            if ((typeof _ret === "undefined" ? "undefined" : _typeof(_ret)) === "object") return _ret.v;
-          } else {
             var _ret2 = function () {
+              var env = {};
+              if (node.op === _model.Model.MATRIX) {
+                (0, _assert.assert)(node.args[0].op === _model.Model.ROW);
+                (0, _assert.assert)(node.args[0].args[0].op === _model.Model.COL);
+                node.m = env.m = node.args[0].args.length;
+                node.n = env.n = node.args[0].args[0].args.length;
+                (0, _backward.forEach)(node.args, function (n, i) {
+                  // matrix dimensions
+                  n.m = i + 1;
+                });
+              } else if (node.op === _model.Model.ROW) {
+                (0, _backward.forEach)(node.args, function (n, i) {
+                  n.m = i + 1;
+                  n.n = undefined;
+                });
+              } else {
+                (0, _backward.forEach)(node.args, function (n, i) {
+                  n.m = node.m;
+                  n.n = i + 1;
+                });
+              }
               var matches = match(patterns, node);
               if (matches.length === 0) {
                 return {
@@ -1452,18 +1523,42 @@ var _rules2 = require("./rules.js");
               }
               // Use first match for now.
               var template = matchedTemplate(rules, matches, node.args.length);
+              var args = [];
               var argRules = getRulesForArgs(template, rules);
               var nodeArgs = getNodeArgsForTemplate(node, template);
-              var args = [];
               (0, _backward.forEach)(nodeArgs, function (n, i) {
                 args = args.concat(translate(n, [globalRules, argRules]));
+                args[i].m = n.m;
+                args[i].n = n.n;
               });
               return {
-                v: expand(template, args)
+                v: expand(template, args, env)
               };
             }();
 
             if ((typeof _ret2 === "undefined" ? "undefined" : _typeof(_ret2)) === "object") return _ret2.v;
+          } else {
+            var _ret3 = function () {
+              var matches = match(patterns, node);
+              if (matches.length === 0) {
+                return {
+                  v: node
+                };
+              }
+              // Use first match for now.
+              var template = matchedTemplate(rules, matches, node.args.length);
+              var argRules = getRulesForArgs(template, rules);
+              var nodeArgs = getNodeArgsForTemplate(node, template);
+              var args = [];
+              (0, _backward.forEach)(nodeArgs, function (n, i) {
+                args = args.concat(translate(n, [globalRules, argRules]));
+              });
+              return {
+                v: expand(template, args)
+              };
+            }();
+
+            if ((typeof _ret3 === "undefined" ? "undefined" : _typeof(_ret3)) === "object") return _ret3.v;
           }
         },
         equals: function equals(node) {
@@ -1479,7 +1574,7 @@ var _rules2 = require("./rules.js");
           (0, _backward.forEach)(nodeArgs, function (n, i) {
             args = args.concat(translate(n, [globalRules, argRules]));
           });
-          return expand(template, args);
+          return expand(template, args, node);
         },
         paren: function paren(node) {
           //assert (node.args.length === 1);
@@ -1948,7 +2043,7 @@ var Core = exports.Core = function () {
       valueNode = value != undefined ? _model.Model.create(value, "spec") : undefined;
       _model.Model.popEnv();
     } catch (e) {
-      // console.log(e.stack);
+      //      console.log(e.stack);
       pendingError = e;
     }
     var evaluate = function evaluate(solution, resume) {
@@ -1974,7 +2069,7 @@ var Core = exports.Core = function () {
         _model.Model.popEnv();
         resume(null, result);
       } catch (e) {
-        // console.log(e.stack);
+        //        console.log(e.stack);
         var _message = e.message;
         resume({
           result: null,
@@ -2979,7 +3074,9 @@ var Model = exports.Model = function () {
             eat(TK_CARET, { oneCharToken: true }); // If we have a subscript, then we expect a superscript
             args.push(primaryExpr());
           }
-          args.push(commaExpr());
+          if (hd()) {
+            args.push(commaExpr());
+          }
           // Finish the log function
           return newNode(tokenToOperator[tk], args);
           break;
@@ -4047,7 +4144,7 @@ var Model = exports.Model = function () {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-var rules = exports.rules = { "words": { "A": "cap a", "B": "cap b", "C": "cap c", "D": "cap d", "E": "cap e", "F": "cap f", "G": "cap g", "H": "cap h", "I": "cap i", "J": "cap j", "K": "cap k", "L": "cap l", "M": "cap m", "N": "cap n", "O": "cap o", "P": "cap p", "Q": "cap q", "R": "cap r", "S": "cap s", "T": "cap t", "U": "cap u", "V": "cap v", "W": "cap w", "X": "cap x", "Y": "cap y", "Z": "cap z", "\\varepsilon": "epsilon", "\\Alpha": "cap alpha", "\\Beta": "cap beta", "\\Gamma": "cap gamma", "\\Delta": "cap delta", "\\Epsilon": "cap epsilon", "\\Zeta": "cap zeta", "\\Eta": "cap eta", "\\Theta": "cap theta", "\\Iota": "cap iota", "\\Kappa": "cap kappa", "\\Lambda": "cap lambda", "\\Mu": "cap mu", "\\Nu": "cap nu", "\\Xi": "cap xi", "\\Omicron": "cap omicron", "\\Pi": "cap pi", "\\Rho": "cap rho", "\\Sigma": "cap sigma", "\\Tau": "cap tau", "\\Upsilon": "cap upsilon", "\\Phi": "cap phi", "\\Chi": "cap chi", "\\Psi": "cap psi", "\\Omega": "cap omega", "\\ldots": "dot dot dot", "\\vdots": "vertical dot dot dot", "\\ddots": "diagonal dot dot dot", "\\infty": "infinity", "\\measuredangle": "measure of angle", "\\cong": "congruent", "\\sin": "sine", "\\cos": "cosine", "\\tan": "tangent", "\\csc": "cosecant", "\\sec": "secant", "\\cot": "cotangent", "\\sinh": "hyperbolic sine", "\\cosh": "hyperbolic cosine", "\\tanh": "hyperbolic tangent", "\\csch": "hyperbolic cosecant", "\\sech": "hyperbolic secant", "\\coth": "hyperbolic cotangent", "\\ln": "natural log", "\\log": "log", "\\lg": "log", "'": "prime", "\\notin": "is not in", "\\mathbb": "bold", "\\backslash": "backslash", "\\emptyset": "empty set", "\\circledot": "circle", "\\longleftarrow": "long left arrow", "\\longleftrightarrow": "long left right arrow", "\\overleftrightarrow": "over left right arrow", "\\overrightarrow": "over right arrow", "\\overleftarrow": "over left arrow", "\\leftarrow": "left arrow", "\\addmatrixcol": "add matrix columns", "\\addmatrixrow": "add matrix rows" }, "types": { "functionName": ["f", "g", "h", "F", "G", "H", "\\ln", "\\lg", "\\log", "\\sin", "\\cos", "\\tan", "\\csc", "\\sec", "\\cot", "\\sinh", "\\cosh", "\\tanh", "\\csch", "\\sech", "\\coth"], "oneByThreeMatrix": ["\\begin{bmatrix}?&?&?\\end{bmatrix}"], "functionComposition": ["(\\type{functionName}+\\type{functionName})", "(\\type{functionName}-\\type{functionName})", "(\\type{functionName}\\cdot\\type{functionName})", "(\\type{simpleFractionExtended})"], "function": ["\\type{function}^{?}", "\\type{function}_{?}", "\\type{functionComposition}", "\\type{functionName}"], "functionCall": ["\\type{function}(?)", "\\type{function}[?]", "\\type{variable}(\\type{number})", "\\type{variable}(\\type{variable})", "\\type{variable}(?,?)", "\\type{variable}[\\type{number}]", "\\type{variable}[\\type{variable}]", "\\type{variable}[?,?]"], "commonFraction": ["\\frac{\\type{integer}}{2}", "\\frac{\\type{integer}}{3}", "\\frac{\\type{integer}}{4}", "\\frac{\\type{integer}}{5}", "\\frac{\\type{integer}}{6}", "\\frac{\\type{integer}}{7}", "\\frac{\\type{integer}}{8}", "\\frac{\\type{integer}}{9}", "\\frac{\\type{integer}}{10}"], "simpleExpression": ["\\type{commonFraction}", "\\type{function}(?)", "\\type{function}[?]", "\\type{number}", "-\\type{variable}", "\\type{variable}", "\\type{number}\\degrees", "\\type{variable}\\degrees", "\\type{variable}", "\\type{variable}\\type{variable}", "\\type{number}\\type{variable}"], "simpleFractionPart": ["-\\type{commonFraction}", "\\type{simpleExpression}", "\\type{commonFraction}"], "simpleFractionExtended": ["\\frac{\\type{simpleFractionPart}}{\\type{simpleFractionPart}}"], "simpleNumericExponent": ["\\type{number}", "\\type{commonFraction}"], "simpleExponent": ["\\type{simpleNumericExponent}", "\\type{variable}"] }, "rules": { "\\sum_?^??": [{ "the sum from %1 to %2 of %3": { "?=?": "%1 equals %2" } }], "\\sum_?^?": [{ "the sum from %1 to %2": { "?=?": "%1 equals %2", "??": "%1" } }], "\\sum ?": ["yyy the sum of %1"], "? \\text{and} ?": ["%1 %2"], "1g": ["1 gram"], "?g": ["%1 grams"], "1s": ["1 second"], "?s": ["%1 seconds"], "1m": ["1 meter"], "?m": ["%1 meters"], "1L": ["1 liter"], "?L": ["%1 liters"], "1kg": ["1 kilogram"], "?kg": ["%1 kilograms"], "1ks": ["1 kilosecond"], "?ks": ["%1 kiloseconds"], "1km": ["1 kilometer"], "?km": ["%1 kilometers"], "1kL": ["1 kiloliter"], "?kL": ["%1 kiloliters"], "1cg": ["1 centigram"], "?cg": ["%1 centigrams"], "1cs": ["1 centisecond"], "?cs": ["%1 centiseconds"], "1cm": ["1 centimeter"], "?cm": ["%1 centimeters"], "1cL": ["1 centiliter"], "?cL": ["%1 centiliters"], "1mg": ["1 milligram"], "?mg": ["%1 milligrams"], "1ms": ["1 millisecond"], "?ms": ["%1 milliseconds"], "1mm": ["1 millimeter"], "?mm": ["%1 millimeters"], "1mL": ["1 milliliter"], "?mL": ["%1 milliliters"], "1\\mug": ["1 microgram"], "?\\mug": ["%1 micrograms"], "1\\mus": ["1 microsecond"], "?\\mus": ["%1 microseconds"], "1\\mum": ["1 micrometer"], "?\\mum": ["%1 micrometers"], "1\\muL": ["1 microliter"], "?\\muL": ["%1 microliters"], "1ng": ["1 nanogram"], "?ng": ["%1 nanograms"], "1ns": ["1 nanosecond"], "?ns": ["%1 nanoseconds"], "1nm": ["1 nanometer"], "?nm": ["%1 nanometers"], "1nL": ["1 nanoliter"], "?nL": ["%1 nanoliters"], "1lb": ["1 pound"], "?lb": ["%1 pounds"], "1in": ["1 inch"], "?in": ["%1 inches"], "1ft": ["1 foot"], "?ft": ["%1 feet"], "1mi": ["1 mile"], "?mi": ["%1 miles"], "1cup": ["1 cup"], "?cup": ["%1 cups"], "1pt": ["1 pint"], "?pt": ["%1 pints"], "1qt": ["1 quart"], "?qt": ["%1 quarts"], "1gal": ["1 gallon"], "?gal": ["%1 gallons"], "1oz": ["1 ounce"], "?oz": ["%1 ounces"], "\\mathbb{R}": ["the real numbers"], "\\mathbb{C}": ["the complex numbers"], "\\mathbb{Z}": ["the integers"], "\\mathbb{Q}": ["the rational numbers"], "\\mathbb{N}": ["the natural numbers"], "\\mathbb{Z}^+": ["the positive integers"], "\\mathbb{?}^?": [{ "%2": { "\\type{integer}": "%1", "R": "r", "C": "c", "Z": "z", "Q": "q", "N": "n", "?^?": "%1 %2" } }], "\\mathbb{?}^3": ["%1 three "], "\\mathbb{?}^n": ["%1 n"], "\\mathbb{?}^\\infty": ["%1 infinty"], "\\Delta": ["triangle"], "$?": ["%2 dollars"], "?'''": ["%1 triple prime"], "?''": ["%1 double prime"], "?'": ["%1 prime"], "?, ?": ["%1 comma %2"], "\\type{commonFraction}": [{ "%%": { "\\frac{1}{2}": "1 half", "\\frac{\\type{integer}}{2}": "%1 halves", "\\frac{1}{3}": "1 third", "\\frac{\\type{integer}}{3}": "%1 thirds", "\\frac{1}{4}": "1 fourth", "\\frac{\\type{integer}}{4}": "%1 fourths", "\\frac{1}{5}": "1 fifth", "\\frac{\\type{integer}}{5}": "%1 fifths", "\\frac{1}{6}": "1 sixth", "\\frac{\\type{integer}}{6}": "%1 sixths", "\\frac{1}{7}": "1 seventh", "\\frac{\\type{integer}}{7}": "%1 sevenths", "\\frac{1}{8}": "1 eighth", "\\frac{\\type{integer}}{8}": "%1 eighths", "\\frac{1}{9}": "1 ninths", "\\frac{\\type{integer}}{9}": "%1 ninths", "\\frac{1}{10}": "1 tenths", "\\frac{\\type{integer}}{10}": "%1 tenths" } }], "\\type{simpleFractionExtended}": ["%1 over %2"], "\\frac{?}{?}": ["the fraction with numerator %1 and denominator %2"], "?^{-1}": ["%1 inverse"], "?^{0}": ["%1 to the 0 power"], "?^{2}": ["%1 squared"], "?^{3}": ["%1 cubed"], "\\type{function}^{\\type{integer}}": ["%2th power of %1"], "?^\\type{integer}": ["%1 to the %2th power"], "?^\\type{variable}": ["%1 to the %2th power"], "?^{-\\type{integer}}": ["%1 to the %2 power"], "?^{\\type{decimal}}": ["%1 raised to the %2 power"], "?^{\\type{simpleExponent}}^{2}": ["%1 raised to the %2 power"], "?^{\\type{simpleExponent}}^{3}": ["%1 raised to the %2 power"], "?^{\\type{simpleNumericExponent}\\type{variable}}^{2}": ["%1 raised to the %2 power"], "?^{\\type{simpleNumericExponent}\\type{variable}}^{3}": ["%1 raised to the %2 power"], "?^?^?": ["%1 raised to the exponent %2 end exponent"], "?^?": ["%1 raised to the %2 power"], "\\sqrt{\\type{simpleExpression}}": ["square root of %1"], "\\sqrt[3]{\\type{simpleExpression}}": ["cube root of %1"], "\\sqrt[\\type{integer}]{\\type{simpleExpression}}": ["%2th root of %1"], "\\sqrt{?}": [{ "options": { "EndRoot": true }, "value": "square root of %1 end root" }, "square root of %1"], "\\sqrt[3]{?}": [{ "options": { "EndRoot": true }, "value": "cube root of %1 end root" }, "cube root of %1"], "\\sqrt[\\type{integer}]{?}": [{ "options": { "EndRoot": true }, "value": "%2th root of %1 end root" }, "%2th root of %1"], "\\sqrt[?]{?}": [{ "options": { "EndRoot": true }, "value": "%2th root of %1 end root" }, "%2th root of %1"], "\\log_{?} ?": [{ "log base %1 of %2": { "\\log_{?}": "%2" } }], "\\type{function}(?)": ["%1 of %2"], "\\type{function}[?]": ["%1 of %2"], "\\sin ?": ["sine %2"], "\\cos{?}": ["cosine %2"], "\\tan{?}": ["tangent %2"], "\\csc{?}": ["cosecant %2"], "\\sec{?}": ["secant %2"], "\\cot{?}": ["cotangent %2"], "\\sin^{-1}{?}": ["inverse sine %2"], "\\cos^{-1}{?}": ["inverse cosine %2"], "\\tan^{-1}{?}": ["inverse tangent %2"], "\\csc^{-1}{?}": ["inverse cosecant %2"], "\\sec^{-1}{?}": ["inverse secant %2"], "\\cot^{-1}{?}": ["inverse cotangent %2"], "\\sinh^{-1}{?}": ["inverse hyperbolic sine %2"], "\\cosh^{-1}{?}": ["inverse hyperbolic cosine %2"], "\\tanh^{-1}{?}": ["inverse hyperbolic tangent %2"], "\\csch^{-1}{?}": ["inverse hyperbolic cosecant %2"], "\\sech^{-1}{?}": ["inverse hyperbolic secant %2"], "\\coth^{-1}{?}": ["inverse hyperbolic cotangent %2"], "? \\cong ?": ["%1 is congruent to %2"], "? \\parallel ?": ["%1 is parallel to %2"], "? \\nparallel ?": ["%1 is not parallel to %2"], "? \\sim ?": ["%1 approximates %2"], "\\partial": ["partial derivative"], "\\lim_{?\\to?}": ["limit x to y"], "\\type{mixedFraction}": ["%1 and %2"], "\\type{scientific}": ["%1 times %2"], "\\type{fraction}": ["%1 over %2"], "\\type{integer}": ["%1"], "\\type{decimal}": ["%1"], "\\type{number}": ["%1"], "?(?)": ["%1 times %2"], "(?)?": ["%1 times %2"], "(?)(?)": ["%1 times %2"], "? \\degree": ["%1 degrees"], "?^\\prime": ["%1 prime"], "\\prod ?": ["the product of %1"], "\\int_?^? ?": ["integral on the interval from %1 to %2 of %3"], "\\int ?": ["integral %1"], "\\bigcup ?": ["union %1"], "? \\cup ?": ["union of %1 and %2"], "\\bigcap ?": ["intersection %1"], "? \\cap ?": ["intersection of %1 and %2"], "? \\not\\in ?": ["%1 is not in %2"], "? \\not\\ni ?": ["%1 does not contain %2"], "? \\not\\subseteq ?": ["%1 is not a subset of %2"], "? \\not\\subset ?": ["%1 is not a strict subset of %2"], "? \\not\\supseteq ?": ["%1 is not a superset of %2"], "? \\not\\supset ?": ["%1 is not a strict superset of %2"], "? \\in ?": ["%1 is in %2"], "? \\ni ?": ["%1 contains %2"], "? \\subseteq ?": ["%1 is a subset of %2"], "? \\subset ?": ["%1 is a strict subset of %2"], "? \\supseteq ?": ["%1 is a superset of %2"], "? \\supset ?": ["%1 is a strict superset of %2"], "{}": ["left brace right brace"], "[]": ["left bracket right bracket"], "{?}": ["start set %1 end set"], "[?,?]": ["left bracket %1 right bracket"], "(?,?]": ["left parenthesis %1 right bracket"], "[?,?)": ["left bracket %1 right parenthesis"], "? \\rightarrow ?": ["%1 right arrow %2"], "?\\'": ["%1 prime"], "?\\overline{?}": ["%1 modifying above %2 with bar"], "?:N+\\frac{?:N}{?:N}": ["%1 and %2"], "? \\text{dx}": ["with respect to x of %1"], "?_?": ["%1 sub %2"], "?:?": ["ratio of %1 to %2"], "? \\perp ?": ["%1 perpendicular to %2"], "? \\propto ?": ["%1 proportional to %2"], "?\\ne?": ["%1 not equal to %2"], "?+?": ["%1 plus %2"], "?-?": ["%1 minus %2"], "?*?": ["%1 times %2"], "?\\cdot?": ["%1 times %2"], "?\\cdotp?": ["%1 times %2"], "?<?": ["%1 is less than %2"], "?<=?": ["%1 is less than or equal to %2"], "?>?": ["%1 is greater than %2"], "?>=?": ["%1 is greater than or equal to %2"], "?=?": ["%1 equals %2"], "?\\approx?": ["%1 almost equal to %2"], "-?": ["negative %1"], "?!": ["%1 factorial"], "?%": ["%1 percent"], "? \\pm ?": ["%1 plus or minus %2"], "? \\ne ?": ["%1 not equal to %2"], "? \\ngtr ?": ["%1 not greater than %2"], "? \\nless ?": ["%1 not less than %2"], "? \\div ?": ["%1 divided by %2"], "? \\backslash ?": ["%1 left divided by %2"], "\\overline{?}": ["line segment %1"], "?^? ?": ["%1 %2"], "? ?^?": ["%1 %2"], "(\\type{simpleExpression})": ["%1"], "(?)": ["open paren %1 close paren"], "[\\type{simpleExpression}]": ["%1"], "[?]": ["open bracket %1 close bracket"], "|\\type{simpleExpression}|": ["absolute value of %1"], "|?|": ["start absolute value %1 end absolute value"], "{?} ?": ["%1 %2"], "? ?": ["%1 %2"], "?": ["%1 "] } };
+var rules = exports.rules = { "words": { "A": "cap a", "B": "cap b", "C": "cap c", "D": "cap d", "E": "cap e", "F": "cap f", "G": "cap g", "H": "cap h", "I": "cap i", "J": "cap j", "K": "cap k", "L": "cap l", "M": "cap m", "N": "cap n", "O": "cap o", "P": "cap p", "Q": "cap q", "R": "cap r", "S": "cap s", "T": "cap t", "U": "cap u", "V": "cap v", "W": "cap w", "X": "cap x", "Y": "cap y", "Z": "cap z", "\\varepsilon": "epsilon", "\\Alpha": "cap alpha", "\\Beta": "cap beta", "\\Gamma": "cap gamma", "\\Delta": "cap delta", "\\Epsilon": "cap epsilon", "\\Zeta": "cap zeta", "\\Eta": "cap eta", "\\Theta": "cap theta", "\\Iota": "cap iota", "\\Kappa": "cap kappa", "\\Lambda": "cap lambda", "\\Mu": "cap mu", "\\Nu": "cap nu ", "\\Xi": "cap xi", "\\Omicron": "cap omicron", "\\Pi": "cap pi", "\\Rho": "cap rho", "\\Sigma": "cap sigma", "\\Tau": "cap tau", "\\Upsilon": "cap upsilon", "\\Phi": "cap phi", "\\Chi": "cap chi", "\\Psi": "cap psi", "\\Omega": "cap omega", "\\ldots": "dot dot dot", "\\vdots": "vertical dot dot dot", "\\ddots": "diagonal dot dot dot", "\\infty": "infinity", "\\measuredangle": "measure of angle", "\\cong": "congruent", "\\sin": "sine", "\\cos": "cosine", "\\tan": "tangent", "\\csc": "cosecant", "\\sec": "secant", "\\cot": "cotangent", "\\sinh": "hyperbolic sine", "\\cosh": "hyperbolic cosine", "\\tanh": "hyperbolic tangent", "\\csch": "hyperbolic cosecant", "\\sech": "hyperbolic secant", "\\coth": "hyperbolic cotangent", "\\ln": "natural log", "\\log": "log", "\\lg": "log", "'": "prime", "\\notin": "is not in", "\\mathbb": "bold", "\\backslash": "backslash", "\\emptyset": "empty set", "\\circledot": "circle", "\\longleftarrow": "long left arrow", "\\longleftrightarrow": "long left right arrow", "\\overleftrightarrow": "over left right arrow", "\\overrightarrow": "over right arrow", "\\overleftarrow": "over left arrow", "\\leftarrow": "left arrow", "\\addmatrixcol": "add matrix columns", "\\addmatrixrow": "add matrix rows" }, "types": { "functionName": ["f", "g", "h", "F", "G", "H", "\\ln", "\\lg", "\\log", "\\sin", "\\cos", "\\tan", "\\csc", "\\sec", "\\cot", "\\sinh", "\\cosh", "\\tanh", "\\csch", "\\sech", "\\coth"], "matrix": ["\\begin{bmatrix}?&?&?\\end{bmatrix}"], "functionComposition": ["(\\type{functionName}+\\type{functionName})", "(\\type{functionName}-\\type{functionName})", "(\\type{functionName}\\cdot\\type{functionName})", "(\\type{simpleFractionExtended})"], "function": ["\\type{function}^{?}", "\\type{function}_{?}", "\\type{functionComposition}", "\\type{functionName}"], "functionCall": ["\\type{function}(?)", "\\type{function}[?]", "\\type{variable}(\\type{number})", "\\type{variable}(\\type{variable})", "\\type{variable}(?,?)", "\\type{variable}[\\type{number}]", "\\type{variable}[\\type{variable}]", "\\type{variable}[?,?]"], "commonFraction": ["\\frac{\\type{integer}}{2}", "\\frac{\\type{integer}}{3}", "\\frac{\\type{integer}}{4}", "\\frac{\\type{integer}}{5}", "\\frac{\\type{integer}}{6}", "\\frac{\\type{integer}}{7}", "\\frac{\\type{integer}}{8}", "\\frac{\\type{integer}}{9}", "\\frac{\\type{integer}}{10}"], "simpleExpression": ["\\type{commonFraction}", "\\type{function}(?)", "\\type{function}[?]", "\\type{number}", "-\\type{variable}", "\\type{variable}", "\\type{number}\\degrees", "\\type{variable}\\degrees", "\\type{variable}", "\\type{variable}\\type{variable}", "\\type{number}\\type{variable}"], "simpleFractionPart": ["-\\type{commonFraction}", "\\type{simpleExpression}", "\\type{commonFraction}"], "simpleFractionExtended": ["\\frac{\\type{simpleFractionPart}}{\\type{simpleFractionPart}}"], "simpleNumericExponent": ["\\type{number}", "\\type{commonFraction}"], "simpleExponent": ["\\type{simpleNumericExponent}", "\\type{variable}"] }, "rules": { "\\type{simpleSmallRowMatrix}": [{ "The 1 by %N row matrix %1": { "\\type{row}": "%1", "\\type{column}": "%*" } }], "\\type{smallRowMatrix}": [{ "The 1 by %N row matrix %1": { "\\type{row}": "%1", "\\type{column}": "column %N %*" } }], "\\type{simpleSmallColumnMatrix}": [{ "The %M by 1 column matrix %1": { "\\type{row}": "%*", "\\type{column}": "%1" } }], "\\type{smallColumnMatrix}": [{ "The %M by 1 column matrix %1": { "\\type{row}": "row %M %*", "\\type{column}": "%1" } }], "\\type{simpleSmallMatrix}": [{ "The %M by %N matrix %1": { "\\type{row}": "row %M %*", "\\type{column}": "%*" } }], "\\type{matrix}": [{ "The %M by %N matrix, %1": { "\\type{row}": "row %M %*", "\\type{column}": "column %N %*" } }], "\\sum_?^??": [{ "the sum from %1 to %2 of %3": { "?=?": "%1 equals %2" } }], "\\sum_?^?": [{ "the sum from %1 to %2": { "?=?": "%1 equals %2", "??": "%1" } }], "\\sum ?": ["yyy the sum of %1"], "? \\text{and} ?": ["%1 %2"], "1g": ["1 gram"], "?g": ["%1 grams"], "1s": ["1 second"], "?s": ["%1 seconds"], "1m": ["1 meter"], "?m": ["%1 meters"], "1L": ["1 liter"], "?L": ["%1 liters"], "1kg": ["1 kilogram"], "?kg": ["%1 kilograms"], "1ks": ["1 kilosecond"], "?ks": ["%1 kiloseconds"], "1km": ["1 kilometer"], "?km": ["%1 kilometers"], "1kL": ["1 kiloliter"], "?kL": ["%1 kiloliters"], "1cg": ["1 centigram"], "?cg": ["%1 centigrams"], "1cs": ["1 centisecond"], "?cs": ["%1 centiseconds"], "1cm": ["1 centimeter"], "?cm": ["%1 centimeters"], "1cL": ["1 centiliter"], "?cL": ["%1 centiliters"], "1mg": ["1 milligram"], "?mg": ["%1 milligrams"], "1ms": ["1 millisecond"], "?ms": ["%1 milliseconds"], "1mm": ["1 millimeter"], "?mm": ["%1 millimeters"], "1mL": ["1 milliliter"], "?mL": ["%1 milliliters"], "1\\mug": ["1 microgram"], "?\\mug": ["%1 micrograms"], "1\\mus": ["1 microsecond"], "?\\mus": ["%1 microseconds"], "1\\mum": ["1 micrometer"], "?\\mum": ["%1 micrometers"], "1\\muL": ["1 microliter"], "?\\muL": ["%1 microliters"], "1ng": ["1 nanogram"], "?ng": ["%1 nanograms"], "1ns": ["1 nanosecond"], "?ns": ["%1 nanoseconds"], "1nm": ["1 nanometer"], "?nm": ["%1 nanometers"], "1nL": ["1 nanoliter"], "?nL": ["%1 nanoliters"], "1lb": ["1 pound"], "?lb": ["%1 pounds"], "1in": ["1 inch"], "?in": ["%1 inches"], "1ft": ["1 foot"], "?ft": ["%1 feet"], "1mi": ["1 mile"], "?mi": ["%1 miles"], "1cup": ["1 cup"], "?cup": ["%1 cups"], "1pt": ["1 pint"], "?pt": ["%1 pints"], "1qt": ["1 quart"], "?qt": ["%1 quarts"], "1gal": ["1 gallon"], "?gal": ["%1 gallons"], "1oz": ["1 ounce"], "?oz": ["%1 ounces"], "\\mathbb{R}": ["the real numbers"], "\\mathbb{C}": ["the complex numbers"], "\\mathbb{Z}": ["the integers"], "\\mathbb{Q}": ["the rational numbers"], "\\mathbb{N}": ["the natural numbers"], "\\mathbb{Z}^+": ["the positive integers"], "\\mathbb{?}^?": [{ "%2": { "\\type{integer}": "%1", "R": "r", "C": "c", "Z": "z", "Q": "q", "N": "n", "?^?": "%1 %2" } }], "\\mathbb{?}^3": ["%1 three "], "\\mathbb{?}^n": ["%1 n"], "\\mathbb{?}^\\infty": ["%1 infinty"], "\\Delta": ["triangle"], "$?": ["%2 dollars"], "?'''": ["%1 triple prime"], "?''": ["%1 double prime"], "?'": ["%1 prime"], "?, ?": ["%1 comma %2"], "\\type{commonFraction}": [{ "%%": { "\\frac{1}{2}": "1 half", "\\frac{\\type{integer}}{2}": "%1 halves", "\\frac{1}{3}": "1 third", "\\frac{\\type{integer}}{3}": "%1 thirds", "\\frac{1}{4}": "1 fourth", "\\frac{\\type{integer}}{4}": "%1 fourths", "\\frac{1}{5}": "1 fifth", "\\frac{\\type{integer}}{5}": "%1 fifths", "\\frac{1}{6}": "1 sixth", "\\frac{\\type{integer}}{6}": "%1 sixths", "\\frac{1}{7}": "1 seventh", "\\frac{\\type{integer}}{7}": "%1 sevenths", "\\frac{1}{8}": "1 eighth", "\\frac{\\type{integer}}{8}": "%1 eighths", "\\frac{1}{9}": "1 ninths", "\\frac{\\type{integer}}{9}": "%1 ninths", "\\frac{1}{10}": "1 tenths", "\\frac{\\type{integer}}{10}": "%1 tenths" } }], "\\type{simpleFractionExtended}": ["%1 over %2"], "\\frac{?}{?}": ["the fraction with numerator %1 and denominator %2"], "?^{-1}": ["%1 inverse"], "?^{0}": ["%1 to the 0 power"], "?^{2}": ["%1 squared"], "?^{3}": ["%1 cubed"], "\\type{function}^{\\type{integer}}": ["%2th power of %1"], "?^\\type{integer}": ["%1 to the %2th power"], "?^\\type{variable}": ["%1 to the %2th power"], "?^{-\\type{integer}}": ["%1 to the %2 power"], "?^{\\type{decimal}}": ["%1 raised to the %2 power"], "?^{\\type{simpleExponent}}^{2}": ["%1 raised to the %2 power"], "?^{\\type{simpleExponent}}^{3}": ["%1 raised to the %2 power"], "?^{\\type{simpleNumericExponent}\\type{variable}}^{2}": ["%1 raised to the %2 power"], "?^{\\type{simpleNumericExponent}\\type{variable}}^{3}": ["%1 raised to the %2 power"], "?^?^?": ["%1 raised to the exponent %2 end exponent"], "?^?": ["%1 raised to the %2 power"], "\\sqrt{\\type{simpleExpression}}": [{ "options": { "EndRoot": true }, "value": "square root of %1 end root" }, "square root of %1"], "\\sqrt[3]{\\type{simpleExpression}}": ["cube root of %1"], "\\sqrt[\\type{integer}]{\\type{simpleExpression}}": ["%2th root of %1"], "\\sqrt{?}": ["square root of %1 end root"], "\\sqrt[3]{?}": [{ "options": { "EndRoot": true }, "value": "cube root of %1 end root" }, "cube root of %1"], "\\sqrt[\\type{integer}]{?}": [{ "options": { "EndRoot": true }, "value": "%2th root of %1 end root" }, "%2th root of %1"], "\\sqrt[?]{?}": [{ "options": { "EndRoot": true }, "value": "%2th root of %1 end root" }, "%2th root of %1"], "\\log_{?} ?": [{ "log base %1 of %2": { "\\log_{?}": "%2" } }], "\\type{function}(?)": ["%1 of %2"], "\\type{function}[?]": ["%1 of %2"], "\\sin ?": ["sine %2"], "\\cos{?}": ["cosine %2"], "\\tan{?}": ["tangent %2"], "\\csc{?}": ["cosecant %2"], "\\sec{?}": ["secant %2"], "\\cot{?}": ["cotangent %2"], "\\sin^{-1}{?}": ["inverse sine %2"], "\\cos^{-1}{?}": ["inverse cosine %2"], "\\tan^{-1}{?}": ["inverse tangent %2"], "\\csc^{-1}{?}": ["inverse cosecant %2"], "\\sec^{-1}{?}": ["inverse secant %2"], "\\cot^{-1}{?}": ["inverse cotangent %2"], "\\sinh^{-1}{?}": ["inverse hyperbolic sine %2"], "\\cosh^{-1}{?}": ["inverse hyperbolic cosine %2"], "\\tanh^{-1}{?}": ["inverse hyperbolic tangent %2"], "\\csch^{-1}{?}": ["inverse hyperbolic cosecant %2"], "\\sech^{-1}{?}": ["inverse hyperbolic secant %2"], "\\coth^{-1}{?}": ["inverse hyperbolic cotangent %2"], "? \\cong ?": ["%1 is congruent to %2"], "? \\parallel ?": ["%1 is parallel to %2"], "? \\nparallel ?": ["%1 is not parallel to %2"], "? \\sim ?": ["%1 approximates %2"], "\\partial": ["partial derivative"], "\\lim_{?\\to?}": ["limit x to y"], "\\type{mixedFraction}": ["%1 and %2"], "\\type{scientific}": ["%1 times %2"], "\\type{fraction}": ["%1 over %2"], "\\type{integer}": ["%1"], "\\type{decimal}": ["%1"], "\\type{number}": ["%1"], "?(?)": ["%1 times %2"], "(?)?": ["%1 times %2"], "(?)(?)": ["%1 times %2"], "? \\degree": ["%1 degrees"], "?^\\prime": ["%1 prime"], "\\prod ?": ["the product of %1"], "\\int_?^? ?": ["integral on the interval from %1 to %2 of %3"], "\\int ?": ["integral %1"], "\\bigcup ?": ["union %1"], "? \\cup ?": ["union of %1 and %2"], "\\bigcap ?": ["intersection %1"], "? \\cap ?": ["intersection of %1 and %2"], "? \\not\\in ?": ["%1 is not in %2"], "? \\not\\ni ?": ["%1 does not contain %2"], "? \\not\\subseteq ?": ["%1 is not a subset of %2"], "? \\not\\subset ?": ["%1 is not a strict subset of %2"], "? \\not\\supseteq ?": ["%1 is not a superset of %2"], "? \\not\\supset ?": ["%1 is not a strict superset of %2"], "? \\in ?": ["%1 is in %2"], "? \\ni ?": ["%1 contains %2"], "? \\subseteq ?": ["%1 is a subset of %2"], "? \\subset ?": ["%1 is a strict subset of %2"], "? \\supseteq ?": ["%1 is a superset of %2"], "? \\supset ?": ["%1 is a strict superset of %2"], "{}": ["left brace right brace"], "[]": ["left bracket right bracket"], "{?}": ["start set %1 end set"], "[?,?]": ["left bracket %1 right bracket"], "(?,?]": ["left parenthesis %1 right bracket"], "[?,?)": ["left bracket %1 right parenthesis"], "? \\rightarrow ?": ["%1 right arrow %2"], "?\\'": ["%1 prime"], "?\\overline{?}": ["%1 modifying above %2 with bar"], "?:N+\\frac{?:N}{?:N}": ["%1 and %2"], "? \\text{dx}": ["with respect to x of %1"], "?_?": ["%1 sub %2"], "?:?": ["ratio of %1 to %2"], "? \\perp ?": ["%1 perpendicular to %2"], "? \\propto ?": ["%1 proportional to %2"], "?\\ne?": ["%1 not equal to %2"], "?+?": ["%1 plus %2"], "?-?": ["%1 minus %2"], "?*?": ["%1 times %2"], "?\\cdot?": ["%1 times %2"], "?\\cdotp?": ["%1 times %2"], "?<?": ["%1 is less than %2"], "?<=?": ["%1 is less than or equal to %2"], "?>?": ["%1 is greater than %2"], "?>=?": ["%1 is greater than or equal to %2"], "?=?": ["%1 equals %2"], "?\\approx?": ["%1 almost equal to %2"], "-?": ["negative %1"], "?!": ["%1 factorial"], "?%": ["%1 percent"], "? \\pm ?": ["%1 plus or minus %2"], "? \\ne ?": ["%1 not equal to %2"], "? \\ngtr ?": ["%1 not greater than %2"], "? \\nless ?": ["%1 not less than %2"], "? \\div ?": ["%1 divided by %2"], "? \\backslash ?": ["%1 left divided by %2"], "\\overline{?}": ["line segment %1"], "?^? ?": ["%1 %2"], "? ?^?": ["%1 %2"], "(\\type{simpleExpression})": ["%1"], "(?)": ["open paren %1 close paren"], "[\\type{simpleExpression}]": ["%1"], "[?]": ["open bracket %1 close bracket"], "|\\type{simpleExpression}|": ["absolute value of %1"], "|?|": ["start absolute value %1 end absolute value"], "{?} ?": ["%1 %2"], "? ?": ["%1 %2"], "?": ["%1 "] } };
 },{}],7:[function(require,module,exports){
 "use strict";
 
