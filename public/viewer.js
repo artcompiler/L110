@@ -1,7 +1,7 @@
 /* -*- Mode: js; js-indent-level: 2; indent-tabs-mode: nil; tab-width: 2 -*- */
 /* vim: set shiftwidth=2 tabstop=2 autoindent cindent expandtab: */
 /* copyright (c) 2014, Jeff Dyer */
-window.exports.viewer = (function () {
+window.gcexports.viewer = (function () {
   var height;
   function updateObj(obj) {
     objCodeMirror.setValue(obj);
