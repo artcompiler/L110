@@ -790,6 +790,8 @@ var renderer = function() {
         node.responseSVG = escapeXML(val);
         if (node.value) {
           tex2SVG(String(node.value), function (err, val) {
+            console.log("render() err=" + JSON.stringify(err));
+            console.log("render() val=" + JSON.stringify(val));
             node.valueSVG = escapeXML(val);
             resume(null, node);
           });
