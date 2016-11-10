@@ -2,14 +2,16 @@
 /* vim: set shiftwidth=2 tabstop=2 autoindent cindent expandtab: */
 var fs=require('graceful-fs');
 
-var basedir = "./2016-04-05/math/";
-//dumpDir("/1/1/");
-//dumpDir("/1/11/");
-//dumpDir("/1/14/");
-//dumpDir("/1/16/");
-//dumpDir("/1/17/");
-//dumpDir("/1/19/0/");
-//dumpDir("/2/");
+//var basedir = "./2016-04-05/math/";
+//var basedir = "./2015-10-27/math/";
+var basedir = "./2015-08-31/math/";
+// dumpDir("/1/1/");
+// dumpDir("/1/11/");
+// dumpDir("/1/14/");
+// dumpDir("/1/16/");
+// dumpDir("/1/17/");
+// dumpDir("/1/19/0/");
+// dumpDir("/2/");
 
 var walk = function(dir, done) {
   var results = [];
