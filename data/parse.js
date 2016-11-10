@@ -6,19 +6,26 @@ load();
 
 function load() {
   var obj = [];
-  var eraseCount = 0;
+  var hash = {};
+  var emptyCount = 0, eraseCount = 0;
   fs.readFile("dump.out", 'utf-8', function(err, data) {
     var list = data.split("\n");
     list.forEach(function (item, lineNum) {
-//      console.log(item);
       if (item === "") {
-        eraseCount++;
+        emptyCount++;
         return;
       }
-      obj.push(parse(item, lineNum));
+      var o = parse(item, lineNum);
+      var key = o.method + JSON.stringify(o.options) + JSON.stringify(o.values);
+      if (!hash[key]) {
+        obj.push(o);
+        hash[key] = true;
+      } else {
+        eraseCount++
+      }
     });
-    console.log("scanned " + list.length + " validations");
-    console.log("erased " + eraseCount + " validations");
+    console.log("scanned " + (list.length - emptyCount) + " validations");
+    console.log("erased " + eraseCount + " duplicate validations");
     console.log(JSON.stringify(obj, null, 2).replace(/\\"/g, ""));
   });
 }

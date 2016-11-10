@@ -2,14 +2,7 @@
 /* vim: set shiftwidth=2 tabstop=2 autoindent cindent expandtab: */
 var fs=require('graceful-fs');
 
-var basedir = "./2016-04-05/math/";
-//dumpDir("/1/1/");
-//dumpDir("/1/11/");
-//dumpDir("/1/14/");
-//dumpDir("/1/16/");
-//dumpDir("/1/17/");
-//dumpDir("/1/19/0/");
-//dumpDir("/2/");
+var basedir = "./20161107/formulavalidations/";
 
 var walk = function(dir, done) {
   var results = [];
@@ -180,7 +173,6 @@ function makeGCItem(method, options, value, name) {
 }
 
 walk(basedir, function(err, files) {
-//walk("./2015-08-31/math/1/1/", function(err, files) {
   if (err) throw err;
   //console.log("scanning " + files.length + " files");
   files.forEach(function(file) {
@@ -198,7 +190,7 @@ walk(basedir, function(err, files) {
 			      } else if (value instanceof Array) {
 			        value.forEach(function (value) {
 				        var str = makeGCItem(value.method, value.options, value.value, name);
-				        console.log(str);
+                console.log(str);
 			        });
 			      }
 		      });
@@ -207,14 +199,14 @@ walk(basedir, function(err, files) {
 			      valid_response.forEach(function (value) {
 			        if (value.method) {
 				        var str = makeGCItem(value.method, value.options, value.value, name);
-				        console.log(str);
+                console.log(str);
 			        } else {
 				        console.log("[2] MISSING METHOD: " + JSON.stringify(value));
 			        }
 			      });
 		      });
 		    } else {
-		      console.log(data);
+          console.log(data);
 		    }
 	    }
       } catch (x) {
