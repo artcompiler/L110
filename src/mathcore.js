@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 3a22633
+ * Mathcore unversioned - 6528f30
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -2160,17 +2160,26 @@ var Model = function() {
       function variable(c) {
         var ch = String.fromCharCode(c);
         lexeme += ch;
+        var identifier = lexeme;
+        var startIndex = curIndex + 1;
         while(isAlphaCharCode(c) || c === "'".charCodeAt(0)) {
           c = src.charCodeAt(curIndex++);
+          if(!isAlphaCharCode(c)) {
+            break
+          }
           var ch = String.fromCharCode(c);
-          var prefix = lexeme + ch;
           var match = some(identifiers, function(u) {
-            return indexOf(u, prefix) === 0
+            return indexOf(u, identifier + ch) === 0
           });
           if(!match) {
             break
           }
-          lexeme += ch
+          identifier += ch
+        }
+        if(indexOf(identifiers, identifier) >= 0) {
+          lexeme = identifier
+        }else {
+          curIndex = startIndex
         }
         while(c === "'".charCodeAt(0)) {
           c = src.charCodeAt(curIndex++);
@@ -5981,8 +5990,6 @@ var BigDecimal = function(MathContext) {
       return binaryNode(node.op, [larg, rarg])
     }
     function eraseCommonExpressions(n1, n2) {
-      n1 = cancelFactors(n1);
-      n2 = cancelFactors(n2);
       if(n1.op !== n2.op || n1.op !== Model.MUL) {
         return[n1, n2]
       }
@@ -6024,7 +6031,7 @@ var BigDecimal = function(MathContext) {
         }
       });
       if(!changed) {
-        return[n1, n2]
+        return[cancelFactors(n1), cancelFactors(n2)]
       }
       var args = [];
       forEach(nKeys, function(k) {
@@ -6054,7 +6061,7 @@ var BigDecimal = function(MathContext) {
           n2 = newNode(n2.op, args)
         }
       }
-      return[n1, n2]
+      return[cancelFactors(n1), cancelFactors(n2)]
     }
     var normalizedNodes = [];
     function normalize(root) {
