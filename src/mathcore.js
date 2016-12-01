@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - d51d70c
+ * Mathcore unversioned - 40ddee2
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -5990,6 +5990,8 @@ var BigDecimal = function(MathContext) {
       return binaryNode(node.op, [larg, rarg])
     }
     function eraseCommonExpressions(n1, n2) {
+      n1 = cancelFactors(n1);
+      n2 = cancelFactors(n2);
       if(n1.op !== n2.op || n1.op !== Model.MUL) {
         return[n1, n2]
       }
