@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 40ddee2
+ * Mathcore unversioned - 077e2ce
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -5790,10 +5790,24 @@ var BigDecimal = function(MathContext) {
       if(node.op !== Model.MUL) {
         return node
       }
+      var args = [];
+      forEach(node.args, function(n, i) {
+        var coeffs;
+        if((coeffs = isPolynomial(n)) && coeffs.length === 3) {
+          var nn = factoredQuadradic(coeffs, n);
+          if(nn) {
+            args = args.concat(nn.args)
+          }else {
+            args.push(n)
+          }
+        }else {
+          args.push(n)
+        }
+      });
       var changed = false;
       var numers = {};
       var denoms = {};
-      forEach(node.args, function(n, i) {
+      forEach(args, function(n, i) {
         var isDenom = false;
         var f;
         if(isMinusOne(n)) {
@@ -9409,6 +9423,25 @@ var BigDecimal = function(MathContext) {
         return true
       }
       return false
+    }
+    function factoredQuadradic(coeffs, node) {
+      var varNode = variableNode(variables(node)[0]);
+      var roots = getRoots(coeffs[2], coeffs[1], coeffs[0]);
+      if(!roots) {
+        return null
+      }
+      var node = multiplyNode([binaryNode(Model.ADD, [varNode, negate(numberNode(roots[0]))]), binaryNode(Model.ADD, [varNode, negate(numberNode(roots[1]))])]);
+      return sort(node)
+    }
+    function getRoots(a, b, c) {
+      a = toNumber(a);
+      b = toNumber(b);
+      c = toNumber(c);
+      var x0 = (-b + Math.sqrt(b * b - 4 * a * c)) / (2 * a);
+      var x1 = (-b - Math.sqrt(b * b - 4 * a * c)) / (2 * a);
+      var opt = option("field");
+      var hasSolution = x0 === (x0 | 0) && x1 === (x1 | 0) || b * b - 4 * a * c >= 0;
+      return hasSolution ? [x0, x1] : null
     }
     function primeFactors(n) {
       var absN = Math.abs(n);
