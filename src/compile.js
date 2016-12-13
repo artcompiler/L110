@@ -774,7 +774,7 @@ var renderer = function() {
       format: "TeX",
       svg: true,
       ex: 6,
-      width: 70,
+      width: 50,
       linebreaks: true,
     }, function (data) {
       if (!data.errors) {
