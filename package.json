@@ -12,7 +12,7 @@
     "requirejs": "latest",
     "speech-rule-engine": "*",
     "underscore": "1.4.x",
-    "mathjax-node": "0.5.1",
+    "mathjax-node": "0.5.2",
     "yargs": "*"
   },
   "engines": {

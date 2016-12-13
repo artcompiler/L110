@@ -276,7 +276,7 @@ var transformer = function() {
             if (err && err.length) {
               errs = errs.concat(error(err, node.elts[0]));
             }
-            response = escapeStr(response);
+            //response = response.split(" ");
             reference = escapeStr(reference);
             if (hideExpected) {
               reference = undefined;
@@ -529,20 +529,33 @@ var transformer = function() {
         } else {
           opts = dialect.options;
         }
-        console.log("speak() latex=" + latex);
         translate(latex, opts, function (err, val) {
           if (err && err.length) {
             errs = errs.concat(error(err, node.elts[0]));
           }
-          console.log("speak() val=" + val);
-          latex = escapeStr(latex);
-          val = "\\text{" + val + "}";
+          var totalSize = val.length;
+          var brkSize;
+          if (totalSize > 55) {
+            brkSize = totalSize / Math.ceil(totalSize / 55);
+          }
+          val = val.split(" ");
+          var str = "";
+          var size = 0;
+          val.forEach(v => {
+            size += v.length;
+            if (size > brkSize) {
+              str += " \\\\";
+              //brkSize = size - v.length;
+              size = v.length;
+            }
+            str += "\\text{" + v + " }" ;
+          });
           resume(errs, {
             score: 1,
             value: latex,
-            response: val,
-            result: val,
-            objectCode: composeValidation("speak", options, val)
+            response: str,
+            result: str,
+            objectCode: composeValidation("speak", options, str)
           });
         });
       }
@@ -734,7 +747,7 @@ var transformer = function() {
 mjAPI.config({
   MathJax: {
     SVG: {
-      font: "Tex"
+      font: "Tex",
     }
   }
 });
@@ -758,10 +771,11 @@ var renderer = function() {
   function tex2SVG(str, resume) {
     mjAPI.typeset({
       math: str,
-      format: "inline-TeX",
+      format: "TeX",
       svg: true,
       ex: 6,
-      width: 100,
+      width: 70,
+      linebreaks: true,
     }, function (data) {
       if (!data.errors) {
         resume(null, data.svg);
