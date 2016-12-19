@@ -9,6 +9,11 @@ var app = express();
 app.set('port', (process.env.PORT || 5106));
 app.use(express.static(__dirname + '/public'));
 
+// LetsEncript acme challenge
+app.get('/.well-known/acme-challenge/zhEIwskXna1yhW7UTHfzy6exQZu5-FzsOXl-mhR1eZA', function(req, res) {
+  res.send("zhEIwskXna1yhW7UTHfzy6exQZu5-FzsOXl-mhR1eZA.Fzpon67yOJjoArf9Yosy2tR5vF2zLd5fJ3tSglCuLoI");
+});
+
 app.get('/', function(req, res) {
   res.send("Hello, L106!");
 });
