@@ -56,7 +56,7 @@ window.gcexports.viewer = (function () {
       method = "SAMPLE";
       var text =
         "<text x='4' y='20'>" +
-        "<tspan font-size='14' font-weight='400' stroke='none' fill='#999'>" + method + "</tspan>" +
+        "<tspan font-size='12' font-weight='400' stroke='none' fill='#999'>" + method + "</tspan>" +
         "</text>";
     } else {
       var text =
