@@ -536,7 +536,6 @@ var transformer = function() {
           latex = escapeStr(latex);
           val = "\\text{" + val + "}";
           resume(errs, {
-            score: 1,
             value: latex,
             response: val,
             result: val,

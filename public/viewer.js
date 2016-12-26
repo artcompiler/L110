@@ -52,8 +52,13 @@ window.gcexports.viewer = (function () {
         height: height
       }
     }
+    var x = "30";
+    if (obj.score === undefined) {
+      method = obj.value;
+      x = "4";
+    }
     var text =
-      "<text x='30' y='20'>" +
+      "<text x='" + x + "' y='20'>" +
       "<tspan font-size='14' font-weight='600'>" + method + "</tspan> " +
       "<tspan font-size='12' font-weight='400' font-style='italic'>" + options  + "</tspan>" +
       "</text>";
@@ -87,7 +92,9 @@ window.gcexports.viewer = (function () {
         "'/>";
     }
     var border;
-    if (obj.score > 0) {
+    if (obj.score === undefined) {
+      checkSrc = "";
+    } else if (obj.score > 0) {
       fill = "#FFF";
       border = "rgb(100,255,100)";
       fontStyle = "normal";
@@ -116,7 +123,6 @@ window.gcexports.viewer = (function () {
     var data = [];
     data.push(text);
     height = 28;
-    var note = "<text><tspan font-size='12' font-weight='600' style='fill:grey;'>" + "[Tap to save]" + "</tspan></text>";
     $(el)
       .html('<g>' + checkSrc + text + svg + '</g>');
     var bbox = $("#graff-view svg g")[0].getBBox();
