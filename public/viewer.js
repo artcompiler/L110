@@ -52,16 +52,19 @@ window.gcexports.viewer = (function () {
         height: height
       }
     }
-    var x = "30";
     if (obj.score === undefined) {
       method = "SAMPLE";
-      x = "4";
+      var text =
+        "<text x='4' y='20'>" +
+        "<tspan font-size='14' font-weight='400' stroke='none' fill='#999'>" + method + "</tspan>" +
+        "</text>";
+    } else {
+      var text =
+        "<text x='30' y='20'>" +
+        "<tspan font-size='14' font-weight='600'>" + method + "</tspan> " +
+        "<tspan font-size='12' font-weight='400' font-style='italic'>" + options  + "</tspan>" +
+        "</text>";
     }
-    var text =
-      "<text x='" + x + "' y='20'>" +
-      "<tspan font-size='14' font-weight='600'>" + method + "</tspan> " +
-      "<tspan font-size='12' font-weight='400' font-style='italic'>" + options  + "</tspan>" +
-      "</text>";
     var svg;
     if (obj.valueSVG) {
       var valueSize = getSize(obj.valueSVG);
@@ -98,7 +101,6 @@ window.gcexports.viewer = (function () {
       fill = "#FFF";
       border = "rgb(100,255,100)";
       fontStyle = "normal";
-      heading = text;
       checkSrc = 
         '<rect x="4" y="4" width="20" height="20" fill="rgb(100, 255, 100)" ' +
         'fill-opacity="1" stroke-opacity="0"/> ';
@@ -106,7 +108,6 @@ window.gcexports.viewer = (function () {
       fill = "#FFF";
       border = "rgb(255,100,100)";
       fontStyle = "normal";
-      heading = text;
       checkSrc = 
         '<rect x="4" y="4" width="20" height="20" fill="rgb(255, 100, 100)" ' +
         'fill-opacity="1" stroke-opacity="0"/> ';
@@ -114,7 +115,6 @@ window.gcexports.viewer = (function () {
       fill = "#FFF";
       border = "rgb(255,255,100)";
       fontStyle = "italic";
-      heading = "ERROR " + src;
       text = "Invalid program code.";
       checkSrc = 
         '<rect x="4" y="4" width="20" height="20" fill="rgb(255, 255, 100)" ' +
