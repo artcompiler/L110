@@ -54,7 +54,7 @@ window.gcexports.viewer = (function () {
     }
     var x = "30";
     if (obj.score === undefined) {
-      method = obj.value;
+      method = "SAMPLE";
       x = "4";
     }
     var text =
