@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 077e2ce
+ * Mathcore unversioned - 437e5aa
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -5680,7 +5680,7 @@ var BigDecimal = function(MathContext) {
           args.push(n)
         }
       });
-      return binaryNode(Model.MUL, args)
+      return multiplyNode(args)
     }
     function normalizeSyntax(root, ref) {
       var options = Model.options ? Model.options : {};
@@ -5735,7 +5735,7 @@ var BigDecimal = function(MathContext) {
             args.push(n)
           }
         });
-        return binaryNode(Model.MUL, args)
+        return multiplyNode(args)
       }, unary:function(node) {
         var arg0 = normalizeSyntax(node.args[0], ref.args[0]);
         switch(node.op) {
@@ -6122,7 +6122,7 @@ var BigDecimal = function(MathContext) {
       }, multiplicative:function(node) {
         assert(node.op !== Model.DIV, "Divsion should be eliminated during parsing");
         if(node.op === Model.FRAC) {
-          node = newNode(Model.MUL, [node.args[0], newNode(Model.POW, [node.args[1], nodeMinusOne])])
+          node = multiplyNode([node.args[0], newNode(Model.POW, [node.args[1], nodeMinusOne])])
         }
         var args = [];
         var hasPM;
@@ -6179,7 +6179,11 @@ var BigDecimal = function(MathContext) {
         node = newNode(node.op, args);
         switch(node.op) {
           case Model.SUB:
-            node = negate(args[0]);
+            if(node.args[0].op === Model.POW && isNeg(node.args[0].args[1])) {
+              node = multiplyNode([nodeMinusOne, node.args[0]])
+            }else {
+              node = negate(node.args[0])
+            }
             break;
           case Model.PERCENT:
             if(args[0].op === Model.NUM) {
@@ -6232,7 +6236,7 @@ var BigDecimal = function(MathContext) {
             var base = node.args[0];
             var expo = node.args[1];
             if(!isE(base)) {
-              return binaryNode(Model.MUL, [binaryNode(Model.LOG, [nodeE, expo]), binaryNode(Model.POW, [binaryNode(Model.LOG, [nodeE, base]), nodeMinusOne])])
+              return multiplyNode([binaryNode(Model.LOG, [nodeE, expo]), binaryNode(Model.POW, [binaryNode(Model.LOG, [nodeE, base]), nodeMinusOne])])
             }
             break;
           case Model.POW:
@@ -6334,7 +6338,7 @@ var BigDecimal = function(MathContext) {
       }, multiplicative:function(node) {
         assert(node.op !== Model.DIV, "Divsion should be eliminated during parsing");
         if(node.op === Model.FRAC) {
-          node = newNode(Model.MUL, [node.args[0], newNode(Model.POW, [node.args[1], nodeMinusOne])])
+          node = multiplyNode([node.args[0], newNode(Model.POW, [node.args[1], nodeMinusOne])])
         }
         var args = [];
         var hasPM;
@@ -6922,7 +6926,7 @@ var BigDecimal = function(MathContext) {
             }else {
               if(n.isImplicit) {
                 assert(args.length > 0);
-                args.push(binaryNode(Model.MUL, [args.pop(), normalizeLiteral(n)], flatten))
+                args.push(multiplyNode([args.pop(), normalizeLiteral(n)], flatten))
               }else {
                 args.push(normalizeLiteral(n))
               }
@@ -7408,7 +7412,7 @@ var BigDecimal = function(MathContext) {
               if(isOne(nd)) {
                 args.push(v)
               }else {
-                args.push(simplify(binaryNode(Model.MUL, [nd, v]), {dontGroup:true}))
+                args.push(simplify(multiplyNode([nd, v]), {dontGroup:true}))
               }
             }
           }else {
@@ -7441,12 +7445,12 @@ var BigDecimal = function(MathContext) {
             }
             if(vp.length > 0) {
               if(nd === null || isOne(nd)) {
-                args.push(simplify(binaryNode(Model.MUL, vp), {dontGroup:true}))
+                args.push(simplify(multiplyNode(vp), {dontGroup:true}))
               }else {
                 if(isZero(nd)) {
                   args.push(nodeZero)
                 }else {
-                  args.push(simplify(binaryNode(Model.MUL, [nd].concat(vp)), {dontGroup:true}))
+                  args.push(simplify(multiplyNode([nd].concat(vp)), {dontGroup:true}))
                 }
               }
             }else {
@@ -7502,7 +7506,7 @@ var BigDecimal = function(MathContext) {
     function squareRoot(node) {
       var e = 2;
       var args;
-      if(node.op === Model.NUM) {
+      if(!option("dontExpandPowers") && node.op === Model.NUM) {
         args = factors(node, {}, false, true)
       }else {
         if(node.op === Model.MUL) {
@@ -7532,7 +7536,7 @@ var BigDecimal = function(MathContext) {
         }
       });
       if(inList.length > 0) {
-        outList = outList.concat(sqrtNode(multiplyNode(inList)))
+        outList = outList.concat(sqrtNode(simplify(multiplyNode(inList))))
       }
       return multiplyNode(outList)
     }
@@ -7978,7 +7982,7 @@ var BigDecimal = function(MathContext) {
                           if(lexpo === 0.5 && ast.intern(lbase) === ast.intern(rbase)) {
                             node = lbase
                           }else {
-                            node = [lnode, rnode]
+                            node = binaryNode(Model.POW, [simplify(multiplyNode([lbase, rbase])), lnode.args[1]])
                           }
                         }else {
                           node = [lnode, rnode]
@@ -8074,7 +8078,7 @@ var BigDecimal = function(MathContext) {
                                     }else {
                                       args.push(rbase)
                                     }
-                                    node = binaryNode(Model.POW, [multiplyNode(args), lnode.args[1]])
+                                    node = binaryNode(Model.POW, [simplify(multiplyNode(args)), lnode.args[1]])
                                   }else {
                                     node = [lnode, rnode]
                                   }
@@ -10354,17 +10358,17 @@ var BigDecimal = function(MathContext) {
       })
     }else {
       if(isComparison(node.op) && (!isZero(node.args[0]) && !isZero(node.args[1]))) {
-        var n = normalize(binaryNode(Model.ADD, [node.args[0], node.args[1]]));
+        n1 = normalize(binaryNode(Model.ADD, [node.args[0], node.args[1]]));
         result = true;
         var inverseResult = option("inverseResult", false);
-        if(!isSimplified(n)) {
+        if(!isSimplified(n1)) {
           result = false
         }
         option("inverseResult", inverseResult);
-        if(result && hasDenominator(n)) {
+        if(result && hasDenominator(n1)) {
           result = false
         }
-        if(result && !isFactorised(n)) {
+        if(result && !isFactorised(n1)) {
           result = false
         }
       }else {
@@ -10379,7 +10383,7 @@ var BigDecimal = function(MathContext) {
     option("dontFactorTerms", dontFactorTerms);
     option("dontConvertDecimalToFraction", dontConvertDecimalToFraction);
     option("dontSimplifyImaginary", dontSimplifyImaginary);
-    if(result) {
+    if(result && (!n1 || !hasLikeFactors(n1))) {
       return inverseResult ? false : true
     }
     return inverseResult ? true : false
