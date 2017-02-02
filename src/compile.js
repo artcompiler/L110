@@ -16,7 +16,7 @@ var transformer = function() {
   function print(str) {
     console.log(str);
   }
-  var table = {
+  var table = [{
     "PROG" : program,
     "EXPRS" : exprs,
     "STR": str,
@@ -52,13 +52,52 @@ var transformer = function() {
     "IGNORE-TEXT": ignoreText,
     "IGNORE-TRAILING-ZEROS": ignoreTrailingZeros,
     "HIDE-EXPECTED": hideExpected,
-  };
+  }, {
+    "PROG" : program,
+    "EXPRS" : exprs,
+    "STR": str,
+    "NUM": num,
+    "IDENT": ident,
+    "BOOL": bool,
+    "LIST" : list,
+    "NOT": not,
+    "EQUIV-SYNTAX": equivSyntax,
+    "EQUIV-LITERAL": equivLiteral,
+    "EQUIV-SYMBOLIC": equivSymbolic,
+    "EQUIV-VALUE": equivValue,
+    "IS-SIMPLIFIED": isSimplified,
+    "IS-EXPANDED": isExpanded,
+    "IS-FACTORISED": isFactorised,
+    "IS-UNIT": isUnit,
+    "IS-TRUE": isTrue,
+    "CALCULATE": calculate,
+    "TRANSLATE": trans,
+    "SPEAK": speak,
+    "VALID-SYNTAX": validSyntax,
+    "INVERSE-RESULT": inverseResult,
+    "DECIMAL-PLACES": decimalPlaces,
+    "ALLOW-DECIMAL": allowDecimal,
+    "IGNORE-ORDER": ignoreOrder,
+    "IGNORE-COEFFICIENT-ONE": ignoreCoefficientOne,
+    "COMPARE-SIDES": compareSides,
+    "SET-DECIMAL-SEPARATOR": setDecimalSeparator,
+    "SET-THOUSANDS-SEPARATOR": setThousandsSeparator,
+    "FIELD": field,
+    "ALLOW-THOUSANDS-SEPARATOR": allowThousandsSeparator,
+    "ALLOW-INTERVAL": allowInterval,
+    "IGNORE-TEXT": ignoreText,
+    "IGNORE-TRAILING-ZEROS": ignoreTrailingZeros,
+    "HIDE-EXPECTED": hideExpected,
+  }];
+
   var nodePool;
-  function reset() {
+  let version;
+  function getVersion(pool) {
+    return pool.version ? +pool.version : 0;
   }
   function transform(pool, resume) {
-    reset();
     nodePool = pool;
+    version = getVersion(pool);
     return visit(pool.root, {}, resume);
   }
   function visit(nid, options, resume) {
@@ -72,9 +111,9 @@ var transformer = function() {
     } else if (node.tag === void 0) {
       return [ ];  // clean up stubs
     }
-    if (isFunction(table[node.tag])) {
+    if (isFunction(table[version][node.tag])) {
       // There is a visitor method for this node, so call it.
-      return table[node.tag](node, options, resume);
+      return table[version][node.tag](node, options, resume);
     } else {
       console.log("Missing method for " + node.tag);
       //throw "missing visitor method for " + node.tag;
@@ -124,22 +163,41 @@ var transformer = function() {
     var val = node.elts[0];
     resume([], val);
   }
+  function concat(node, options, resume) {
+    visit(node.elts[0], options, function (err1, val1) {
+      let str = "";
+      if (val1 instanceof Array) {
+        val1.forEach(v => {
+          str += v;
+        });
+      } else {
+        str = val1.toString();
+      }
+      resume(err1, str);
+    });
+  }
   function list(node, options, resume) {
     if (node.elts && node.elts.length > 1) {
       visit(node.elts[0], options, function (err1, val1) {
-        node.elts.shift();
+        node = {
+          tag: "LIST",
+          elts: node.elts.slice(1),
+        };
         list(node, options, function (err2, val2) {
-          resume([].concat(err1).concat(err2), [].concat(val1).concat(val2));
+          let val = [].concat(val2);
+          val.unshift(val1);
+          resume([].concat(err1).concat(err2), val);
         });
       });
-    } else if (node.elts && node.elts.length === 0) {
+    } else if (node.elts && node.elts.length > 0) {
       visit(node.elts[0], options, function (err1, val1) {
-        resume([].concat(err1), [].concat(val1));
+        let val = [val1];
+        resume([].concat(err1), val);
       });
     } else {
       resume([], []);
     }
-  };
+  }
   function binding(node, options, resume) {
     visit(node.elts[0], options, function (err1, val1) {
       visit(node.elts[1], options, function (err2, val2) {
@@ -150,19 +208,47 @@ var transformer = function() {
   function record(node, options, resume) {
     if (node.elts && node.elts.length > 1) {
       visit(node.elts[0], options, function (err1, val1) {
-        node.elts.shift();
+        node = {
+          tag: "RECORD",
+          elts: node.elts.slice(1),
+        };
         record(node, options, function (err2, val2) {
-          resume([].concat(err1).concat(err2), [].concat(val1).concat(val2));
+          val2[val1.key] = val1.val;
+          resume([].concat(err1).concat(err2), val2);
         });
       });
     } else if (node.elts && node.elts.length > 0) {
       visit(node.elts[0], options, function (err1, val1) {
-        resume([].concat(err1), [].concat(val1));
+        let val = {};
+        val[val1.key] = val1.val;
+        resume([].concat(err1), val);
+      });
+    } else {
+      resume([], {});
+    }
+  }
+  function exprs(node, options, resume) {
+    if (node.elts && node.elts.length > 1) {
+      visit(node.elts[0], options, function (err1, val1) {
+        node = {
+          tag: "EXPRS",
+          elts: node.elts.slice(1),
+        };
+        exprs(node, options, function (err2, val2) {
+          let val = [].concat(val2);
+          val.unshift(val1);
+          resume([].concat(err1).concat(err2), val);
+        });
+      });
+    } else if (node.elts && node.elts.length > 0) {
+      visit(node.elts[0], options, function (err1, val1) {
+        let val = [val1];
+        resume([].concat(err1), val);
       });
     } else {
       resume([], []);
     }
-  };
+  }
   function program(node, options, resume) {
     if (!options) {
       options = {};
@@ -171,22 +257,6 @@ var transformer = function() {
       resume(err, val);
     });
   }
-  function exprs(node, options, resume) {
-    if (node.elts && node.elts.length > 1) {
-      visit(node.elts[0], options, function (err1, val1) {
-        node.elts.shift();
-        exprs(node, options, function (err2, val2) {
-          resume([].concat(err1).concat(err2), [].concat(val1).concat(val2));
-        });
-      });
-    } else if (node.elts && node.elts.length > 0) {
-      visit(node.elts[0], options, function (err1, val1) {
-        resume([].concat(err1), [].concat(val1));
-      });
-    } else {
-      resume([], []);
-    }
-  };
 
   // Get or set an option on a node.
   function option(options, id, val) {
@@ -225,10 +295,10 @@ var transformer = function() {
   }
   function equivSyntax(node, options, resume) {
     var errs = [];
-    visit(node.elts[1], options, function (err, val) {
+    visit(node.elts[0], options, function (err, val) {
       errs = errs.concat(err);
       var reference = val.result ? val.result : val;
-      visit(node.elts[0], options, function (err, val) {
+      visit(node.elts[1], options, function (err, val) {
         errs = errs.concat(err);
         var response = val.result ? val.result : val;
         if (response) {
@@ -240,7 +310,7 @@ var transformer = function() {
           }, response, function (err, val) {
             delete options.strict;
             if (err && err.length) {
-              errs = errs.concat(error(err, node.elts[0]));
+              errs = errs.concat(error(err, node.elts[1]));
             }
             resume(errs, {
               score: val ? (val.result ? 1 : -1) : 0,
@@ -255,10 +325,10 @@ var transformer = function() {
   }
   function equivLiteral(node, options, resume) {
     var errs = [];
-    visit(node.elts[1], options, function (err, val) {
+    visit(node.elts[0], options, function (err, val) {
       errs = errs.concat(err);
       var reference = val.result ? val.result : val;
-      visit(node.elts[0], options, function (err, val) {
+      visit(node.elts[1], options, function (err, val) {
         errs = errs.concat(err);
         var response = val.result ? val.result : val;
         var hideExpected = options.hideExpected;
@@ -274,7 +344,7 @@ var transformer = function() {
             delete options.strict;
             delete options.keepTextWhitespace;
             if (err && err.length) {
-              errs = errs.concat(error(err, node.elts[0]));
+              errs = errs.concat(error(err, node.elts[1]));
             }
             //response = response.split(" ");
             reference = escapeStr(reference);
@@ -291,7 +361,7 @@ var transformer = function() {
         } else {
           delete options.strict;
           if (err && err.length) {
-            errs = errs.concat(error(err, node.elts[0]));
+            errs = errs.concat(error(err, node.elts[1]));
           }
           response = "";
           reference = escapeStr(reference);
@@ -310,10 +380,10 @@ var transformer = function() {
   }
   function equivSymbolic(node, options, resume) {
     var errs = [];
-    visit(node.elts[1], options, function (err, val) {
+    visit(node.elts[0], options, function (err, val) {
       errs = errs.concat(err);
       var reference = val.result ? val.result : val;
-      visit(node.elts[0], options, function (err, val) {
+      visit(node.elts[1], options, function (err, val) {
         errs = errs.concat(err);
         var response = val.result ? val.result : val;
         if (response) {
@@ -342,10 +412,10 @@ var transformer = function() {
   }
   function equivValue(node, options, resume) {
     var errs = [];
-    visit(node.elts[1], options, function (err, val) {
+    visit(node.elts[0], options, function (err, val) {
       errs = errs.concat(err);
       var reference = val.result ? val.result : val;
-      visit(node.elts[0], options, function (err, val) {
+      visit(node.elts[1], options, function (err, val) {
         errs = errs.concat(err);
         var response = val.result ? val.result : val;
         if (response) {
@@ -357,7 +427,7 @@ var transformer = function() {
           }, response, function (err, val) {
             delete options.strict;
             if (err && err.length) {
-              errs = errs.concat(error(err, node.elts[0]));
+              errs = errs.concat(error(err, node.elts[1]));
             }
             response = escapeStr(response);
             reference = escapeStr(reference);
@@ -572,10 +642,10 @@ var transformer = function() {
   }
   function isUnit(node, options, resume) {
     var errs = [];
-    visit(node.elts[1], options, function (err, val) {
+    visit(node.elts[0], options, function (err, val) {
       errs = errs.concat(err);
       var reference = val;
-      visit(node.elts[0], options, function (err, val) {
+      visit(node.elts[1], options, function (err, val) {
         errs = errs.concat(err);
         var response = val;
         if (response) {
@@ -587,7 +657,7 @@ var transformer = function() {
           }, response, function (err, val) {
             delete options.strict;
             if (err && err.length) {
-              errs = errs.concat(error(err, node.elts[0]));
+              errs = errs.concat(error(err, node.elts[1]));
             }
             response = escapeStr(response);
             reference = escapeStr(reference);
@@ -688,36 +758,36 @@ var transformer = function() {
   }
 
   function decimalPlaces(node, options, resume) {
-    visit(node.elts[1], options, function (err, val) {
+    visit(node.elts[0], options, function (err, val) {
       option(options, "decimalPlaces", val);
-      visit(node.elts[0], options, function (err, val) {
+      visit(node.elts[1], options, function (err, val) {
         resume(err, val);
       });
     });
   }
 
   function field(node, options, resume) {
-    visit(node.elts[1], options, function (err, val) {
+    visit(node.elts[0], options, function (err, val) {
       option(options, "field", val);
-      visit(node.elts[0], options, function (err, val) {
+      visit(node.elts[1], options, function (err, val) {
         resume(err, val);
       });
     });
   }
 
   function setDecimalSeparator(node, options, resume) {
-    visit(node.elts[1], options, function (err, val) {
+    visit(node.elts[0], options, function (err, val) {
       option(options, "setDecimalSeparator", val);
-      visit(node.elts[0], options, function (err, val) {
+      visit(node.elts[1], options, function (err, val) {
         resume(err, val);
       });
     });
   }
 
   function setThousandsSeparator(node, options, resume) {
-    visit(node.elts[1], options, function (err, val) {
+    visit(node.elts[0], options, function (err, val) {
       option(options, "setThousandsSeparator", val);
-      visit(node.elts[0], options, function (err, val) {
+      visit(node.elts[1], options, function (err, val) {
         resume(err, val);
       });
     });
@@ -868,6 +938,7 @@ var renderer = function() {
 }();
 
 exports.compiler = function () {
+  exports.version = "v1.0.0";
   exports.compile = compile;
   function compile(src, resume) {
     try {

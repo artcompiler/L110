@@ -24,6 +24,9 @@ function load() {
         eraseCount++;
         return;
       }
+
+      var id = item.substring(0, item.indexOf("|"));
+      item = item.substring(id.length + 1);
       //item = escapeXML(item);
       try {
         var obj = JSON.parse(item);
@@ -48,13 +51,13 @@ function load() {
         eraseCount++;
         return;
       }
-      items.push(s);
+      items.push(s + ".. | " + lineNum + ":" + id.trim());
       return;
     });
     console.log("scanned " + items.length + " validations");
     console.log("erased " + eraseCount + " validations");
     items.forEach(function (s, i) {
-      console.log(s + ".. | " + i);
+      console.log(s);
     });
   });
 }
@@ -431,7 +434,6 @@ function parse(str, lineNum) {
     }
     return opt;
   }
-  
   function scanMethod() {
     var method = "";
     loop:

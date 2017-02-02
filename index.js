@@ -15,6 +15,10 @@ app.get('/', function(req, res) {
 
 var compiler = require("./lib/compile.js");
 
+app.get('/version', function(req, res) {
+  console.log("GET /version " + compiler.version);
+  res.send(compiler.version ? compiler.version : "v0.0.0");
+});
 app.get('/compile', function(req, res) {
   var data = "";
   req.on("data", function (chunk) {
