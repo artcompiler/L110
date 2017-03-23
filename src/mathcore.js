@@ -5348,69 +5348,6 @@ var BigDecimal = function(MathContext) {
         return hints
       }})
     }
-    function m2e(root) {
-      if(!root || !root.args) {
-        assert(false, "Should not get here. Illformed node.");
-        return 0
-      }
-      return visit(root, {name:"m2e", exponential:function(node) {
-        var args = [];
-        forEach(node.args, function(n) {
-          args = args.concat(m2e(n))
-        });
-        var str = "exponential " + args;
-        return str
-      }, multiplicative:function(node) {
-        var args = [];
-        forEach(node.args, function(n) {
-          args = args.concat(m2e(n))
-        });
-        var str = args[0] + " times " + args[1];
-        return str
-      }, additive:function(node) {
-        var args = [];
-        forEach(node.args, function(n) {
-          args = args.concat(m2e(n))
-        });
-        var str = "additive " + args;
-        return str
-      }, unary:function(node) {
-        var args = [];
-        forEach(node.args, function(n) {
-          args = args.concat(m2e(n))
-        });
-        var str = "unary " + args;
-        return str
-      }, numeric:function(node) {
-        var args = [];
-        forEach(node.args, function(n) {
-          args = args.concat(n)
-        });
-        var str = args;
-        return str
-      }, variable:function(node) {
-        var args = [];
-        forEach(node.args, function(n) {
-          args = args.concat(n)
-        });
-        var str = args;
-        return str
-      }, comma:function(node) {
-        var args = [];
-        forEach(node.args, function(n) {
-          args = args.concat(m2e(n))
-        });
-        var str = "list " + args;
-        return str
-      }, equals:function(node) {
-        var args = [];
-        forEach(node.args, function(n) {
-          args = args.concat(m2e(n))
-        });
-        var str = "equals " + args;
-        return str
-      }})
-    }
     function variablePart(root) {
       var env = Model.env;
       if(!root || !root.args) {
@@ -5790,20 +5727,6 @@ var BigDecimal = function(MathContext) {
       if(node.op !== Model.MUL) {
         return node
       }
-      var args = [];
-      forEach(node.args, function(n, i) {
-        var coeffs;
-        if((coeffs = isPolynomial(n)) && coeffs.length === 3) {
-          var nn = factoredQuadradic(coeffs, n);
-          if(nn) {
-            args = args.concat(nn.args)
-          }else {
-            args.push(n)
-          }
-        }else {
-          args.push(n)
-        }
-      });
       var changed = false;
       var numers = {};
       var denoms = {};
@@ -8595,24 +8518,6 @@ var BigDecimal = function(MathContext) {
         return uu
       }})
     }
-    function dummy(root, env, resume) {
-      console.log("dummy() root=" + JSON.stringify(root, null, 2));
-      if(!root || !root.args) {
-        assert(false, "Should not get here. Illformed node.")
-      }
-      var nid = Ast.intern(root);
-      visit(root, {name:"dummy", exponential:function(node) {
-      }, multiplicative:function(node) {
-        resume(null, node)
-      }, additive:function(node) {
-        resume(null, node)
-      }}, function(err, val) {
-        if(Ast.intern(val) === nid) {
-          resume(err, val)
-        }
-        dummy(val, env, resume)
-      })
-    }
     function multiplyMatrix(lnode, rnode) {
       var snode, mnode;
       if(lnode.op !== Model.MATRIX) {
@@ -9430,25 +9335,6 @@ var BigDecimal = function(MathContext) {
       }
       return false
     }
-    function factoredQuadradic(coeffs, node) {
-      var varNode = variableNode(variables(node)[0]);
-      var roots = getRoots(coeffs[2], coeffs[1], coeffs[0]);
-      if(!roots) {
-        return null
-      }
-      var node = multiplyNode([binaryNode(Model.ADD, [varNode, negate(numberNode(roots[0]))]), binaryNode(Model.ADD, [varNode, negate(numberNode(roots[1]))])]);
-      return sort(node)
-    }
-    function getRoots(a, b, c) {
-      a = toNumber(a);
-      b = toNumber(b);
-      c = toNumber(c);
-      var x0 = (-b + Math.sqrt(b * b - 4 * a * c)) / (2 * a);
-      var x1 = (-b - Math.sqrt(b * b - 4 * a * c)) / (2 * a);
-      var opt = option("field");
-      var hasSolution = x0 === (x0 | 0) && x1 === (x1 | 0) || b * b - 4 * a * c >= 0;
-      return hasSolution ? [x0, x1] : null
-    }
     function primeFactors(n) {
       var absN = Math.abs(n);
       if(absN <= 1 || (isNaN(n) || isInfinity(n))) {
@@ -9521,7 +9407,6 @@ var BigDecimal = function(MathContext) {
     this.sort = sort;
     this.sortLiteral = sortLiteral;
     this.simplify = simplify;
-    this.dummy = dummy;
     this.expand = expand;
     this.terms = terms;
     this.factors = factors;
@@ -9546,10 +9431,6 @@ var BigDecimal = function(MathContext) {
   }
   function hint(node) {
     return visitor.hint(node)
-  }
-  function m2e(node) {
-    var visitor = new Visitor(new Ast);
-    return visitor.m2e(node)
   }
   function variablePart(node) {
     return visitor.variablePart(node)
@@ -9642,16 +9523,6 @@ var BigDecimal = function(MathContext) {
     var result = visitor.simplify(node, env);
     Assert.setLocation(prevLocation);
     return result
-  }
-  function dummy(node, env, resume) {
-    var prevLocation = Assert.location;
-    if(node.location) {
-      Assert.setLocation(node.location)
-    }
-    visitor.dummy(node, env, function(err, val) {
-      Assert.setLocation(prevLocation);
-      resume(err, val)
-    })
   }
   function hasLikeFactors(node, env) {
     var prevLocation = Assert.location;
@@ -10467,9 +10338,6 @@ var BigDecimal = function(MathContext) {
   };
   Model.fn.hint = function(n1) {
     return hint(n1)
-  };
-  Model.fn.m2e = function(n1) {
-    return m2e(n1)
   };
   var option = Model.option = function option(p, v) {
     var options = Model.options;
