@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 36e11e2
+ * Mathcore unversioned - cc71e3c
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -1572,6 +1572,19 @@ var Model = function() {
     }
     function fractionExpr() {
       var t, node = subscriptExpr();
+      if(isNumber(node) && hd() === TK_FRAC) {
+        var frac = primaryExpr();
+        if(isMixedFraction(node, frac)) {
+          if(isNeg(node)) {
+            frac = binaryNode(Model.MUL, [nodeMinusOne, frac])
+          }
+          node = binaryNode(Model.ADD, [node, frac]);
+          node.isMixedFraction = true
+        }else {
+          node = binaryNode(Model.MUL, [node, frac]);
+          frac.isImplicit = true
+        }
+      }
       while((t = hd()) === TK_SLASH) {
         next();
         node = newNode(Model.FRAC, [node, subscriptExpr()]);
