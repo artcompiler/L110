@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 59c0c62
+ * Mathcore unversioned - 36e11e2
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -1722,7 +1722,7 @@ var Model = function() {
       if(n0.op === Model.SUB && n0.args.length === 1) {
         n0 = n0.args[0]
       }
-      if(!n0.lbrk && (!n1.lbrk && (n0.op === Model.NUM && isVar(n1) || (isVar(n0) && n1.op === Model.NUM || (n0.op === Model.NUM && n1.op === Model.NUM || isVar(n0) && isVar(n1)))))) {
+      if(!n0.lbrk && (!n1.lbrk && (n0.op === Model.NUM && isVar(n1) || (isVar(n0) && n1.op === Model.NUM || n0.op === Model.NUM && n1.op === Model.NUM)))) {
         return true
       }
       return false
@@ -6122,7 +6122,14 @@ var BigDecimal = function(MathContext) {
       }, multiplicative:function(node) {
         assert(node.op !== Model.DIV, "Divsion should be eliminated during parsing");
         if(node.op === Model.FRAC) {
-          node = multiplyNode([node.args[0], newNode(Model.POW, [node.args[1], nodeMinusOne])])
+          if(node.args[1].op === Model.POW) {
+            var denom = node.args[1];
+            var b = denom.args[0];
+            var e = denom.args[1];
+            node = multiplyNode([node.args[0], newNode(Model.POW, [b, negate(e)])])
+          }else {
+            node = multiplyNode([node.args[0], newNode(Model.POW, [node.args[1], nodeMinusOne])])
+          }
         }
         var args = [];
         var hasPM;
