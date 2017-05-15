@@ -96,6 +96,73 @@ function makeGCOptions(options) {
   return str;
 }
 
+function makeGC118Options(options) {
+  if (!options || typeof options !== "object") {
+    return "";
+  }
+  var str = "";
+  Object.keys(options).forEach(function (key) {
+    var val = options[key];
+    switch (key) {
+    // case "field":
+    //   switch (val) {
+    //   case void 0: // undefined means use default
+    //   case "integer":
+    //   case "real":
+    //   case "complex":
+    //     val = "\"" + val + "\"";
+    //     break;
+    //   default:
+    //     console.log("ERROR: Invalid field value: " + val);
+    //     break;
+    //   }
+    //   break;
+    // case "decimalPlaces":
+    //   if (isNaN(+val)) {
+    //     key = undefined;
+    //   }
+    //   val = "\"" + val + "\"";
+    //   break;
+    // case "allowDecimal":
+    // case "allowInterval":
+    // case "dontExpandPowers":
+    // case "dontFactorDenominators":
+    // case "dontFactorTerms":
+    // case "dontConvertDecimalToFraction":
+    // case "dontSimplifyImaginary":
+    // case "ignoreOrder":
+    // case "inverseResult":
+    // case "requireThousandsSeparator":
+    // case "ignoreText":
+    // case "ignoreTrailingZeros":
+    // case "ignoreCoefficientOne":
+    // case "compareSides":
+    case "allowThousandsSeparator":
+      if (val !== true) {
+        key = undefined;
+      }
+      val = "";
+      break;
+    // case "setThousandsSeparator":
+    // case "setDecimalSeparator":
+    //   if (typeof v !== "string" &&
+    //       !val instanceof Array) {
+    //     key = undefined;
+    //   } else if (val.length > 0) {
+    //     val = JSON.stringify(val);
+    //   }
+    //   break;
+    default:
+      key = undefined;
+      break;
+    }
+    if (key) {
+      str += " " + key + " " + val;
+    }
+  });
+  return str;
+}
+
 function parseFormat(pattern) {
   var index = pattern.indexOf("{");
   if (index !== -1) {
@@ -111,7 +178,7 @@ function parseFormat(pattern) {
   };
 }
 
-function makeGCItem(method, options, value, name) {
+function makeJasmineItem(method, options, value, name) {
   var values = [];
   switch (method) {
   case "equivSyntax":
@@ -172,7 +239,36 @@ function makeGCItem(method, options, value, name) {
     ".. | " + name + "." + ticket++;
 }
 
+function makeGC118Item(method, options, value, name) {
+  var values = [];
+  switch (method) {
+  case "equivSyntax":
+  case "stringMatch":
+      return "";
+  default:
+    if (!value || !isNaN(parseInt(value))) {
+      // Filter trivial values
+      return "";
+    }
+    values.push(value);
+    break;
+  }
+  if (!options) {
+    options = {};
+  }
+  delete options.syntax;  // Clean up
+  delete options.argument;
+  return (
+    makeGC118Options(options) +
+    " \"" + values[0] + "\""
+  );
+}
+
+//let makeGCItem = makeGC118Item;
+let makeGCItem = makeJasmineItem;
+
 walk(basedir, function(err, files) {
+  let items = {};
   if (err) throw err;
   //console.log("scanning " + files.length + " files");
   files.forEach(function(file) {
@@ -186,12 +282,23 @@ walk(basedir, function(err, files) {
 		    if (obj.valid_response) {
 		      obj.valid_response.value.forEach(function (value) {
 			      if (value.method) {
-			        var str = value.method + " \"" + value.value + "\"";
+				      var str = makeGCItem(value.method, value.options, value.value, name);
+              if (items[str]) {
+                items[str]++;
+              } else {
+                items[str] = 1;
+                if (str) console.log(str + ",");
+              }
 			      } else if (value instanceof Array) {
 			        value.forEach(function (value) {
 				        var str = makeGCItem(value.method, value.options, value.value, name);
-                console.log(str);
-			        });
+                if (items[str]) {
+                  items[str]++;
+                } else {
+                  items[str] = 1;
+                  if (str) console.log(str + ",");
+                }
+              });
 			      }
 		      });
 		    } else if (obj.valid_responses) {
@@ -199,14 +306,26 @@ walk(basedir, function(err, files) {
 			      valid_response.forEach(function (value) {
 			        if (value.method) {
 				        var str = makeGCItem(value.method, value.options, value.value, name);
-                console.log(str);
+                if (items[str]) {
+                  items[str]++;
+                } else {
+                  items[str] = 1;
+                  if (str) console.log(str + ",");
+                }
 			        } else {
 				        console.log("[2] MISSING METHOD: " + JSON.stringify(value));
 			        }
 			      });
 		      });
 		    } else {
-          console.log(data);
+          console.log(data + ",");
+          if (items[data]) {
+            items[data]++;
+          } else {
+            items[data] = 1;
+            if (str) console.log(str);
+          }
+          items[data] = items[data] ? items[data]++ : 1;
 		    }
 	    }
       } catch (x) {

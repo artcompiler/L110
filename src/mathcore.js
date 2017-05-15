@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - cc71e3c
+ * Mathcore unversioned - 40daa8c
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -481,6 +481,7 @@ var Model = function() {
   }
   var Mp = Model.prototype = new Ast;
   Assert.reserveCodeRange(1E3, 1999, "model");
+  Assert.messages[1E3] = "Internal error.";
   Assert.messages[1001] = "Invalid syntax. '%1' expected, '%2' found.";
   Assert.messages[1002] = "Only one decimal separator can be specified.";
   Assert.messages[1003] = "Extra characters in input at position: %1, lexeme: %2.";
@@ -493,7 +494,7 @@ var Model = function() {
   Assert.messages[1010] = "Expecting an operator between numbers.";
   var message = Assert.message;
   Model.create = Mp.create = function create(node, location) {
-    assert(node != undefined, "Model.create() called with invalid argument " + node);
+    assert(node != undefined, message(1011));
     if(node instanceof Model) {
       if(location) {
         node.location = location
@@ -1041,26 +1042,33 @@ var Model = function() {
     var nodeMinusOne = unaryNode(Model.SUB, [numberNode("1")]);
     var nodeNone = newNode(Model.NONE, [numberNode("0")]);
     var nodeEmpty = newNode(Model.VAR, ["0"]);
+    var lexemeT0, lexemeT1;
     var scan = scanner(src);
     function start(options) {
-      T0 = scan.start(options)
+      T0 = scan.start(options);
+      lexemeT0 = scan.lexeme()
     }
     function hd() {
       return T0
     }
     function lexeme() {
-      return scan.lexeme()
+      assert(lexemeT0 !== undefined);
+      return lexemeT0
     }
     function next(options) {
-      T0 = T1;
-      T1 = TK_NONE;
-      if(T0 === TK_NONE) {
-        T0 = scan.start(options)
+      if(T1 === TK_NONE) {
+        T0 = scan.start(options);
+        lexemeT0 = scan.lexeme()
+      }else {
+        T0 = T1;
+        lexemeT0 = lexemeT1;
+        T1 = TK_NONE
       }
     }
     function lookahead(options) {
       if(T1 === TK_NONE) {
-        T1 = scan.start(options)
+        T1 = scan.start(options);
+        lexemeT1 = scan.lexeme()
       }
       return T1
     }
@@ -1305,7 +1313,6 @@ var Model = function() {
           }
           args.push(commaExpr());
           return newNode(tokenToOperator[tk], args);
-          break;
         case TK_EXISTS:
           next();
           return newNode(Model.EXISTS, [equalExpr()]);
@@ -1335,7 +1342,6 @@ var Model = function() {
           var expr2 = braceExpr();
           expr2.args.push(newNode(tokenToOperator[tk], [expr1]));
           return expr2;
-          break;
         case TK_MATHBF:
           next();
           var expr1 = braceExpr();
@@ -1572,8 +1578,8 @@ var Model = function() {
     }
     function fractionExpr() {
       var t, node = subscriptExpr();
-      if(isNumber(node) && hd() === TK_FRAC) {
-        var frac = primaryExpr();
+      if(isNumber(node) && (hd() === TK_FRAC || hd() === TK_NUM && lookahead() === TK_SLASH)) {
+        var frac = fractionExpr();
         if(isMixedFraction(node, frac)) {
           if(isNeg(node)) {
             frac = binaryNode(Model.MUL, [nodeMinusOne, frac])
@@ -2255,9 +2261,7 @@ var Model = function() {
         return tk
       }
       return{start:start, lexeme:function() {
-        if(lexeme) {
-          return lexeme
-        }
+        return lexeme
       }, pos:function() {
         return curIndex
       }}
@@ -4397,15 +4401,16 @@ var BigDecimal = function(MathContext) {
 (function(ast) {
   var messages = Assert.messages;
   Assert.reserveCodeRange(2E3, 2999, "mathmodel");
+  Assert.messages[2E3] = "Internal error.";
   messages[2001] = "Factoring of multi-variate polynomials with all terms of degree greater than one is not supported";
-  messages[2002] = "[unused]";
+  messages[2002] = "Expression not supported.";
   messages[2003] = "Factoring non-polynomials is not supported.";
   messages[2004] = "Compound units not supported with tolerances.";
   messages[2005] = "Non-numeric expressions cannot be compared with equivValue.";
   messages[2006] = "More that two equals symbols in equation.";
   messages[2007] = "Tolerances are not supported in lists.";
   messages[2008] = "deprecated";
-  messages[2009] = "[unused]";
+  messages[2009] = "Undefined value in 'equivValue'";
   messages[2010] = "Invalid option name %1.";
   messages[2011] = "Invalid option value %2 for option %1.";
   messages[2012] = "Expressions with comparison or equality operators cannot be compared with equivValue.";
@@ -4999,10 +5004,7 @@ var BigDecimal = function(MathContext) {
       return node
     }
     function degree(root, notAbsolute) {
-      if(!root || !root.args) {
-        assert(false, "Should not get here. Illformed node.");
-        return 0
-      }
+      assert(root && root.args, message(2E3));
       return visit(root, {name:"degree", exponential:function(node) {
         var args = node.args;
         var d;
@@ -5137,10 +5139,7 @@ var BigDecimal = function(MathContext) {
     }
     function constantPart(root) {
       var env = Model.env;
-      if(!root || !root.args) {
-        assert(false, "Should not get here. Illformed node.");
-        return nodeZero
-      }
+      assert(root && root.args, message(2E3));
       return visit(root, {name:"constantPart", exponential:function(node) {
         if(variablePart(node) === null) {
           return node
@@ -5206,10 +5205,7 @@ var BigDecimal = function(MathContext) {
       }})
     }
     function variables(root) {
-      if(!root || !root.args) {
-        assert(false, "Should not get here. Illformed node.");
-        return 0
-      }
+      assert(root && root.args, message(2E3));
       return visit(root, {name:"variables", exponential:function(node) {
         var args = node.args;
         var val = [];
@@ -5286,10 +5282,7 @@ var BigDecimal = function(MathContext) {
       }})
     }
     function hint(root) {
-      if(!root || !root.args) {
-        assert(false, "Should not get here. Illformed node.");
-        return 0
-      }
+      assert(root && root.args, message(2E3));
       return visit(root, {name:"hints", exponential:function(node) {
         var hints = [];
         if(node.hints instanceof Array) {
@@ -5426,10 +5419,7 @@ var BigDecimal = function(MathContext) {
     }
     function variablePart(root) {
       var env = Model.env;
-      if(!root || !root.args) {
-        assert(false, "Should not get here. Illformed node.");
-        return null
-      }
+      assert(root && root.args, message(2E3));
       return visit(root, {name:"variablePart", exponential:function(node) {
         if(variablePart(node.args[0]) || variablePart(node.args[1])) {
           return node
@@ -5494,10 +5484,7 @@ var BigDecimal = function(MathContext) {
       }})
     }
     function terms(root) {
-      if(!root || !root.args) {
-        assert(false, "Should not get here. Illformed node.");
-        return 0
-      }
+      assert(root && root.args, message(2E3));
       return visit(root, {name:"terms", exponential:function(node) {
         return[node]
       }, multiplicative:function(node) {
@@ -5700,10 +5687,7 @@ var BigDecimal = function(MathContext) {
       if(!ref || !ref.args) {
         ref = {args:[]}
       }
-      if(!root || !root.args) {
-        assert(false, "Should not get here. Illformed node.");
-        return 0
-      }
+      assert(root && root.args, message(2E3));
       var nid = ast.intern(root);
       var node = Model.create(visit(root, {name:"normalizeSyntax", format:function(node) {
         var fmtList = normalizeFormatObject(node.args[0]);
@@ -6094,10 +6078,7 @@ var BigDecimal = function(MathContext) {
     }
     var normalizedNodes = [];
     function normalize(root) {
-      if(!root || !root.args) {
-        assert(false, "Should not get here. Illformed node.");
-        return 0
-      }
+      assert(root && root.args, message(2E3));
       var nid = ast.intern(root);
       if(root.normalizeNid === nid) {
         return root
@@ -6272,7 +6253,9 @@ var BigDecimal = function(MathContext) {
             args.push(normalize(node.args[0]));
             break
         }
-        args.push(normalize(node.args[1]));
+        if(node.args.length > 1) {
+          args.push(normalize(node.args[1]))
+        }
         return binaryNode(node.op, args)
       }, comma:function(node) {
         var vals = [];
@@ -6321,10 +6304,7 @@ var BigDecimal = function(MathContext) {
       return node
     }
     function normalizeCalculate(root) {
-      if(!root || !root.args) {
-        assert(false, "Should not get here. Illformed node.");
-        return 0
-      }
+      assert(root && root.args, message(2E3));
       var nid = ast.intern(root);
       if(root.normalizeCalculateNid === nid) {
         return root
@@ -6492,8 +6472,8 @@ var BigDecimal = function(MathContext) {
         assert(isZero(node.args[1]));
         var coeffs = isPolynomial(node);
         assert(coeffs.length === 2);
-        var c0 = coeffs[0] ? coeffs[0] : "1";
-        var c1 = coeffs[1] ? coeffs[1] : "1";
+        var c0 = coeffs[0] === undefined ? "1" : coeffs[0];
+        var c1 = coeffs[1] === undefined ? "1" : coeffs[1];
         return fractionNode(multiplyNode([nodeMinusOne, numberNode(c0)]), numberNode(c1))
       }}), root.location);
       while(nid !== ast.intern(node)) {
@@ -6506,10 +6486,7 @@ var BigDecimal = function(MathContext) {
     var sortedNodes = [];
     function sort(root) {
       Assert.checkTimeout();
-      if(!root || !root.args) {
-        assert(false, "Should not get here. Illformed node.");
-        return 0
-      }
+      assert(root && root.args, message(2E3));
       var nid = ast.intern(root);
       if(root.sortNid === nid) {
         return root
@@ -6782,10 +6759,7 @@ var BigDecimal = function(MathContext) {
     var sortedLiteralNodes = [];
     function sortLiteral(root) {
       Assert.checkTimeout();
-      if(!root || !root.args) {
-        assert(false, "Should not get here. Illformed node.");
-        return 0
-      }
+      assert(root && root.args, message(2E3));
       var nid = ast.intern(root);
       if(root.sortLiteralNid === nid) {
         return root
@@ -6913,10 +6887,7 @@ var BigDecimal = function(MathContext) {
       return node
     }
     function normalizeLiteral(root) {
-      if(!root || !root.args) {
-        assert(false, "Should not get here. Illformed node.");
-        return 0
-      }
+      assert(root && root.args, message(2E3));
       var nid = ast.intern(root);
       if(root.normalizeLiteralNid === nid) {
         return root
@@ -7002,10 +6973,7 @@ var BigDecimal = function(MathContext) {
       return node
     }
     function normalizeExpanded(root) {
-      if(!root || !root.args) {
-        assert(false, "Should not get here. Illformed node.");
-        return 0
-      }
+      assert(root && root.args, message(2E3));
       var nid = ast.intern(root);
       if(root.normalizeExpandedNid === nid) {
         return root
@@ -7201,20 +7169,21 @@ var BigDecimal = function(MathContext) {
     function sqrtNode(node) {
       return binaryNode(Model.POW, [node, nodeOneHalf])
     }
+    var DECIMAL128 = new MathContext(34);
     function divide(n, d) {
       if(n === null || d === null) {
         return null
       }
-      if(n instanceof BigDecimal) {
-        n = toNumber(n)
+      if(!(n instanceof BigDecimal)) {
+        n = toDecimal(n)
       }
-      if(d instanceof BigDecimal) {
-        d = toNumber(d)
+      if(!(d instanceof BigDecimal)) {
+        d = toDecimal(d)
       }
-      if(d === 0) {
+      if(isZero(d)) {
         return null
       }
-      return toDecimal(n / d)
+      return n.divide(d, DECIMAL128)
     }
     function sqrt(n) {
       if(n instanceof BigDecimal) {
@@ -7303,10 +7272,7 @@ var BigDecimal = function(MathContext) {
       return binaryNode(node.op, args)
     }
     function factorGroupingKey(root) {
-      if(!root || !root.args) {
-        assert(false, "Should not get here. Illformed node.");
-        return 0
-      }
+      assert(root && root.args, message(2E3));
       return visit(root, {name:"factorGroupingKey", exponential:function(node) {
         return factorGroupingKey(node.args[1]) + Model.POW + factorGroupingKey(node.args[0])
       }, multiplicative:function(node) {
@@ -7574,7 +7540,7 @@ var BigDecimal = function(MathContext) {
     function diffSets(n1, n2) {
       if(n1.op === Model.MUL) {
         assert(n1.args.length === 2);
-        assert(n1.args[1].op === Model.COMMA);
+        assert(n1.args[1].op === Model.COMMA, message(2002));
         var t = n2;
         n2 = n1.args[1];
         n1 = t
@@ -7602,6 +7568,7 @@ var BigDecimal = function(MathContext) {
         return 0
       }
       assert(root.op !== Model.MUL || root.args.length > 1);
+      assert(root.op !== Model.MUL || root.args.length > 1, message(2E3));
       var nid = ast.intern(root);
       if(root.simplifyNid === nid) {
         return root
@@ -8226,19 +8193,7 @@ var BigDecimal = function(MathContext) {
                             if(bmv !== null && (emv !== null && !isNeg(bmv))) {
                               var b = pow(bmv, emv);
                               base = numberNode(b);
-                              return base;
-                              if(ff.length === 0) {
-                                return base
-                              }else {
-                                if(ff.length === 1) {
-                                  return[ff[0], base]
-                                }else {
-                                  if(ff.length === 0) {
-                                    assert(false)
-                                  }
-                                  return[multiplyNode(ff), base]
-                                }
-                              }
+                              return base
                             }else {
                               var b = pow(bmv, emv);
                               if(b !== null) {
@@ -8369,10 +8324,7 @@ var BigDecimal = function(MathContext) {
       if(!root) {
         return null
       }
-      if(!root || !root.args) {
-        assert(false, "Should not get here. Illformed node.");
-        return 0
-      }
+      assert(root && root.args, message(2E3));
       if(env === undefined) {
         env = Model.env
       }else {
@@ -8567,10 +8519,7 @@ var BigDecimal = function(MathContext) {
       return a
     }
     function units(root, env) {
-      if(!root || !root.args) {
-        assert(false, "Should not get here. Illformed node.");
-        return 0
-      }
+      assert(root && root.args, message(2E3));
       return visit(root, {name:"units", exponential:function(node) {
         var uu = units(node.args[0], env);
         if(uu.length > 0) {
@@ -8755,10 +8704,7 @@ var BigDecimal = function(MathContext) {
     }
     var expandedNodes = [];
     function expand(root, env) {
-      if(!root || !root.args) {
-        assert(false, "Should not get here. Illformed node.");
-        return 0
-      }
+      assert(root && root.args, message(2E3));
       var nid = ast.intern(root);
       if(root.expandNid === nid) {
         return root
@@ -8988,10 +8934,7 @@ var BigDecimal = function(MathContext) {
       return node
     }
     function factors(root, env, ignorePrimeFactors, preserveNeg, factorAdditive) {
-      if(!root || !root.args) {
-        assert(false, "Should not get here. Illformed node.");
-        return 0
-      }
+      assert(root && root.args, message(2E3));
       return visit(root, {name:"factors", numeric:function(node) {
         if(ignorePrimeFactors || isInfinity(node)) {
           return[node]
@@ -9155,10 +9098,7 @@ var BigDecimal = function(MathContext) {
       return binaryNode(Model.ADD, args)
     }
     function scale(root) {
-      if(!root || !root.args) {
-        assert(false, "Should not get here. Illformed node.");
-        return 0
-      }
+      assert(root && root.args, message(2E3));
       var node = Model.create(visit(root, {name:"scale", exponential:function(node) {
         var mv, nd;
         if((mv = mathValue(node, true)) && (nd = numberNode(String(mv), true))) {
@@ -9280,10 +9220,7 @@ var BigDecimal = function(MathContext) {
       return node
     }
     function isFactorised(root, env) {
-      if(!root || !root.args) {
-        assert(false, "Should not get here. Illformed node.");
-        return 0
-      }
+      assert(root && root.args, message(2E3));
       return visit(root, {name:"isFactorised", numeric:function(node) {
         return true
       }, additive:function(node) {
@@ -10578,7 +10515,7 @@ var MathCore = function() {
     }
   }
   function evaluateVerbose(spec, solution, resume) {
-    var model;
+    var model, result;
     try {
       assert(spec, message(3001, [spec]));
       Assert.setTimeout(timeoutDuration, message(3005, [timeoutDuration]));
