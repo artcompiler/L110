@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 8c02a90
+ * Mathcore unversioned - 27f145e
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -1730,7 +1730,7 @@ var Model = function() {
       }
     }
     function isNumber(n) {
-      if(n.op === Model.SUB && n.args.length === 1) {
+      if((n.op === Model.SUB || n.op === Model.ADD) && n.args.length === 1) {
         n = n.args[0]
       }
       if(n.op === Model.NUM) {
@@ -1834,7 +1834,7 @@ var Model = function() {
     }
     function isENotation(args, expr, t) {
       var n;
-      if(args.length > 0 && (isNumber(args[args.length - 1]) && (expr.op === Model.VAR && ((expr.args[0] === "E" || expr.args[0] === "e") && (hd() === TK_NUM || hd() === 45 && lookahead() === TK_NUM))))) {
+      if(args.length > 0 && (isNumber(args[args.length - 1]) && (expr.op === Model.VAR && ((expr.args[0] === "E" || expr.args[0] === "e") && (hd() === TK_NUM || (hd() === 45 || hd() === 43) && lookahead() === TK_NUM))))) {
         return true
       }
       return false
