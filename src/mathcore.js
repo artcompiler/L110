@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 27f145e
+ * Mathcore unversioned - 50cbd62
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -2097,11 +2097,13 @@ var Model = function() {
               lexeme = "";
               continue;
             case 45:
+            ;
+            case 8722:
               if(src.charCodeAt(curIndex) === 62) {
                 curIndex++;
                 return TK_RIGHTARROW
               }
-              return c;
+              return TK_SUB;
             case 33:
               if(src.charCodeAt(curIndex) === 61) {
                 curIndex++;
