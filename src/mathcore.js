@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 40daa8c
+ * Mathcore unversioned - 8c02a90
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -1685,16 +1685,23 @@ var Model = function() {
                   args.pop();
                   expr = n0
                 }else {
-                  if(!isChemCore() && isPolynomialTerm(args[args.length - 1], expr)) {
-                    expr.isPolynomial = true;
-                    var t = args.pop();
-                    if(!t.isPolynomial) {
-                      expr = binaryNode(Model.MUL, [t, expr]);
-                      expr.isImplicit = t.isImplicit;
-                      t.isImplicit = undefined
-                    }
+                  if(isENotation(args, expr)) {
+                    var tmp = args.pop();
+                    expr = binaryNode(Model.POW, [numberNode("10"), unaryExpr()]);
+                    expr = binaryNode(Model.MUL, [tmp, expr]);
+                    expr.isScientific = true
                   }else {
-                    expr.isImplicit = true
+                    if(!isChemCore() && isPolynomialTerm(args[args.length - 1], expr)) {
+                      expr.isPolynomial = true;
+                      var t = args.pop();
+                      if(!t.isPolynomial) {
+                        expr = binaryNode(Model.MUL, [t, expr]);
+                        expr.isImplicit = t.isImplicit;
+                        t.isImplicit = undefined
+                      }
+                    }else {
+                      expr.isImplicit = true
+                    }
                   }
                 }
               }
@@ -1702,9 +1709,6 @@ var Model = function() {
           }else {
             if(t === TK_MUL && (args.length > 0 && isScientific([args[args.length - 1], expr]))) {
               t = args.pop();
-              if(isNeg(t)) {
-                expr = binaryNode(Model.MUL, [nodeMinusOne, expr])
-              }
               expr = binaryNode(Model.MUL, [t, expr]);
               expr.isScientific = true
             }
@@ -1726,7 +1730,13 @@ var Model = function() {
       }
     }
     function isNumber(n) {
-      return n.op === Model.NUM
+      if(n.op === Model.SUB && n.args.length === 1) {
+        n = n.args[0]
+      }
+      if(n.op === Model.NUM) {
+        return n
+      }
+      return false
     }
     function isMixedFraction(n0, n1) {
       if(n0.op === Model.SUB && n0.args.length === 1) {
@@ -1750,6 +1760,9 @@ var Model = function() {
       var mv;
       if(!node) {
         return false
+      }
+      if(node.op === Model.SUB && node.args.length === 1) {
+        node = node.args[0]
       }
       if(node.op === Model.NUM && ((mv = new BigDecimal(node.args[0])) && isInteger(mv))) {
         return true
@@ -1819,12 +1832,20 @@ var Model = function() {
       }
       return expr
     }
+    function isENotation(args, expr, t) {
+      var n;
+      if(args.length > 0 && (isNumber(args[args.length - 1]) && (expr.op === Model.VAR && ((expr.args[0] === "E" || expr.args[0] === "e") && (hd() === TK_NUM || hd() === 45 && lookahead() === TK_NUM))))) {
+        return true
+      }
+      return false
+    }
     function isScientific(args) {
+      var n;
       if(args.length === 1) {
-        if(args[0].op === Model.NUM && (args[0].args[0].length === 1 || indexOf(args[0].args[0], ".") === 1)) {
+        if((n = isNumber(args[0])) && (n.args[0].length === 1 || indexOf(n.args[0], ".") === 1)) {
           return true
         }else {
-          if(args[0].op === Model.POW && (args[0].args[0].op === Model.NUM && (args[0].args[0].args[0] === "10" && args[0].args[1].numberFormat === "integer"))) {
+          if(args[0].op === Model.POW && ((n = isNumber(args[0].args[0])) && (n.args[0] === "10" && isInteger(args[0].args[1])))) {
             return true
           }
         }
@@ -1833,7 +1854,7 @@ var Model = function() {
         if(args.length === 2) {
           var a = args[0];
           var e = args[1];
-          if(a.op === Model.NUM && ((a.args[0].length === 1 || indexOf(a.args[0], ".") === 1) && (e.op === Model.POW && (e.args[0].op === Model.NUM && (e.args[0].args[0] === "10" && e.args[1].numberFormat === "integer"))))) {
+          if((n = isNumber(a)) && ((n.args[0].length === 1 || indexOf(n.args[0], ".") === 1) && (e.op === Model.POW && ((n = isNumber(e.args[0])) && (n.args[0] === "10" && isInteger(e.args[1])))))) {
             return true
           }
           return false
@@ -2080,7 +2101,7 @@ var Model = function() {
                 curIndex++;
                 return TK_RIGHTARROW
               }
-            ;
+              return c;
             case 33:
               if(src.charCodeAt(curIndex) === 61) {
                 curIndex++;
