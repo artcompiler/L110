@@ -92,6 +92,7 @@ function decomp(node) {
     return "";
   }
   var str = "";
+  var numArgs = 0;
   switch(node.tag) {
   case "NUM":
   case "STR":
@@ -102,72 +103,95 @@ function decomp(node) {
     switch (node.tag) {
     case "EQUIV-SYMBOLIC":
       str = "equivSymbolic";
+      numArgs = 2;
       break;
     case "EQUIV-VALUE":
+      numArgs = 2;
       str = "equivValue";
       break;
     case "EQUIV-SYNTAX":
+      numArgs = 2;
       str = "equivSyntax";
       break;
     case "EQUIV-LITERAL":
+      numArgs = 2;
       str = "equivLiteral";
       break;
     case "IS-TRUE":
+      numArgs = 1;
       str = "isTrue";
       break;
     case "IS-SIMPLIFIED":
+      numArgs = 1;
       str = "isSimplified";
       break;
     case "IS-FACTORISED":
+      numArgs = 1;
       str = "isFactorised";
       break;
     case "IS-EXPANDED":
+      numArgs = 1;
       str = "isExpanded";
       break;
     case "VALID-SYNTAX":
+      numArgs = 1;
       str = "validSyntax";
       break;
     case "IGNORE-ORDER":
+      numArgs = 1;
       str = " ignoreOrder";
       break;
     case "DECIMAL-PLACES":
+      numArgs = 2;
       str = " decimalPlaces";
       break;
     case "ALLOW-DECIMAL":
+      numArgs = 1;
       str = " allowDecimal";
       break;
     case "ALLOW-INTERVAL":
+      numArgs = 1;
       str = " allowInterval";
       break;
     case "ALLOW-THOUSANDS-SEPARATOR":
+      numArgs = 1;
       str = " allowThousandsSeparator";
       break;
     case "SET-THOUSANDS-SEPARATOR":
+      numArgs = 2;
       str = " setThousandsSeparator";
       break;
     case "SET-DECIMAL-SEPARATOR":
+      numArgs = 2;
       str = " setDecimalSeparator";
       break;
     case "INVERSE-RESULT":
     case "NOT":
+      numArgs = 1;
       str = " inverseResult";
       break;
     case "IGNORE-TRAILING-ZEROS":
+      numArgs = 1;
       str = " ignoreTrailingZeros";
       break;
     case "IGNORE-COEFFICIENT-ONE":
+      numArgs = 1;
       str = " ignoreCoefficientOne";
       break;
     case "COMPARE-SIDES":
+      numArgs = 1;
       str = " compareSides";
       break;
     case "FIELD":
+      numArgs = 2;
       str = " field";
       break;
     case "IS-UNIT":
-      str = " isUnit";
+      numArgs = 2;
+      str = "isUnit";
       break;
     case "IGNORE-TEXT":
+      numArgs = 1;
       str = " ignoreText";
       break;
     case "PROG":
@@ -180,7 +204,7 @@ function decomp(node) {
       break;
     }
     if (node.elts) {
-      node.elts.reverse().forEach(function (n, i) {
+      node.elts.forEach(function (n, i) {
         if (str === " inverseResult") {
           str = decomp(n);
           var prefix = str.substring(0, str.indexOf(" "));
@@ -190,7 +214,16 @@ function decomp(node) {
           if (node.tag === "LIST" && i !== 0) {
             str += "," + decomp(n);
           } else {
-            str += decomp(n);
+            if (i <= numArgs) {
+              str += decomp(n);
+              let i = str.indexOf("inverseResult");
+              if (i > 0) {
+                str = str.substring(0, i) + str.substring(i + "inverseResult".length);
+                var prefix = str.substring(0, str.indexOf(" "));
+                var suffix = str.substring(str.indexOf(" "));
+                str = prefix + " inverseResult" + suffix;
+              }
+            }
           }
         }
       });
