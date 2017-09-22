@@ -307,6 +307,7 @@ var transformer = function() {
         var response = val.result ? val.result : val;
         if (response) {
           options.strict = true;
+          delete options.data;
           MathCore.evaluateVerbose({
             method: "equivSyntax",
             options: options,
@@ -337,7 +338,7 @@ var transformer = function() {
         var response = val.result ? val.result : val;
         var hideExpected = options.hideExpected;
         delete options.hideExpected;
-        delete options.data;  // cleanup.
+        delete options.data;
         if (response) {
           options.strict = true;
           options.keepTextWhitespace = true;
@@ -426,6 +427,7 @@ var transformer = function() {
         var response = val.result ? val.result : val;
         if (response) {
           options.strict = true;
+          delete options.data;
           MathCore.evaluateVerbose({
             method: "equivValue",
             options: options,
@@ -455,6 +457,7 @@ var transformer = function() {
       var response = val;
       if (response) {
         options.strict = true;
+        delete options.data;
         MathCore.evaluateVerbose({
           method: "isFactorised",
           options: options,
@@ -480,6 +483,7 @@ var transformer = function() {
       var response = val;
       if (response) {
         options.strict = true;
+        delete options.data;
         MathCore.evaluateVerbose({
           method: "isSimplified",
           options: options,
@@ -505,6 +509,7 @@ var transformer = function() {
       var response = val;
       if (response) {
         options.strict = true;
+        delete options.data;
         MathCore.evaluateVerbose({
           method: "isExpanded",
           options: options,
@@ -530,6 +535,7 @@ var transformer = function() {
       var response = val;
       if (response) {
         options.strict = true;
+        delete options.data;
         MathCore.evaluateVerbose({
           method: "isTrue",
           options: options,
@@ -555,6 +561,7 @@ var transformer = function() {
       var response = val;
       if (response) {
         options.strict = true;
+        delete options.data;
         MathCore.evaluateVerbose({
           method: "calculate",
           options: options,
@@ -628,6 +635,7 @@ var transformer = function() {
       var response = val;
       if (response) {
         options.strict = true;
+        delete options.data;
         MathCore.evaluateVerbose({
           method: "validSyntax",
           options: options,
@@ -656,6 +664,7 @@ var transformer = function() {
         var response = val;
         if (response) {
           options.strict = true;
+          delete options.data;
           MathCore.evaluateVerbose({
             method: "isUnit",
             options: options,
