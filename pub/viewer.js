@@ -16,7 +16,7 @@ window.gcexports.viewer = (function () {
     var fill, fontStyle;
     var value = obj.objectCode.validation.valid_response.value[0];
     var options = "";
-    var method = value.method;
+    var method = obj.methods || value.method;
     Object.keys(value.options).sort().forEach(function (v) {
       switch(v) {
       case "inverseResult":

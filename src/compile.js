@@ -304,7 +304,9 @@ var transformer = function() {
       var reference = val.result ? val.result : val;
       visit(node.elts[1], options, function (err, val) {
         errs = errs.concat(err);
-        let response = options.data.response || val.result || val;
+        let response = options.data && options.data.response || val.response || val;
+        let score = val.score || 1;
+        let methods = "equivSyntax " + (val.methods || "");
         if (response) {
           options.strict = true;
           delete options.data;
@@ -318,9 +320,10 @@ var transformer = function() {
               errs = errs.concat(error(err, node.elts[1]));
             }
             resume(errs, {
-              score: val ? (val.result ? 1 : -1) : 0,
+              score: score > 0 && val && val.result ? 1 : -1,
               response: response,
               value: reference,
+              methods: methods,
               objectCode: composeValidation("equivSyntax", options, reference)
             });
           });
@@ -335,7 +338,9 @@ var transformer = function() {
       var reference = val.result ? val.result : val;
       visit(node.elts[1], options, function (err, val) {
         errs = errs.concat(err);
-        let response = options.data.response || val.result || val;
+        let response = options.data && options.data.response || val.response || val;
+        let score = val.score || 1;
+        let methods = "equivLiteral " + (val.methods || ""); 
         var hideExpected = options.hideExpected;
         delete options.hideExpected;
         delete options.data;
@@ -358,9 +363,10 @@ var transformer = function() {
               reference = undefined;
             }
             resume(errs, {
-              score: val ? (val.result ? 1 : -1) : 0,
+              score: score > 0 && val && val.result ? 1 : -1,
               response: response,
               value: reference,
+              methods: methods,
               objectCode: composeValidation("equivLiteral", options, reference)
             });
           });
@@ -378,6 +384,7 @@ var transformer = function() {
             score: 0,
             response: response,
             value: reference,
+            methods: methods,
             objectCode: composeValidation("equivLiteral", options, reference)
           });
         }
@@ -391,7 +398,9 @@ var transformer = function() {
       var reference = val.result ? val.result : val;
       visit(node.elts[1], options, function (err, val) {
         errs = errs.concat(err);
-        let response = options.data.response || val.result || val;
+        let response = options.data && options.data.response || val.response || val;
+        let score = val.score || 1;
+        let methods = "equivSymbolic " + (val.methods || ""); 
         if (response) {
           options.strict = true;
           delete options.data;  // cleanup.
@@ -407,9 +416,10 @@ var transformer = function() {
             response = escapeStr(response);
             reference = escapeStr(reference);
             resume(errs, {
-              score: val ? (val.result ? 1 : -1) : 0,
+              score: score > 0 && val && val.result ? 1 : -1,
               response: response,
               value: reference,
+              methods: methods,
               objectCode: composeValidation("equivSymbolic", options, reference)
             });
           });
@@ -424,7 +434,9 @@ var transformer = function() {
       var reference = val.result ? val.result : val;
       visit(node.elts[1], options, function (err, val) {
         errs = errs.concat(err);
-        let response = options.data.response || val.result || val;
+        let response = options.data && options.data.response || val.response || val;
+        let score = val.score || 1;
+        let methods = "equivValue " + (val.methods || ""); 
         if (response) {
           options.strict = true;
           delete options.data;
@@ -440,9 +452,10 @@ var transformer = function() {
             response = escapeStr(response);
             reference = escapeStr(reference);
             resume(errs, {
-              score: val ? (val.result ? 1 : -1) : 0,
+              score: score > 0 && val && val.result ? 1 : -1,
               response: response,
               value: reference,
+              methods: methods,
               objectCode: composeValidation("equivValue", options, reference)
             });
           });
@@ -454,7 +467,9 @@ var transformer = function() {
     var errs = [];
     visit(node.elts[0], options, function (err, val) {
       errs = errs.concat(err);
-      let response = options.data.response || val.result || val;
+      let response = options.data && options.data.response || val.response || val;
+      let score = val.score || 1;
+      let methods = "isFactorised " + (val.methods || ""); 
       if (response) {
         options.strict = true;
         delete options.data;
@@ -468,8 +483,9 @@ var transformer = function() {
           }
           response = escapeStr(response);
           resume(errs, {
-            score: val ? (val.result ? 1 : -1) : 0,
+            score: score > 0 && val && val.result ? 1 : -1,
             response: response,
+            methods: methods,
             objectCode: composeValidation("isFactorised", options)
           });
         });
@@ -479,8 +495,11 @@ var transformer = function() {
   function isSimplified(node, options, resume) {
     var errs = [];
     visit(node.elts[0], options, function (err, val) {
+      console.log("isSimplified() val=" + JSON.stringify(val));
       errs = errs.concat(err);
-      let response = options.data.response || val.result || val;
+      let response = options.data && options.data.response || val.response || val;
+      let score = val.score || 1;
+      let methods = "isSimplified " + (val.methods || ""); 
       if (response) {
         options.strict = true;
         delete options.data;
@@ -494,8 +513,9 @@ var transformer = function() {
           }
           response = escapeStr(response);
           resume(errs, {
-            score: val ? (val.result ? 1 : -1) : 0,
+            score: score > 0 && val && val.result ? 1 : -1,
             response: response,
+            methods: methods,
             objectCode: composeValidation("isSimplified", options)
           });
         });
@@ -506,7 +526,9 @@ var transformer = function() {
     var errs = [];
     visit(node.elts[0], options, function (err, val) {
       errs = errs.concat(err);
-      let response = options.data.response || val.result || val;
+      let response = options.data && options.data.response || val.response || val;
+      let score = val.score || 1;
+      let methods = "isExpanded " + (val.methods || ""); 
       if (response) {
         options.strict = true;
         delete options.data;
@@ -520,8 +542,9 @@ var transformer = function() {
           }
           response = escapeStr(response);
           resume(errs, {
-            score: val ? (val.result ? 1 : -1) : 0,
+            score: score > 0 && val && val.result ? 1 : -1,
             response: response,
+            methods: methods,
             objectCode: composeValidation("isExpanded", options)
           });
         });
@@ -532,7 +555,9 @@ var transformer = function() {
     var errs = [];
     visit(node.elts[0], options, function (err, val) {
       errs = errs.concat(err);
-      let response = options.data.response || val.result || val;
+      let response = options.data && options.data.response || val.response || val;
+      let score = val.score || 1;
+      let methods = "isTrue " + (val.methods || ""); 
       if (response) {
         options.strict = true;
         delete options.data;
@@ -546,8 +571,9 @@ var transformer = function() {
           }
           response = escapeStr(response);
           resume(errs, {
-            score: val ? (val.result ? 1 : -1) : 0,
+            score: score > 0 && val && val.result ? 1 : -1,
             response: response,
+            methods: methods,
             objectCode: composeValidation("isTrue", options)
           });
         });
@@ -558,7 +584,9 @@ var transformer = function() {
     var errs = [];
     visit(node.elts[0], options, function (err, val) {
       errs = errs.concat(err);
-      let response = options.data.response || val.result || val;
+      let response = options.data && options.data.response || val.response || val;
+      let score = val.score || 1;
+      let methods = "calculate " + (val.methods || ""); 
       if (response) {
         options.strict = true;
         delete options.data;
@@ -572,10 +600,11 @@ var transformer = function() {
           }
           response = escapeStr(response);
           resume(errs, {
-            score: val.result !== "ERROR" ? 1 : 0,
+            score: score > 0 && val && val.result !== "ERROR" ? 1 : -1,
             value: response,
             response: val.result,
             result: val.result,
+            methods: methods,
             objectCode: composeValidation("calculate", options, val)
           });
         });
@@ -622,6 +651,7 @@ var transformer = function() {
             value: latex,
             response: val,
             result: val,
+            methods: methods,
             objectCode: composeValidation("speak", options, val)
           });
         });
@@ -632,7 +662,9 @@ var transformer = function() {
     var errs = [];
     visit(node.elts[0], options, function (err, val) {
       errs = errs.concat(err);
-      let response = options.data.response || val.result || val;
+      let response = options.data && options.data.response || val.response || val;
+      let score = val.score || 1;
+      let methods = "validSyntax " + (val.methods || ""); 
       if (response) {
         options.strict = true;
         delete options.data;
@@ -646,8 +678,9 @@ var transformer = function() {
           }
           response = escapeStr(response);
           resume(errs, {
-            score: val ? (val.result ? 1 : -1) : 0,
+            score: score > 0 && val && val.result ? 1 : -1,
             response: response,
+            methods: methods,
             objectCode: composeValidation("validSyntax", options)
           });
         });
@@ -661,7 +694,9 @@ var transformer = function() {
       var reference = val;
       visit(node.elts[1], options, function (err, val) {
         errs = errs.concat(err);
-        let response = options.data.response || val.result || val;
+        let response = options.data && options.data.response || val.response || val;
+        let score = val.score || 1;
+        let methods = "isUnit " + (val.methods || ""); 
         if (response) {
           options.strict = true;
           delete options.data;
@@ -677,9 +712,10 @@ var transformer = function() {
             response = escapeStr(response);
             reference = escapeStr(reference);
             resume(errs, {
-              score: val ? (val.result ? 1 : -1) : 0,
+              score: score > 0 && val && val.result ? 1 : -1,
               response: response,
               value: reference,
+              methods: methods,
               objectCode: composeValidation("isUnit", options)
             });
           });
