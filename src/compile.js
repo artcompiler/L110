@@ -88,6 +88,7 @@ var transformer = function() {
     "IGNORE-TEXT": ignoreText,
     "IGNORE-TRAILING-ZEROS": ignoreTrailingZeros,
     "HIDE-EXPECTED": hideExpected,
+    "IN": inData,
   }];
 
   var nodePool;
@@ -95,10 +96,10 @@ var transformer = function() {
   function getVersion(pool) {
     return pool.version ? +pool.version : 0;
   }
-  function transform(pool, resume) {
+  function transform(pool, options, resume) {
     nodePool = pool;
     version = getVersion(pool);
-    return visit(pool.root, {}, resume);
+    return visit(pool.root, options, resume);
   }
   function visit(nid, options, resume) {
     if (typeof resume !== "function") {
@@ -257,6 +258,9 @@ var transformer = function() {
       resume(err, val);
     });
   }
+  function inData(node, options, resume) {
+    resume([], options.data.val || "0");
+  }
 
   // Get or set an option on a node.
   function option(options, id, val) {
@@ -333,6 +337,7 @@ var transformer = function() {
         var response = val.result ? val.result : val;
         var hideExpected = options.hideExpected;
         delete options.hideExpected;
+        delete options.data;  // cleanup.
         if (response) {
           options.strict = true;
           options.keepTextWhitespace = true;
@@ -388,6 +393,7 @@ var transformer = function() {
         var response = val.result ? val.result : val;
         if (response) {
           options.strict = true;
+          delete options.data;  // cleanup.
           MathCore.evaluateVerbose({
             method: "equivSymbolic",
             options: options,
@@ -940,9 +946,12 @@ var renderer = function() {
 exports.compiler = function () {
   exports.version = "v1.0.0";
   exports.compile = compile;
-  function compile(src, resume) {
+  function compile(src, data, resume) {
+    let options = {
+      data: data,
+    };
     try {
-      transformer.transform(src, function (err, val) {
+      transformer.transform(src, options, function (err, val) {
         if (err.length) {
           console.log("ERROR transform() err=" + JSON.stringify(err));
           resume(err, null);

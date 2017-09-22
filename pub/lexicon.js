@@ -37,5 +37,6 @@ window.gcexports.globalLexicon = {
     "decimalPlaces" : { "tk": 1, "name": "DECIMAL-PLACES", "cls": "function", "length": 2 },
     "field" : { "tk": 1, "name": "FIELD", "cls": "function", "length": 2 },
     "setDecimalSeparator" : { "tk": 1, "name": "SET-DECIMAL-SEPARATOR", "cls": "function", "length": 2 },
-    "setThousandsSeparator" : { "tk": 1, "name": "SET-THOUSANDS-SEPARATOR", "cls": "function", "length": 2 }
+    "setThousandsSeparator" : { "tk": 1, "name": "SET-THOUSANDS-SEPARATOR", "cls": "function", "length": 2 },
+    "IN" : { "tk": 1, "name": "IN", "cls": "function", "length": 0 }
 }
