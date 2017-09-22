@@ -424,6 +424,7 @@ var transformer = function() {
       var reference = val.result ? val.result : val;
       visit(node.elts[1], options, function (err, val) {
         errs = errs.concat(err);
+        let response = options.data.response || val.result || val;
         if (response) {
           options.strict = true;
           delete options.data;
