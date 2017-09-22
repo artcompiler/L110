@@ -304,7 +304,7 @@ var transformer = function() {
       var reference = val.result ? val.result : val;
       visit(node.elts[1], options, function (err, val) {
         errs = errs.concat(err);
-        var response = val.result ? val.result : val;
+        let response = options.data.response || val.result || val;
         if (response) {
           options.strict = true;
           delete options.data;
@@ -335,7 +335,7 @@ var transformer = function() {
       var reference = val.result ? val.result : val;
       visit(node.elts[1], options, function (err, val) {
         errs = errs.concat(err);
-        var response = val.result ? val.result : val;
+        let response = options.data.response || val.result || val;
         var hideExpected = options.hideExpected;
         delete options.hideExpected;
         delete options.data;
@@ -391,7 +391,7 @@ var transformer = function() {
       var reference = val.result ? val.result : val;
       visit(node.elts[1], options, function (err, val) {
         errs = errs.concat(err);
-        var response = val.result ? val.result : val;
+        let response = options.data.response || val.result || val;
         if (response) {
           options.strict = true;
           delete options.data;  // cleanup.
@@ -424,7 +424,6 @@ var transformer = function() {
       var reference = val.result ? val.result : val;
       visit(node.elts[1], options, function (err, val) {
         errs = errs.concat(err);
-        var response = val.result ? val.result : val;
         if (response) {
           options.strict = true;
           delete options.data;
@@ -454,7 +453,7 @@ var transformer = function() {
     var errs = [];
     visit(node.elts[0], options, function (err, val) {
       errs = errs.concat(err);
-      var response = val;
+      let response = options.data.response || val.result || val;
       if (response) {
         options.strict = true;
         delete options.data;
@@ -480,7 +479,7 @@ var transformer = function() {
     var errs = [];
     visit(node.elts[0], options, function (err, val) {
       errs = errs.concat(err);
-      var response = val;
+      let response = options.data.response || val.result || val;
       if (response) {
         options.strict = true;
         delete options.data;
@@ -506,7 +505,7 @@ var transformer = function() {
     var errs = [];
     visit(node.elts[0], options, function (err, val) {
       errs = errs.concat(err);
-      var response = val;
+      let response = options.data.response || val.result || val;
       if (response) {
         options.strict = true;
         delete options.data;
@@ -532,7 +531,7 @@ var transformer = function() {
     var errs = [];
     visit(node.elts[0], options, function (err, val) {
       errs = errs.concat(err);
-      var response = val;
+      let response = options.data.response || val.result || val;
       if (response) {
         options.strict = true;
         delete options.data;
@@ -558,7 +557,7 @@ var transformer = function() {
     var errs = [];
     visit(node.elts[0], options, function (err, val) {
       errs = errs.concat(err);
-      var response = val;
+      let response = options.data.response || val.result || val;
       if (response) {
         options.strict = true;
         delete options.data;
@@ -632,7 +631,7 @@ var transformer = function() {
     var errs = [];
     visit(node.elts[0], options, function (err, val) {
       errs = errs.concat(err);
-      var response = val;
+      let response = options.data.response || val.result || val;
       if (response) {
         options.strict = true;
         delete options.data;
@@ -661,7 +660,7 @@ var transformer = function() {
       var reference = val;
       visit(node.elts[1], options, function (err, val) {
         errs = errs.concat(err);
-        var response = val;
+        let response = options.data.response || val.result || val;
         if (response) {
           options.strict = true;
           delete options.data;
