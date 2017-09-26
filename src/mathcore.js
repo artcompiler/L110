@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 6bd2fe0
+ * Mathcore unversioned - 2f20cd7
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -6244,7 +6244,7 @@ var BigDecimal = function(MathContext) {
           case Model.SIN:
           ;
           case Model.COS:
-            node = phaseShift(node.op, node.args);
+            node = trigIdent(node.op, node.args);
             break;
           default:
             break
@@ -7300,7 +7300,7 @@ var BigDecimal = function(MathContext) {
       }
       return toDecimal(f(n))
     }
-    function phaseShift(op, args) {
+    function trigIdent(op, args) {
       debugger;
       var tt = terms(args[0]);
       var mv = bigZero;
@@ -7322,29 +7322,37 @@ var BigDecimal = function(MathContext) {
       var node;
       var shift = binaryNode(Model.MUL, [numberNode(cycles), numberNode("2"), variableNode("\\pi")]);
       var arg;
-      if(cycles) {
-        arg = binaryNode(Model.ADD, vp.concat(cp).concat(shift))
+      if(vp.length > 0) {
+        if(cycles) {
+          arg = binaryNode(Model.ADD, vp.concat(cp).concat(shift))
+        }else {
+          arg = binaryNode(Model.ADD, vp.concat(cp))
+        }
       }else {
-        arg = binaryNode(Model.ADD, vp.concat(cp))
-      }
-      if(vp.length === 0) {
-        vp.push(nodeZero)
+        vp.push(nodeZero);
+        arg = args[0]
       }
       switch(op) {
         case Model.SIN:
           switch(phase) {
-            case 0:
-              arg = neg ? multiplyNode([nodeMinusOne, arg]) : arg;
-              node = unaryNode(Model.SIN, [arg]);
-              node = neg ? multiplyNode([nodeMinusOne, node]) : node;
-              break;
-            case 1 / 2:
-              node = unaryNode(Model.COS, vp);
-              break;
             case 1:
               arg = neg ? multiplyNode(vp.concat(nodeMinusOne), true) : binaryNode(Model.ADD, vp);
               node = unaryNode(Model.SIN, [arg]);
               node = !neg ? multiplyNode([nodeMinusOne, node]) : node;
+              break;
+            case 1 / 2:
+              node = unaryNode(Model.COS, vp);
+              break;
+            case 0:
+              if(vp.length === 1) {
+                arg = neg ? multiplyNode([nodeMinusOne, arg]) : arg;
+                node = unaryNode(Model.SIN, [arg]);
+                node = neg ? multiplyNode([nodeMinusOne, node]) : node
+              }else {
+                var arg1 = vp[0];
+                var arg2 = multiplyNode(vp.slice(1).concat(cp));
+                node = binaryNode(Model.ADD, [multiplyNode([unaryNode(Model.SIN, [arg1]), unaryNode(Model.COS, [arg2])]), multiplyNode([unaryNode(Model.COS, [arg1]), unaryNode(Model.SIN, [arg2])])])
+              }
               break;
             default:
               node = unaryNode(op, args);
@@ -7353,19 +7361,25 @@ var BigDecimal = function(MathContext) {
           break;
         case Model.COS:
           switch(phase) {
-            case 0:
-              arg = neg ? multiplyNode([nodeMinusOne, arg]) : arg;
+            case 1:
+              arg = neg ? multiplyNode(vp.concat(nodeMinusOne), true) : binaryNode(Model.ADD, vp);
               node = unaryNode(Model.COS, [arg]);
+              node = multiplyNode([nodeMinusOne, node]);
               break;
             case 1 / 2:
               arg = neg ? multiplyNode(vp.concat(nodeMinusOne), true) : binaryNode(Model.ADD, vp);
               node = unaryNode(Model.SIN, [arg]);
               node = !neg ? multiplyNode([nodeMinusOne, node]) : node;
               break;
-            case 1:
-              arg = neg ? multiplyNode(vp.concat(nodeMinusOne), true) : binaryNode(Model.ADD, vp);
-              node = unaryNode(Model.COS, [arg]);
-              node = multiplyNode([nodeMinusOne, node]);
+            case 0:
+              if(vp.length === 1) {
+                arg = neg ? multiplyNode([nodeMinusOne, arg]) : arg;
+                node = unaryNode(Model.COS, [arg])
+              }else {
+                var arg1 = vp[0];
+                var arg2 = multiplyNode(vp.slice(1).concat(cp));
+                node = binaryNode(Model.ADD, [multiplyNode([unaryNode(Model.COS, [arg1]), unaryNode(Model.COS, [arg2])]), multiplyNode([nodeMinusOne, unaryNode(Model.SIN, [arg1]), unaryNode(Model.SIN, [arg2])])])
+              }
               break;
             default:
               node = unaryNode(op, args);
@@ -10639,7 +10653,7 @@ var MathCore = function() {
       return e
     }
   }
-  var timeoutDuration = 3E6;
+  var timeoutDuration = 3E4;
   function setTimeoutDuration(duration) {
     timeoutDuration = duration
   }
