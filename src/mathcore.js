@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - d4968d1
+ * Mathcore unversioned - 6bd2fe0
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -481,6 +481,7 @@ var Model = function() {
   }
   var Mp = Model.prototype = new Ast;
   Assert.reserveCodeRange(1E3, 1999, "model");
+  Assert.messages[1E3] = "Internal error. %1.";
   Assert.messages[1E3] = "Internal error.";
   Assert.messages[1001] = "Invalid syntax. '%1' expected, '%2' found.";
   Assert.messages[1002] = "Only one decimal separator can be specified.";
@@ -760,158 +761,243 @@ var Model = function() {
     }
     return text
   };
+  var CC_SPACE = 32;
+  var CC_BANG = 33;
+  var CC_DOLLAR = 36;
+  var CC_PERCENT = 37;
+  var CC_LEFTPAREN = 40;
+  var CC_MUL = 42;
+  var CC_ADD = 43;
+  var CC_COMMA = 44;
+  var CC_SUB = 45;
+  var CC_RIGHTPAREN = 41;
+  var CC_SLASH = 47;
+  var CC_NUM = 48;
+  var CC_COLON = 58;
+  var CC_SEMICOLON = 59;
+  var CC_EQL = 61;
+  var CC_QMARK = 63;
+  var CC_CONST = 65;
+  var CC_LEFTBRACKET = 91;
+  var CC_RIGHTBRACKET = 93;
+  var CC_CARET = 94;
+  var CC_UNDERSCORE = 95;
+  var CC_VAR = 97;
+  var CC_LEFTBRACE = 123;
+  var CC_VERTICALBAR = 124;
+  var CC_RIGHTBRACE = 125;
+  var CC_SINGLEQUOTE = 39;
+  var TK_NONE = 0;
+  var TK_ADD = CC_ADD;
+  var TK_CARET = CC_CARET;
+  var TK_UNDERSCORE = CC_UNDERSCORE;
+  var TK_SLASH = CC_SLASH;
+  var TK_EQL = CC_EQL;
+  var TK_LEFTBRACE = CC_LEFTBRACE;
+  var TK_VERTICALBAR = CC_VERTICALBAR;
+  var TK_LEFTBRACKET = CC_LEFTBRACKET;
+  var TK_LEFTPAREN = CC_LEFTPAREN;
+  var TK_MUL = CC_MUL;
+  var TK_NUM = CC_NUM;
+  var TK_RIGHTBRACE = CC_RIGHTBRACE;
+  var TK_RIGHTBRACKET = CC_RIGHTBRACKET;
+  var TK_RIGHTPAREN = CC_RIGHTPAREN;
+  var TK_SUB = CC_SUB;
+  var TK_VAR = CC_VAR;
+  var TK_CONST = CC_CONST;
+  var TK_COMMA = CC_COMMA;
+  var TK_PERCENT = CC_PERCENT;
+  var TK_QMARK = CC_QMARK;
+  var TK_BANG = CC_BANG;
+  var TK_COLON = CC_COLON;
+  var TK_FRAC = 256;
+  var TK_SQRT = 257;
+  var TK_PM = 258;
+  var TK_SIN = 259;
+  var TK_TAN = 260;
+  var TK_COS = 261;
+  var TK_SEC = 262;
+  var TK_LN = 263;
+  var TK_COT = 264;
+  var TK_CSC = 265;
+  var TK_NEXT = 266;
+  var TK_LG = 267;
+  var TK_LOG = 268;
+  var TK_TEXT = 269;
+  var TK_LT = 270;
+  var TK_LE = 271;
+  var TK_GT = 272;
+  var TK_GE = 273;
+  var TK_EXISTS = 274;
+  var TK_IN = 275;
+  var TK_FORALL = 276;
+  var TK_LIM = 277;
+  var TK_EXP = 278;
+  var TK_TO = 279;
+  var TK_SUM = 280;
+  var TK_INT = 281;
+  var TK_PROD = 282;
+  var TK_M = 283;
+  var TK_RIGHTARROW = 284;
+  var TK_BINOM = 285;
+  var TK_NEWROW = 286;
+  var TK_NEWCOL = 287;
+  var TK_BEGIN = 288;
+  var TK_END = 289;
+  var TK_VEC = 290;
+  var TK_ARCSIN = 291;
+  var TK_ARCCOS = 292;
+  var TK_ARCTAN = 293;
+  var TK_DIV = 294;
+  var TK_TYPE = 295;
+  var TK_OVERLINE = 296;
+  var TK_OVERSET = 297;
+  var TK_UNDERSET = 298;
+  var TK_BACKSLASH = 299;
+  var TK_MATHBF = 300;
+  var TK_NE = 301;
+  var TK_APPROX = 302;
+  var TK_ABS = 303;
+  var TK_DOT = 304;
+  var TK_NGTR = 305;
+  var TK_NLESS = 306;
+  var TK_SINH = 307;
+  var TK_COSH = 308;
+  var TK_TANH = 309;
+  var TK_SECH = 310;
+  var TK_COTH = 311;
+  var TK_CSCH = 312;
+  var TK_ARCSINH = 313;
+  var TK_ARCCOSH = 314;
+  var TK_ARCTANH = 315;
+  var TK_ARCSEC = 305;
+  var TK_ARCCSC = 306;
+  var TK_ARCCOT = 307;
+  var TK_MATHFIELD = 308;
+  var TK_CUP = 309;
+  var TK_BIGCUP = 310;
+  var TK_CAP = 311;
+  var TK_BIGCAP = 312;
+  var TK_PERP = 313;
+  var TK_PROPTO = 314;
+  var unused = 315;
+  var TK_FORMAT = 316;
+  var TK_NI = 317;
+  var TK_SUBSETEQ = 318;
+  var TK_SUPSETEQ = 319;
+  var TK_SUBSET = 320;
+  var TK_SUPSET = 321;
+  var TK_NOT = 322;
+  var TK_PARALLEL = 323;
+  var TK_NPARALLEL = 324;
+  var TK_SIM = 325;
+  var TK_CONG = 326;
+  var TK_LEFTARROW = 327;
+  var TK_LONGRIGHTARROW = 328;
+  var TK_LONGLEFTARROW = 329;
+  var TK_OVERRIGHTARROW = 330;
+  var TK_OVERLEFTARROW = 331;
+  var TK_LONGLEFTRIGHTARROW = 332;
+  var TK_OVERLEFTRIGHTARROW = 333;
+  var TK_IMPLIES = 334;
+  var T0 = TK_NONE;
+  var T1 = TK_NONE;
+  var tokenToOperator = {};
+  tokenToOperator[TK_SLASH] = OpStr.FRAC;
+  tokenToOperator[TK_FRAC] = OpStr.FRAC;
+  tokenToOperator[TK_SQRT] = OpStr.SQRT;
+  tokenToOperator[TK_VEC] = OpStr.VEC;
+  tokenToOperator[TK_ADD] = OpStr.ADD;
+  tokenToOperator[TK_SUB] = OpStr.SUB;
+  tokenToOperator[TK_PM] = OpStr.PM;
+  tokenToOperator[TK_NOT] = OpStr.NOT;
+  tokenToOperator[TK_CARET] = OpStr.POW;
+  tokenToOperator[TK_UNDERSCORE] = OpStr.SUBSCRIPT;
+  tokenToOperator[TK_MUL] = OpStr.MUL;
+  tokenToOperator[TK_DOT] = OpStr.DOT;
+  tokenToOperator[TK_DIV] = OpStr.DIV;
+  tokenToOperator[TK_SIN] = OpStr.SIN;
+  tokenToOperator[TK_COS] = OpStr.COS;
+  tokenToOperator[TK_TAN] = OpStr.TAN;
+  tokenToOperator[TK_ARCSIN] = OpStr.ARCSIN;
+  tokenToOperator[TK_ARCCOS] = OpStr.ARCCOS;
+  tokenToOperator[TK_ARCTAN] = OpStr.ARCTAN;
+  tokenToOperator[TK_SEC] = OpStr.SEC;
+  tokenToOperator[TK_COT] = OpStr.COT;
+  tokenToOperator[TK_CSC] = OpStr.CSC;
+  tokenToOperator[TK_SINH] = OpStr.SINH;
+  tokenToOperator[TK_COSH] = OpStr.COSH;
+  tokenToOperator[TK_TANH] = OpStr.TANH;
+  tokenToOperator[TK_ARCSINH] = OpStr.ARCSINH;
+  tokenToOperator[TK_ARCCOSH] = OpStr.ARCCOSH;
+  tokenToOperator[TK_ARCTANH] = OpStr.ARCTANH;
+  tokenToOperator[TK_SECH] = OpStr.SECH;
+  tokenToOperator[TK_COTH] = OpStr.COTH;
+  tokenToOperator[TK_CSCH] = OpStr.CSCH;
+  tokenToOperator[TK_LN] = OpStr.LN;
+  tokenToOperator[TK_LG] = OpStr.LG;
+  tokenToOperator[TK_LOG] = OpStr.LOG;
+  tokenToOperator[TK_EQL] = OpStr.EQL;
+  tokenToOperator[TK_COMMA] = OpStr.COMMA;
+  tokenToOperator[TK_TEXT] = OpStr.TEXT;
+  tokenToOperator[TK_LT] = OpStr.LT;
+  tokenToOperator[TK_LE] = OpStr.LE;
+  tokenToOperator[TK_GT] = OpStr.GT;
+  tokenToOperator[TK_GE] = OpStr.GE;
+  tokenToOperator[TK_NE] = OpStr.NE;
+  tokenToOperator[TK_NGTR] = OpStr.NGTR;
+  tokenToOperator[TK_NLESS] = OpStr.NLESS;
+  tokenToOperator[TK_NI] = OpStr.NI;
+  tokenToOperator[TK_SUBSETEQ] = OpStr.SUBSETEQ;
+  tokenToOperator[TK_SUPSETEQ] = OpStr.SUPSETEQ;
+  tokenToOperator[TK_SUBSET] = OpStr.SUBSET;
+  tokenToOperator[TK_SUPSET] = OpStr.SUPSET;
+  tokenToOperator[TK_APPROX] = OpStr.APPROX;
+  tokenToOperator[TK_PERP] = OpStr.PERP;
+  tokenToOperator[TK_PROPTO] = OpStr.PROPTO;
+  tokenToOperator[TK_PARALLEL] = OpStr.PARALLEL;
+  tokenToOperator[TK_NPARALLEL] = OpStr.NPARALLEL;
+  tokenToOperator[TK_SIM] = OpStr.SIM;
+  tokenToOperator[TK_CONG] = OpStr.CONG;
+  tokenToOperator[TK_EXISTS] = OpStr.EXISTS;
+  tokenToOperator[TK_IN] = OpStr.IN;
+  tokenToOperator[TK_FORALL] = OpStr.FORALL;
+  tokenToOperator[TK_LIM] = OpStr.LIM;
+  tokenToOperator[TK_EXP] = OpStr.EXP;
+  tokenToOperator[TK_TO] = OpStr.TO;
+  tokenToOperator[TK_VERTICALBAR] = OpStr.PIPE;
+  tokenToOperator[TK_SUM] = OpStr.SUM;
+  tokenToOperator[TK_INT] = OpStr.INT;
+  tokenToOperator[TK_PROD] = OpStr.PROD;
+  tokenToOperator[TK_CUP] = OpStr.CUP;
+  tokenToOperator[TK_BIGCUP] = OpStr.BIGCUP;
+  tokenToOperator[TK_CAP] = OpStr.CAP;
+  tokenToOperator[TK_BIGCAP] = OpStr.BIGCAP;
+  tokenToOperator[TK_M] = OpStr.M;
+  tokenToOperator[TK_IMPLIES] = OpStr.IMPLIES;
+  tokenToOperator[TK_RIGHTARROW] = OpStr.RIGHTARROW;
+  tokenToOperator[TK_LEFTARROW] = OpStr.LEFTARROW;
+  tokenToOperator[TK_LONGRIGHTARROW] = OpStr.LONGRIGHTARROW;
+  tokenToOperator[TK_LONGLEFTARROW] = OpStr.LONGLEFTARROW;
+  tokenToOperator[TK_OVERRIGHTARROW] = OpStr.OVERRIGHTARROW;
+  tokenToOperator[TK_OVERLEFTARROW] = OpStr.OVERLEFTARROW;
+  tokenToOperator[TK_LONGLEFTRIGHTARROW] = OpStr.LONGLEFTRIGHTARROW;
+  tokenToOperator[TK_OVERLEFTRIGHTARROW] = OpStr.OVERLEFTRIGHTARROW;
+  tokenToOperator[TK_BANG] = OpStr.FACT;
+  tokenToOperator[TK_BINOM] = OpStr.BINOM;
+  tokenToOperator[TK_NEWROW] = OpStr.ROW;
+  tokenToOperator[TK_NEWCOL] = OpStr.COL;
+  tokenToOperator[TK_COLON] = OpStr.COLON;
+  tokenToOperator[TK_TYPE] = OpStr.TYPE;
+  tokenToOperator[TK_OVERLINE] = OpStr.OVERLINE;
+  tokenToOperator[TK_OVERSET] = OpStr.OVERSET;
+  tokenToOperator[TK_UNDERSET] = OpStr.UNDERSET;
+  tokenToOperator[TK_BACKSLASH] = OpStr.BACKSLASH;
+  tokenToOperator[TK_MATHBF] = OpStr.MATHBF;
+  tokenToOperator[TK_DOT] = OpStr.DOT;
+  tokenToOperator[TK_MATHFIELD] = OpStr.MATHFIELD;
   var parse = function parse(src, env) {
     src = stripInvisible(src);
-    var TK_NONE = 0;
-    var TK_ADD = "+".charCodeAt(0);
-    var TK_CARET = "^".charCodeAt(0);
-    var TK_UNDERSCORE = "_".charCodeAt(0);
-    var TK_COS = 261;
-    var TK_COT = 264;
-    var TK_CSC = 265;
-    var TK_FRAC = 256;
-    var TK_SLASH = "/".charCodeAt(0);
-    var TK_EQL = "=".charCodeAt(0);
-    var TK_LN = 263;
-    var TK_LEFTBRACE = "{".charCodeAt(0);
-    var TK_VERTICALBAR = "|".charCodeAt(0);
-    var TK_LEFTBRACKET = "[".charCodeAt(0);
-    var TK_LEFTPAREN = "(".charCodeAt(0);
-    var TK_MUL = "*".charCodeAt(0);
-    var TK_NUM = "0".charCodeAt(0);
-    var TK_PM = 258;
-    var TK_RIGHTBRACE = "}".charCodeAt(0);
-    var TK_RIGHTBRACKET = "]".charCodeAt(0);
-    var TK_RIGHTPAREN = ")".charCodeAt(0);
-    var TK_SEC = 262;
-    var TK_SIN = 259;
-    var TK_SQRT = 257;
-    var TK_SUB = "-".charCodeAt(0);
-    var TK_TAN = 260;
-    var TK_VAR = "a".charCodeAt(0);
-    var TK_CONST = "A".charCodeAt(0);
-    var TK_NEXT = 266;
-    var TK_COMMA = ",".charCodeAt(0);
-    var TK_LG = 267;
-    var TK_LOG = 268;
-    var TK_TEXT = 269;
-    var TK_LT = 270;
-    var TK_LE = 271;
-    var TK_GT = 272;
-    var TK_GE = 273;
-    var TK_EXISTS = 274;
-    var TK_IN = 275;
-    var TK_FORALL = 276;
-    var TK_LIM = 277;
-    var TK_EXP = 278;
-    var TK_TO = 279;
-    var TK_SUM = 280;
-    var TK_INT = 281;
-    var TK_PROD = 282;
-    var TK_PERCENT = "%".charCodeAt(0);
-    var TK_M = 283;
-    var TK_RIGHTARROW = 284;
-    var TK_BANG = "!".charCodeAt(0);
-    var TK_BINOM = 285;
-    var TK_NEWROW = 286;
-    var TK_NEWCOL = 287;
-    var TK_BEGIN = 288;
-    var TK_END = 289;
-    var TK_COLON = ":".charCodeAt(0);
-    var TK_VEC = 290;
-    var TK_ARCSIN = 291;
-    var TK_ARCCOS = 292;
-    var TK_ARCTAN = 293;
-    var TK_DIV = 294;
-    var TK_FORMAT = 295;
-    var TK_OVERLINE = 296;
-    var TK_OVERSET = 297;
-    var TK_UNDERSET = 298;
-    var TK_BACKSLASH = 299;
-    var TK_MATHBF = 300;
-    var TK_NE = 301;
-    var TK_APPROX = 302;
-    var TK_ABS = 303;
-    var TK_DOT = 304;
-    var TK_NGTR = 305;
-    var TK_NLESS = 306;
-    var TK_SINH = 307;
-    var TK_COSH = 308;
-    var TK_TANH = 309;
-    var TK_SECH = 310;
-    var TK_COTH = 311;
-    var TK_CSCH = 312;
-    var TK_ARCSINH = 313;
-    var TK_ARCCOSH = 314;
-    var TK_ARCTANH = 315;
-    var T0 = TK_NONE, T1 = TK_NONE;
-    var tokenToOperator = {};
-    tokenToOperator[TK_SLASH] = OpStr.FRAC;
-    tokenToOperator[TK_FRAC] = OpStr.FRAC;
-    tokenToOperator[TK_SQRT] = OpStr.SQRT;
-    tokenToOperator[TK_VEC] = OpStr.VEC;
-    tokenToOperator[TK_ADD] = OpStr.ADD;
-    tokenToOperator[TK_SUB] = OpStr.SUB;
-    tokenToOperator[TK_PM] = OpStr.PM;
-    tokenToOperator[TK_CARET] = OpStr.POW;
-    tokenToOperator[TK_UNDERSCORE] = OpStr.SUBSCRIPT;
-    tokenToOperator[TK_MUL] = OpStr.MUL;
-    tokenToOperator[TK_DIV] = OpStr.DIV;
-    tokenToOperator[TK_SIN] = OpStr.SIN;
-    tokenToOperator[TK_COS] = OpStr.COS;
-    tokenToOperator[TK_TAN] = OpStr.TAN;
-    tokenToOperator[TK_ARCSIN] = OpStr.ARCSIN;
-    tokenToOperator[TK_ARCCOS] = OpStr.ARCCOS;
-    tokenToOperator[TK_ARCTAN] = OpStr.ARCTAN;
-    tokenToOperator[TK_SEC] = OpStr.SEC;
-    tokenToOperator[TK_COT] = OpStr.COT;
-    tokenToOperator[TK_CSC] = OpStr.CSC;
-    tokenToOperator[TK_SINH] = OpStr.SINH;
-    tokenToOperator[TK_COSH] = OpStr.COSH;
-    tokenToOperator[TK_TANH] = OpStr.TANH;
-    tokenToOperator[TK_ARCSINH] = OpStr.ARCSINH;
-    tokenToOperator[TK_ARCCOSH] = OpStr.ARCCOSH;
-    tokenToOperator[TK_ARCTANH] = OpStr.ARCTANH;
-    tokenToOperator[TK_SECH] = OpStr.SECH;
-    tokenToOperator[TK_COTH] = OpStr.COTH;
-    tokenToOperator[TK_CSCH] = OpStr.CSCH;
-    tokenToOperator[TK_LN] = OpStr.LN;
-    tokenToOperator[TK_LG] = OpStr.LG;
-    tokenToOperator[TK_LOG] = OpStr.LOG;
-    tokenToOperator[TK_EQL] = OpStr.EQL;
-    tokenToOperator[TK_COMMA] = OpStr.COMMA;
-    tokenToOperator[TK_TEXT] = OpStr.TEXT;
-    tokenToOperator[TK_LT] = OpStr.LT;
-    tokenToOperator[TK_LE] = OpStr.LE;
-    tokenToOperator[TK_GT] = OpStr.GT;
-    tokenToOperator[TK_GE] = OpStr.GE;
-    tokenToOperator[TK_NE] = OpStr.NE;
-    tokenToOperator[TK_NGTR] = OpStr.NGTR;
-    tokenToOperator[TK_NLESS] = OpStr.NLESS;
-    tokenToOperator[TK_APPROX] = OpStr.APPROX;
-    tokenToOperator[TK_EXISTS] = OpStr.EXISTS;
-    tokenToOperator[TK_IN] = OpStr.IN;
-    tokenToOperator[TK_FORALL] = OpStr.FORALL;
-    tokenToOperator[TK_LIM] = OpStr.LIM;
-    tokenToOperator[TK_EXP] = OpStr.EXP;
-    tokenToOperator[TK_TO] = OpStr.TO;
-    tokenToOperator[TK_SUM] = OpStr.SUM;
-    tokenToOperator[TK_INT] = OpStr.INT;
-    tokenToOperator[TK_PROD] = OpStr.PROD;
-    tokenToOperator[TK_M] = OpStr.M;
-    tokenToOperator[TK_RIGHTARROW] = OpStr.RIGHTARROW;
-    tokenToOperator[TK_BANG] = OpStr.FACT;
-    tokenToOperator[TK_BINOM] = OpStr.BINOM;
-    tokenToOperator[TK_NEWROW] = OpStr.ROW;
-    tokenToOperator[TK_NEWCOL] = OpStr.COL;
-    tokenToOperator[TK_COLON] = OpStr.COLON;
-    tokenToOperator[TK_FORMAT] = OpStr.FORMAT;
-    tokenToOperator[TK_OVERLINE] = OpStr.OVERLINE;
-    tokenToOperator[TK_OVERSET] = OpStr.OVERSET;
-    tokenToOperator[TK_UNDERSET] = OpStr.UNDERSET;
-    tokenToOperator[TK_BACKSLASH] = OpStr.BACKSLASH;
-    tokenToOperator[TK_MATHBF] = OpStr.MATHBF;
-    tokenToOperator[TK_DOT] = OpStr.DOT;
     function newNode(op, args) {
       return{op:op, args:args}
     }
@@ -1118,9 +1204,7 @@ var Model = function() {
       var tk;
       var op;
       switch(tk = hd()) {
-        case "A".charCodeAt(0):
-        ;
-        case "a".charCodeAt(0):
+        case CC_CONST:
         ;
         case TK_VAR:
           var args = [lexeme()];
@@ -1649,6 +1733,7 @@ var Model = function() {
       }else {
         args = [expr]
       }
+      var loopCount = 0;
       while((t = hd()) && (!isAdditive(t) && (!isRelational(t) && (t !== TK_COMMA && (!isEquality(t) && (t !== TK_RIGHTBRACE && (t !== TK_RIGHTPAREN && (t !== TK_RIGHTBRACKET && (t !== TK_RIGHTARROW && (t !== TK_LT && (t !== TK_VERTICALBAR && (t !== TK_NEWROW && (t !== TK_NEWCOL && t !== TK_END))))))))))))) {
         prevExplicitOperator = explicitOperator;
         explicitOperator = false;
@@ -1719,6 +1804,7 @@ var Model = function() {
         }else {
           args.push(expr)
         }
+        assert(loopCount++ < 1E3, message(1E3, ["Stuck in loop in mutliplicativeExpr()"]))
       }
       if(args.length > 1) {
         return multiplyNode(args)
@@ -2165,7 +2251,7 @@ var Model = function() {
               }
             ;
             default:
-              if(isAlphaCharCode(c) || c === "'".charCodeAt(0)) {
+              if(isAlphaCharCode(c) || c === CC_SINGLEQUOTE) {
                 return variable(c)
               }else {
                 if(matchDecimalSeparator(String.fromCharCode(c)) || isNumberCharCode(c)) {
@@ -2204,7 +2290,7 @@ var Model = function() {
         lexeme += ch;
         var identifier = lexeme;
         var startIndex = curIndex + 1;
-        while(isAlphaCharCode(c) || c === "'".charCodeAt(0)) {
+        while(isAlphaCharCode(c) || c === CC_SINGLEQUOTE) {
           c = src.charCodeAt(curIndex++);
           if(!isAlphaCharCode(c)) {
             break
@@ -2223,7 +2309,7 @@ var Model = function() {
         }else {
           curIndex = startIndex
         }
-        while(c === "'".charCodeAt(0)) {
+        while(c === CC_SINGLEQUOTE) {
           c = src.charCodeAt(curIndex++);
           var ch = String.fromCharCode(c);
           lexeme += ch
@@ -2233,13 +2319,13 @@ var Model = function() {
       }
       function latex() {
         var c = src.charCodeAt(curIndex++);
-        if(c === "$".charCodeAt(0)) {
+        if(c === CC_DOLLAR) {
           lexeme = String.fromCharCode(c)
         }else {
-          if(c === "%".charCodeAt(0)) {
+          if(c === CC_PERCENT) {
             lexeme += String.fromCharCode(c)
           }else {
-            if(indexOf([" ".charCodeAt(0), ":".charCodeAt(0), ";".charCodeAt(0), ",".charCodeAt(0), "!".charCodeAt(0)], c) >= 0) {
+            if(indexOf([CC_SPACE, CC_COLON, CC_SEMICOLON, CC_COMMA, CC_BANG], c) >= 0) {
               lexeme = "\\ "
             }else {
               while(isAlphaCharCode(c)) {
@@ -2256,13 +2342,13 @@ var Model = function() {
         }else {
           if(tk === TK_TEXT) {
             var c = src.charCodeAt(curIndex++);
-            while(c && c !== "{".charCodeAt(0)) {
+            while(c && c !== CC_LEFTBRACE) {
               c = src.charCodeAt(curIndex++)
             }
             lexeme = "";
             var c = src.charCodeAt(curIndex++);
             var keepTextWhitespace = Model.option("keepTextWhitespace");
-            while(c && c !== "}".charCodeAt(0)) {
+            while(c && c !== CC_RIGHTBRACE) {
               var ch = String.fromCharCode(c);
               if(!keepTextWhitespace && (ch === "&" && indexOf(src.substring(curIndex), "nbsp;") === 0)) {
                 curIndex += 5
@@ -4447,6 +4533,7 @@ var BigDecimal = function(MathContext) {
   var bigTwo = new BigDecimal("2");
   var bigThree = new BigDecimal("3");
   var bigFour = new BigDecimal("4");
+  var bigFive = new BigDecimal("5");
   var bigMinusOne = new BigDecimal("-1");
   var nodeOne = numberNode("1");
   var nodeMinusOne = numberNode("-1");
@@ -5377,69 +5464,6 @@ var BigDecimal = function(MathContext) {
         return hints
       }})
     }
-    function m2e(root) {
-      if(!root || !root.args) {
-        assert(false, "Should not get here. Illformed node.");
-        return 0
-      }
-      return visit(root, {name:"m2e", exponential:function(node) {
-        var args = [];
-        forEach(node.args, function(n) {
-          args = args.concat(m2e(n))
-        });
-        var str = "exponential " + args;
-        return str
-      }, multiplicative:function(node) {
-        var args = [];
-        forEach(node.args, function(n) {
-          args = args.concat(m2e(n))
-        });
-        var str = args[0] + " times " + args[1];
-        return str
-      }, additive:function(node) {
-        var args = [];
-        forEach(node.args, function(n) {
-          args = args.concat(m2e(n))
-        });
-        var str = "additive " + args;
-        return str
-      }, unary:function(node) {
-        var args = [];
-        forEach(node.args, function(n) {
-          args = args.concat(m2e(n))
-        });
-        var str = "unary " + args;
-        return str
-      }, numeric:function(node) {
-        var args = [];
-        forEach(node.args, function(n) {
-          args = args.concat(n)
-        });
-        var str = args;
-        return str
-      }, variable:function(node) {
-        var args = [];
-        forEach(node.args, function(n) {
-          args = args.concat(n)
-        });
-        var str = args;
-        return str
-      }, comma:function(node) {
-        var args = [];
-        forEach(node.args, function(n) {
-          args = args.concat(m2e(n))
-        });
-        var str = "list " + args;
-        return str
-      }, equals:function(node) {
-        var args = [];
-        forEach(node.args, function(n) {
-          args = args.concat(m2e(n))
-        });
-        var str = "equals " + args;
-        return str
-      }})
-    }
     function variablePart(root) {
       var env = Model.env;
       assert(root && root.args, message(2E3));
@@ -5810,24 +5834,10 @@ var BigDecimal = function(MathContext) {
       if(node.op !== Model.MUL) {
         return node
       }
-      var args = [];
-      forEach(node.args, function(n, i) {
-        var coeffs;
-        if((coeffs = isPolynomial(n)) && coeffs.length === 3) {
-          var nn = factoredQuadradic(coeffs, n);
-          if(nn) {
-            args = args.concat(nn.args)
-          }else {
-            args.push(n)
-          }
-        }else {
-          args.push(n)
-        }
-      });
       var changed = false;
       var numers = {};
       var denoms = {};
-      forEach(args, function(n, i) {
+      forEach(node.args, function(n, i) {
         var isDenom = false;
         var f;
         if(isMinusOne(n)) {
@@ -6231,6 +6241,11 @@ var BigDecimal = function(MathContext) {
               node = unaryNode(node.op, [args[0]])
             }
             break;
+          case Model.SIN:
+          ;
+          case Model.COS:
+            node = phaseShift(node.op, node.args);
+            break;
           default:
             break
         }
@@ -6238,9 +6253,18 @@ var BigDecimal = function(MathContext) {
       }, variable:function(node) {
         if(node.args[0] === "i" && !option("dontSimplifyImaginary")) {
           node = nodeImaginary
-        }
-        if(node.args[0] === "\\infty") {
-          node = nodePositiveInfinity
+        }else {
+          if(node.args[0] === "\\infty") {
+            node = nodePositiveInfinity
+          }else {
+            if(node.args[0] === "\\radian") {
+              node = nodeOne
+            }else {
+              if(node.args[0] === "\\degree") {
+                node = fractionNode(variableNode("\\pi"), numberNode("180"))
+              }
+            }
+          }
         }
         return node
       }, exponential:function(node) {
@@ -7276,6 +7300,84 @@ var BigDecimal = function(MathContext) {
       }
       return toDecimal(f(n))
     }
+    function phaseShift(op, args) {
+      debugger;
+      var tt = terms(args[0]);
+      var mv = bigZero;
+      var cp = [], vp = [];
+      var neg = false;
+      tt.forEach(function(t, i) {
+        if(variablePart(t) === null) {
+          mv = mv.add(mathValue(t, true, true));
+          cp.push(t)
+        }else {
+          if(isNeg(constantPart(t))) {
+            neg = !neg
+          }
+          vp.push(t)
+        }
+      });
+      var cycles = -1 * toNumber(mv) / (2 * Math.PI);
+      var phase = toNumber(mv) % (2 * Math.PI) / Math.PI;
+      var node;
+      var shift = binaryNode(Model.MUL, [numberNode(cycles), numberNode("2"), variableNode("\\pi")]);
+      var arg;
+      if(cycles) {
+        arg = binaryNode(Model.ADD, vp.concat(cp).concat(shift))
+      }else {
+        arg = binaryNode(Model.ADD, vp.concat(cp))
+      }
+      if(vp.length === 0) {
+        vp.push(nodeZero)
+      }
+      switch(op) {
+        case Model.SIN:
+          switch(phase) {
+            case 0:
+              arg = neg ? multiplyNode([nodeMinusOne, arg]) : arg;
+              node = unaryNode(Model.SIN, [arg]);
+              node = neg ? multiplyNode([nodeMinusOne, node]) : node;
+              break;
+            case 1 / 2:
+              node = unaryNode(Model.COS, vp);
+              break;
+            case 1:
+              arg = neg ? multiplyNode(vp.concat(nodeMinusOne), true) : binaryNode(Model.ADD, vp);
+              node = unaryNode(Model.SIN, [arg]);
+              node = !neg ? multiplyNode([nodeMinusOne, node]) : node;
+              break;
+            default:
+              node = unaryNode(op, args);
+              break
+          }
+          break;
+        case Model.COS:
+          switch(phase) {
+            case 0:
+              arg = neg ? multiplyNode([nodeMinusOne, arg]) : arg;
+              node = unaryNode(Model.COS, [arg]);
+              break;
+            case 1 / 2:
+              arg = neg ? multiplyNode(vp.concat(nodeMinusOne), true) : binaryNode(Model.ADD, vp);
+              node = unaryNode(Model.SIN, [arg]);
+              node = !neg ? multiplyNode([nodeMinusOne, node]) : node;
+              break;
+            case 1:
+              arg = neg ? multiplyNode(vp.concat(nodeMinusOne), true) : binaryNode(Model.ADD, vp);
+              node = unaryNode(Model.COS, [arg]);
+              node = multiplyNode([nodeMinusOne, node]);
+              break;
+            default:
+              node = unaryNode(op, args);
+              break
+          }
+          break;
+        default:
+          assert(false);
+          break
+      }
+      return node
+    }
     function flattenNestedNodes(node, doSimplify) {
       var args = [];
       if(node.op === Model.NUM || node.op === Model.VAR) {
@@ -8190,7 +8292,9 @@ var BigDecimal = function(MathContext) {
                           if(emv.remainder(bigThree).compareTo(bigZero) === 0) {
                             return[multiplyNode([nodeMinusOne, nodeImaginary])]
                           }else {
-                            return[nodeImaginary]
+                            if(emv.remainder(bigFive).compareTo(bigZero) === 0) {
+                              return[nodeImaginary]
+                            }
                           }
                         }
                       }
@@ -8586,24 +8690,6 @@ var BigDecimal = function(MathContext) {
         });
         return uu
       }})
-    }
-    function dummy(root, env, resume) {
-      console.log("dummy() root=" + JSON.stringify(root, null, 2));
-      if(!root || !root.args) {
-        assert(false, "Should not get here. Illformed node.")
-      }
-      var nid = Ast.intern(root);
-      visit(root, {name:"dummy", exponential:function(node) {
-      }, multiplicative:function(node) {
-        resume(null, node)
-      }, additive:function(node) {
-        resume(null, node)
-      }}, function(err, val) {
-        if(Ast.intern(val) === nid) {
-          resume(err, val)
-        }
-        dummy(val, env, resume)
-      })
     }
     function multiplyMatrix(lnode, rnode) {
       var snode, mnode;
@@ -9410,15 +9496,6 @@ var BigDecimal = function(MathContext) {
       }
       return false
     }
-    function factoredQuadradic(coeffs, node) {
-      var varNode = variableNode(variables(node)[0]);
-      var roots = getRoots(coeffs[2], coeffs[1], coeffs[0]);
-      if(!roots) {
-        return null
-      }
-      var node = multiplyNode([binaryNode(Model.ADD, [varNode, negate(numberNode(roots[0]))]), binaryNode(Model.ADD, [varNode, negate(numberNode(roots[1]))])]);
-      return sort(node)
-    }
     function getRoots(a, b, c) {
       a = toNumber(a);
       b = toNumber(b);
@@ -9501,7 +9578,6 @@ var BigDecimal = function(MathContext) {
     this.sort = sort;
     this.sortLiteral = sortLiteral;
     this.simplify = simplify;
-    this.dummy = dummy;
     this.expand = expand;
     this.terms = terms;
     this.factors = factors;
@@ -9526,10 +9602,6 @@ var BigDecimal = function(MathContext) {
   }
   function hint(node) {
     return visitor.hint(node)
-  }
-  function m2e(node) {
-    var visitor = new Visitor(new Ast);
-    return visitor.m2e(node)
   }
   function variablePart(node) {
     return visitor.variablePart(node)
@@ -9622,16 +9694,6 @@ var BigDecimal = function(MathContext) {
     var result = visitor.simplify(node, env);
     Assert.setLocation(prevLocation);
     return result
-  }
-  function dummy(node, env, resume) {
-    var prevLocation = Assert.location;
-    if(node.location) {
-      Assert.setLocation(node.location)
-    }
-    visitor.dummy(node, env, function(err, val) {
-      Assert.setLocation(prevLocation);
-      resume(err, val)
-    })
   }
   function hasLikeFactors(node, env) {
     var prevLocation = Assert.location;
@@ -10448,9 +10510,6 @@ var BigDecimal = function(MathContext) {
   Model.fn.hint = function(n1) {
     return hint(n1)
   };
-  Model.fn.m2e = function(n1) {
-    return m2e(n1)
-  };
   var option = Model.option = function option(p, v) {
     var options = Model.options;
     var opt = options && options[p];
@@ -10580,7 +10639,7 @@ var MathCore = function() {
       return e
     }
   }
-  var timeoutDuration = 3E4;
+  var timeoutDuration = 3E6;
   function setTimeoutDuration(duration) {
     timeoutDuration = duration
   }
