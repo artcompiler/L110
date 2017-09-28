@@ -284,16 +284,14 @@ var transformer = function() {
     delete options.dontConvertDecimalToFraction;
     delete options.dontSimplifyImaginary;
     return {
-      "validation": {
-        "scoring_type": "exactMatch",
-        "valid_response": {
-          "score": 1,
-          "value": [{
-            "method": method,
-            "options": options,
-            "value": value,
-          }]
-        }
+      "scoring_type": "exactMatch",
+      "valid_response": {
+        "score": 1,
+        "value": [{
+          "method": method,
+          "options": options,
+          "value": value,
+        }]
       }
     };
   }
@@ -324,7 +322,7 @@ var transformer = function() {
               response: response,
               value: reference,
               methods: methods,
-              objectCode: composeValidation("equivSyntax", options, reference)
+              validation: composeValidation("equivSyntax", options, reference)
             });
           });
         }
@@ -367,7 +365,7 @@ var transformer = function() {
               response: response,
               value: reference,
               methods: methods,
-              objectCode: composeValidation("equivLiteral", options, reference)
+              validation: composeValidation("equivLiteral", options, reference)
             });
           });
         } else {
@@ -385,7 +383,7 @@ var transformer = function() {
             response: response,
             value: reference,
             methods: methods,
-            objectCode: composeValidation("equivLiteral", options, reference)
+            validation: composeValidation("equivLiteral", options, reference)
           });
         }
       });
@@ -420,7 +418,7 @@ var transformer = function() {
               response: response,
               value: reference,
               methods: methods,
-              objectCode: composeValidation("equivSymbolic", options, reference)
+              validation: composeValidation("equivSymbolic", options, reference)
             });
           });
         }
@@ -456,7 +454,7 @@ var transformer = function() {
               response: response,
               value: reference,
               methods: methods,
-              objectCode: composeValidation("equivValue", options, reference)
+              validation: composeValidation("equivValue", options, reference)
             });
           });
         }
@@ -486,7 +484,7 @@ var transformer = function() {
             score: score > 0 && val && val.result ? 1 : -1,
             response: response,
             methods: methods,
-            objectCode: composeValidation("isFactorised", options)
+            validation: composeValidation("isFactorised", options)
           });
         });
       }
@@ -516,7 +514,7 @@ var transformer = function() {
             score: score > 0 && val && val.result ? 1 : -1,
             response: response,
             methods: methods,
-            objectCode: composeValidation("isSimplified", options)
+            validation: composeValidation("isSimplified", options)
           });
         });
       }
@@ -545,7 +543,7 @@ var transformer = function() {
             score: score > 0 && val && val.result ? 1 : -1,
             response: response,
             methods: methods,
-            objectCode: composeValidation("isExpanded", options)
+            validation: composeValidation("isExpanded", options)
           });
         });
       }
@@ -574,7 +572,7 @@ var transformer = function() {
             score: score > 0 && val && val.result ? 1 : -1,
             response: response,
             methods: methods,
-            objectCode: composeValidation("isTrue", options)
+            validation: composeValidation("isTrue", options)
           });
         });
       }
@@ -605,7 +603,7 @@ var transformer = function() {
             response: val.result,
             result: val.result,
             methods: methods,
-            objectCode: composeValidation("calculate", options, val)
+            validation: composeValidation("calculate", options, val)
           });
         });
       }
@@ -652,7 +650,7 @@ var transformer = function() {
             response: val,
             result: val,
             methods: methods,
-            objectCode: composeValidation("speak", options, val)
+            validation: composeValidation("speak", options, val)
           });
         });
       }
@@ -681,7 +679,7 @@ var transformer = function() {
             score: score > 0 && val && val.result ? 1 : -1,
             response: response,
             methods: methods,
-            objectCode: composeValidation("validSyntax", options)
+            validation: composeValidation("validSyntax", options)
           });
         });
       }
@@ -716,7 +714,7 @@ var transformer = function() {
               response: response,
               value: reference,
               methods: methods,
-              objectCode: composeValidation("isUnit", options)
+              validation: composeValidation("isUnit", options)
             });
           });
         }

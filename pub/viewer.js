@@ -7,14 +7,17 @@ window.gcexports.viewer = (function () {
     objCodeMirror.setValue(obj);
   }
   function update(el, obj, src, pool) {
-    if (!obj.objectCode) {
+    if (!obj) {
       d3.select(el).html('<g/>');
       var bbox = $("#graff-view svg g")[0].getBBox();
       $(el).attr("height", (bbox.height + 20) + "px");
       return;
     }
     var fill, fontStyle;
-    var value = obj.objectCode.validation.valid_response.value[0];
+    var validation = obj.objectCode
+      ? obj.objectCode.validation   // Legacy.
+      : obj.validation;
+    var value = validation.valid_response.value[0];
     var options = "";
     var method = obj.methods || value.method;
     Object.keys(value.options).sort().forEach(function (v) {
