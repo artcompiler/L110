@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 2f20cd7
+ * Mathcore unversioned - eac0e7a
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -8110,6 +8110,8 @@ var BigDecimal = function(MathContext) {
                           }else {
                             if(lexpo !== -1 && (!isMinusOne(lbase) && !isMinusOne(rbase))) {
                               node = binaryNode(Model.POW, [simplify(multiplyNode([lbase, rbase])), lnode.args[1]])
+                            }else {
+                              node = [lnode, rnode]
                             }
                           }
                         }else {
