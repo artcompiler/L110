@@ -10,6 +10,7 @@ window.gcexports.globalLexicon = {
     "true" : { "tk": 20, "cls": "val", "length": 0 },
     "false" : { "tk": 20, "cls": "val", "length": 0 },
 
+    "concat" : { "tk": 1, "name": "CONCAT", "cls": "function", "length": 2 , "arity": 2 },
     "equivSyntax" : { "tk": 1, "name": "EQUIV-SYNTAX", "cls": "function", "length": 2 , "arity": 2 },
     "equivLiteral" : { "tk": 1, "name": "EQUIV-LITERAL", "cls": "function", "length": 2 , "arity": 2 },
     "equivSymbolic" : { "tk": 1, "name": "EQUIV-SYMBOLIC", "cls": "function", "length": 2 , "arity": 2 },

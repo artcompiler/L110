@@ -61,6 +61,7 @@ var transformer = function() {
     "BOOL": bool,
     "LIST" : list,
     "NOT": not,
+    "CONCAT": concat,
     "EQUIV-SYNTAX": equivSyntax,
     "EQUIV-LITERAL": equivLiteral,
     "EQUIV-SYMBOLIC": equivSymbolic,
