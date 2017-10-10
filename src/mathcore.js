@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - eac0e7a
+ * Mathcore unversioned - 554473f
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -1457,10 +1457,13 @@ var Model = function() {
       }
       return newNode(tokenToOperator[TK_NEWCOL], args)
     }
+    var pipeTokenCount = 0;
     function absExpr() {
+      pipeTokenCount++;
       eat(TK_VERTICALBAR);
       var e = additiveExpr();
       eat(TK_VERTICALBAR);
+      pipeTokenCount--;
       return unaryNode(Model.ABS, [e])
     }
     function braceExpr() {
@@ -1734,7 +1737,7 @@ var Model = function() {
         args = [expr]
       }
       var loopCount = 0;
-      while((t = hd()) && (!isAdditive(t) && (!isRelational(t) && (t !== TK_COMMA && (!isEquality(t) && (t !== TK_RIGHTBRACE && (t !== TK_RIGHTPAREN && (t !== TK_RIGHTBRACKET && (t !== TK_RIGHTARROW && (t !== TK_LT && (t !== TK_VERTICALBAR && (t !== TK_NEWROW && (t !== TK_NEWCOL && t !== TK_END))))))))))))) {
+      while((t = hd()) && (!isAdditive(t) && (!isRelational(t) && (t !== TK_COMMA && (!isEquality(t) && (t !== TK_RIGHTBRACE && (t !== TK_RIGHTPAREN && (t !== TK_RIGHTBRACKET && (t !== TK_RIGHTARROW && (t !== TK_LT && (!(t === TK_VERTICALBAR && pipeTokenCount > 0) && (t !== TK_NEWROW && (t !== TK_NEWCOL && t !== TK_END))))))))))))) {
         prevExplicitOperator = explicitOperator;
         explicitOperator = false;
         if(isMultiplicative(t)) {
@@ -7100,6 +7103,28 @@ var BigDecimal = function(MathContext) {
       }
       return false
     }
+    function isEven(n) {
+      if(n === null) {
+        return false
+      }else {
+        if(n instanceof BigDecimal) {
+          return toNumber(n) % 2 === 0
+        }else {
+          if(typeof n === "number") {
+            return n % 2 === 0
+          }else {
+            if(n.op === Model.NUM) {
+              return isEven(mathValue(n))
+            }else {
+              return false
+            }
+          }
+        }
+      }
+    }
+    function isOdd(n) {
+      return isInteger(n) && !isEven(n)
+    }
     function isDecimal(node) {
       var mv;
       if(!node) {
@@ -8239,8 +8264,30 @@ var BigDecimal = function(MathContext) {
             node = multiplyNode([node.args[0], nodeMinusOne]);
             break;
           case Model.ABS:
-            if(sign(node.args[0]) < 0) {
-              node = simplify(expand(unaryNode(Model.ABS, [negate(node.args[0])])))
+            var arg = simplify(node.args[0]);
+            var cp = constantPart(arg);
+            var vp = variablePart(arg);
+            var ep;
+            if(vp.op === Model.POW && vp.args.length === 2) {
+              ep = vp.args[1];
+              vp = vp.args[0]
+            }
+            if(vp && sign(vp) < 0) {
+              vp = unaryNode(Model.ABS, [simplify(expand(negate(vp)))])
+            }else {
+              vp = vp ? unaryNode(Model.ABS, [vp]) : nodeOne
+            }
+            if(ep) {
+              vp = binaryNode(Model.POW, [vp, ep])
+            }
+            if(isOne(cp) || isMinusOne(cp)) {
+              node = vp
+            }else {
+              if(isNeg(cp)) {
+                node = multiplyNode([simplify(expand(negate(cp))), vp])
+              }else {
+                node = multiplyNode([cp, vp])
+              }
             }
             break;
           case Model.M:
@@ -8915,6 +8962,18 @@ var BigDecimal = function(MathContext) {
       }, unary:function(node) {
         assert(node.op !== Model.SQRT, "Internal error: SQRT removed during parsing");
         switch(node.op) {
+          case Model.ABS:
+            var arg0 = expand(node.args[0]);
+            if(arg0.op === Model.MUL) {
+              var args = [];
+              arg0.args.forEach(function(n) {
+                args.push(unaryNode(Model.ABS, [n]))
+              });
+              node = multiplyNode(args)
+            }else {
+              node = unaryNode(Model.ABS, [arg0])
+            }
+            break;
           case Model.SUB:
             node = multiplyNode([expand(node.args[0]), nodeMinusOne]);
             node.args[0] = expand(node.args[0]);
