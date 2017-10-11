@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 554473f
+ * Mathcore unversioned - 211060a
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -5166,6 +5166,14 @@ var BigDecimal = function(MathContext) {
           ;
           case Model.SUB:
           ;
+          case Model.PM:
+          ;
+          case Model.PERCENT:
+          ;
+          case Model.M:
+          ;
+          case Model.ABS:
+            return d;
           case Model.SIN:
           ;
           case Model.COS:
@@ -5201,15 +5209,7 @@ var BigDecimal = function(MathContext) {
           case Model.CSCH:
           ;
           case Model.COTH:
-          ;
-          case Model.PM:
-          ;
-          case Model.PERCENT:
-          ;
-          case Model.M:
-          ;
-          case Model.ABS:
-            return d;
+            return 1;
           case Model.SQRT:
             assert(args.length === 1, message(2003));
             return d / 2;
@@ -6247,7 +6247,7 @@ var BigDecimal = function(MathContext) {
           case Model.SIN:
           ;
           case Model.COS:
-            node = trigIdent(node.op, node.args);
+            node = normalizeTrigIdent(node.op, node.args);
             break;
           default:
             break
@@ -7325,8 +7325,7 @@ var BigDecimal = function(MathContext) {
       }
       return toDecimal(f(n))
     }
-    function trigIdent(op, args) {
-      debugger;
+    function normalizeTrigIdent(op, args) {
       var tt = terms(args[0]);
       var mv = bigZero;
       var cp = [], vp = [];
@@ -7870,60 +7869,6 @@ var BigDecimal = function(MathContext) {
           }
           return denoms
         }
-        function unfold(lnode, rnode) {
-          var ldeg = degree(lnode);
-          var rdeg = degree(rnode);
-          if(isZero(ldeg) && isZero(rdeg)) {
-            var lfact = factors(lnode, null, false, true);
-            var rfact = factors(rnode, null, false, true);
-            var ldenom = nodeOne, lnumer = nodeOne;
-            forEach(lfact, function(n) {
-              if(n.op === Model.POW && isMinusOne(mathValue(n.args[1]))) {
-                if(!isOne(ldenom)) {
-                  ldenom = multiplyNode([ldenom, n.args[0]], true)
-                }else {
-                  ldenom = n.args[0]
-                }
-              }else {
-                if(!isOne(lnumer)) {
-                  lnumer = multiplyNode([lnumer, n], true)
-                }else {
-                  lnumer = n
-                }
-              }
-            });
-            var rdenom = nodeOne, rnumer = nodeOne;
-            forEach(rfact, function(n) {
-              if(n.op === Model.POW && isMinusOne(mathValue(n.args[1]))) {
-                if(!isOne(rdenom)) {
-                  rdenom = multiplyNode([rdenom, n.args[0]], true)
-                }else {
-                  rdenom = n.args[0]
-                }
-              }else {
-                if(!isOne(rnumer)) {
-                  rnumer = multiplyNode([rnumer, n], true)
-                }else {
-                  rnumer = n
-                }
-              }
-            });
-            var mvldenom = mathValue(ldenom, true);
-            var mvrdenom = mathValue(rdenom, true);
-            if(mvldenom !== null && (mvrdenom !== null && isZero(mvldenom.compareTo(mvrdenom)))) {
-              if(isZero(mvldenom.compareTo(bigOne))) {
-                return[binaryNode(Model.ADD, [lnumer, rnumer])]
-              }else {
-                return[multiplyNode([binaryNode(Model.ADD, [lnumer, rnumer]), binaryNode(Model.POW, [ldenom, nodeMinusOne])])]
-              }
-            }else {
-              lnumer = multiplyNode([rdenom, lnumer], true);
-              rnumer = multiplyNode([ldenom, rnumer], true);
-              return[multiplyNode([binaryNode(Model.ADD, [lnumer, rnumer]), binaryNode(Model.POW, [multiplyNode([ldenom, rdenom]), nodeMinusOne])])]
-            }
-          }
-          return[lnode, rnode]
-        }
         function fold(lnode, rnode) {
           var ldegr = degree(lnode);
           var rdegr = degree(rnode);
@@ -7968,6 +7913,10 @@ var BigDecimal = function(MathContext) {
                         return[lnode, rnode]
                       }
                     }
+                  }
+                }else {
+                  if(ldegr === 2 && (rdegr === 2 && (isOne(lcoeff) && (isOne(rcoeff) && ((lnode.args[0].op === Model.SIN && rnode.args[0].op === Model.COS || lnode.args[0].op === Model.COS && rnode.args[0].op === Model.SIN) && ast.intern(lnode.args[0].args[0]) === ast.intern(rnode.args[0].args[0])))))) {
+                    return nodeOne
                   }
                 }
               }
@@ -8259,6 +8208,11 @@ var BigDecimal = function(MathContext) {
           return node
         }
       }, unary:function(node) {
+        var args = [];
+        forEach(node.args, function(n) {
+          args = args.concat(simplify(n))
+        });
+        node = newNode(node.op, args);
         switch(node.op) {
           case Model.SUB:
             node = multiplyNode([node.args[0], nodeMinusOne]);
@@ -10714,7 +10668,7 @@ var MathCore = function() {
       return e
     }
   }
-  var timeoutDuration = 3E4;
+  var timeoutDuration = 3E6;
   function setTimeoutDuration(duration) {
     timeoutDuration = duration
   }
