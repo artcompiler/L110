@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 211060a
+ * Mathcore unversioned - f7768c1
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -4842,6 +4842,66 @@ var BigDecimal = function(MathContext) {
     }
     assert(false, "Internal error: unable to compare with zero.")
   }
+  function isInteger(node) {
+    var mv;
+    if(!node) {
+      return false
+    }
+    if(node.op === Model.NUM && ((mv = mathValue(node, true)) !== null && isInteger(mv))) {
+      return true
+    }else {
+      if(node instanceof BigDecimal) {
+        return node.remainder(bigOne).compareTo(bigZero) === 0
+      }
+    }
+    return false
+  }
+  function isDecimal(node) {
+    var mv;
+    if(!node) {
+      return false
+    }
+    if(node.op === Model.NUM && ((mv = mathValue(node, true)) !== null && !isInteger(mv))) {
+      return true
+    }else {
+      if(node instanceof BigDecimal && !isInteger(node)) {
+        return true
+      }
+    }
+    return false
+  }
+  function isEven(node) {
+    var mv;
+    if(!node) {
+      return false
+    }
+    if(node.op === Model.NUM && ((mv = mathValue(node, true)) !== null && isEven(mv))) {
+      return true
+    }else {
+      if(node instanceof BigDecimal) {
+        return node.remainder(bigTwo).compareTo(bigZero) === 0
+      }
+    }
+    return false
+  }
+  function isOdd(node) {
+    var mv = mathValue(node, true);
+    return isInteger(mv) && !isEven(mv)
+  }
+  function isOddFraction(node) {
+    var ff = factors(node, {}, true, true);
+    var nn = [nodeOne], dd = [nodeOne];
+    forEach(ff, function(f) {
+      if(f.op !== Model.POW || !isNeg(mathValue(f.args[1], true))) {
+        nn.push(f)
+      }else {
+        dd.push(f.args[1])
+      }
+    });
+    var n = multiplyNode(nn);
+    var d = multiplyNode(dd);
+    return isOdd(n) && isOdd(d)
+  }
   function toNumber(n) {
     var str;
     if(n === null) {
@@ -8320,28 +8380,32 @@ var BigDecimal = function(MathContext) {
                       if(ast.intern(expo) === ast.intern(nodeOneHalf)) {
                         return squareRoot(base)
                       }else {
-                        if(!option("dontExpandPowers") && base.op === Model.MUL) {
-                          var args = [];
-                          forEach(base.args, function(n) {
-                            if(n.op === Model.POW) {
-                              args.push(binaryNode(Model.POW, [n.args[0], multiplyNode([n.args[1], expo])]))
-                            }else {
-                              args.push(binaryNode(Model.POW, [n, expo]))
-                            }
-                          });
-                          return multiplyNode(args)
+                        if(isMinusOne(base) && isOddFraction(expo)) {
+                          return multiplyNode([nodeMinusOne, binaryNode(Model.POW, [negate(base), expo])])
                         }else {
-                          if(base.op === Model.POW) {
-                            return binaryNode(Model.POW, [base.args[0], multiplyNode([base.args[1], expo])])
+                          if(!option("dontExpandPowers") && base.op === Model.MUL) {
+                            var args = [];
+                            forEach(base.args, function(n) {
+                              if(n.op === Model.POW) {
+                                args.push(binaryNode(Model.POW, [n.args[0], multiplyNode([n.args[1], expo])]))
+                              }else {
+                                args.push(binaryNode(Model.POW, [n, expo]))
+                              }
+                            });
+                            return multiplyNode(args)
                           }else {
-                            if(bmv !== null && (emv !== null && !isNeg(bmv))) {
-                              var b = pow(bmv, emv);
-                              base = numberNode(b);
-                              return base
+                            if(base.op === Model.POW) {
+                              return binaryNode(Model.POW, [base.args[0], multiplyNode([base.args[1], expo])])
                             }else {
-                              var b = pow(bmv, emv);
-                              if(b !== null) {
-                                return numberNode(b)
+                              if(bmv !== null && (emv !== null && !isNeg(bmv))) {
+                                var b = pow(bmv, emv);
+                                base = numberNode(b);
+                                return base
+                              }else {
+                                var b = pow(bmv, emv);
+                                if(b !== null) {
+                                  return numberNode(b)
+                                }
                               }
                             }
                           }
