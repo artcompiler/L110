@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - f7768c1
+ * Mathcore unversioned - 7ee3d81
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -5932,7 +5932,6 @@ var BigDecimal = function(MathContext) {
       if(nKeys.length === 0 || (dKeys.length === 0 || dKeys.length === 1 && dKeys[0] === "-1")) {
         return node
       }
-      var args = [];
       forEach(nKeys, function(k) {
         var nn = numers[k];
         var dd = denoms[k];
@@ -5946,16 +5945,37 @@ var BigDecimal = function(MathContext) {
       if(!changed) {
         return node
       }
+      var nargs = [];
+      var dargs = [];
       forEach(nKeys, function(k) {
-        args = args.concat(numers[k])
+        nargs = nargs.concat(numers[k])
       });
       forEach(dKeys, function(k) {
-        args = args.concat(denoms[k])
+        dargs = dargs.concat(denoms[k])
       });
-      if(args.length) {
-        return multiplyNode(args)
+      var n, d;
+      if(nargs.length) {
+        n = multiplyNode(nargs)
       }else {
+        n = null
+      }
+      if(dargs.length) {
+        d = multiplyNode(dargs)
+      }else {
+        d = null
+      }
+      if(!n && !d) {
         return nodeOne
+      }else {
+        if(!d) {
+          return n
+        }else {
+          if(!n) {
+            return d
+          }else {
+            return multiplyNode([n, d])
+          }
+        }
       }
     }
     function cancelTerms(node, location) {
