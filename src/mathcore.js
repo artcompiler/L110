@@ -473,7 +473,7 @@ var Model = function() {
     Model.env = env = e
   };
   Model.popEnv = function popEnv() {
-    assert(envStack.length > 0, "Empty envStack");
+    assert(envStack.length > 0, "1000: Empty envStack");
     Model.env = env = envStack.pop()
   };
   function isChemCore() {
@@ -482,10 +482,9 @@ var Model = function() {
   var Mp = Model.prototype = new Ast;
   Assert.reserveCodeRange(1E3, 1999, "model");
   Assert.messages[1E3] = "Internal error. %1.";
-  Assert.messages[1E3] = "Internal error.";
   Assert.messages[1001] = "Invalid syntax. '%1' expected, '%2' found.";
   Assert.messages[1002] = "Only one decimal separator can be specified.";
-  Assert.messages[1003] = "Extra characters in input at position: %1, lexeme: %2.";
+  Assert.messages[1003] = "Extra characters in input at position: %1, lexeme: %2, prefix: %3.";
   Assert.messages[1004] = "Invalid character '%1' (%2) in input.";
   Assert.messages[1005] = "Misplaced thousands separator.";
   Assert.messages[1006] = "Invalid syntax. Expression expected, %1 found.";
@@ -543,7 +542,7 @@ var Model = function() {
     return model
   };
   Model.fromLaTex = Mp.fromLaTex = function fromLaTex(src) {
-    assert(typeof src === "string", "Model.prototype.fromLaTex");
+    assert(typeof src === "string", "1000: Model.prototype.fromLaTex");
     if(!this) {
       return Model.create(src)
     }
@@ -751,11 +750,11 @@ var Model = function() {
               });
               break;
             default:
-              assert(false, "unimplemented eval operator");
+              assert(false, "1000: Unimplemented eval operator");
               break
           }
         }else {
-          assert(false, "invalid expression type")
+          assert(false, "1000: Invalid expression type")
         }
       }
     }
@@ -1109,11 +1108,11 @@ var Model = function() {
       return binaryNode(Model.MUL, args, flatten)
     }
     function unaryNode(op, args) {
-      assert(args.length === 1, "Wrong number of arguments for unary node");
+      assert(args.length === 1, "1000: Wrong number of arguments for unary node");
       return newNode(op, args)
     }
     function binaryNode(op, args, flatten) {
-      assert(args.length > 1, "Too few argument for binary node");
+      assert(args.length > 1, "1000: Too few argument for binary node");
       var aa = [];
       forEach(args, function(n) {
         if(flatten && n.op === op) {
@@ -1138,7 +1137,7 @@ var Model = function() {
       return T0
     }
     function lexeme() {
-      assert(lexemeT0 !== undefined);
+      assert(lexemeT0 !== undefined, "1000: Lexeme for token is missing");
       return lexemeT0
     }
     function next(options) {
@@ -1242,7 +1241,7 @@ var Model = function() {
           if(indexOf(figure.args[0], "matrix") >= 0) {
             e = newNode(Model.MATRIX, [tbl])
           }else {
-            assert(false, "Unrecognized LaTeX name")
+            assert(false, "1000: Unrecognized LaTeX name")
           }
           break;
         case TK_VERTICALBAR:
@@ -1708,7 +1707,7 @@ var Model = function() {
       return sym && sym.name ? true : false
     }
     function isVar(n, id) {
-      assert(typeof id === "undefined" || typeof id === "string", "Internal error in 'isVar()'");
+      assert(typeof id === "undefined" || typeof id === "string", "1000: Invalid id");
       if(n.op === Model.VAR) {
         return id === undefined ? true : n.args[0] === id
       }else {
@@ -1807,7 +1806,7 @@ var Model = function() {
         }else {
           args.push(expr)
         }
-        assert(loopCount++ < 1E3, message(1E3, ["Stuck in loop in mutliplicativeExpr()"]))
+        assert(loopCount++ < 1E3, "1000: Stuck in loop in mutliplicativeExpr()")
       }
       if(args.length > 1) {
         return multiplyNode(args)
@@ -1868,13 +1867,13 @@ var Model = function() {
       var expr, n0, n1;
       if(args[0].isRepeating === Model.DOT) {
         var n = args[0].op === Model.ADD && args[0].args[1].op === Model.NUM ? args[0].args[1] : args[0];
-        assert(n.op === Model.NUM);
+        assert(n.op === Model.NUM, "1000: Expecting a number");
         var arg1;
         if(args[1].op === Model.DOT) {
-          assert(args[1].args[0].op === Model.NUM);
+          assert(args[1].args[0].op === Model.NUM, "1000: Expecting a number");
           arg1 = numberNode(n.args[0] + args[1].args[0].args[0])
         }else {
-          assert(args[1].op === Model.NUM);
+          assert(args[1].op === Model.NUM, "1000: Expecting a number");
           arg1 = numberNode(n.args[0] + args[1].args[0])
         }
         arg1.isRepeating = Model.DOT;
@@ -2087,7 +2086,7 @@ var Model = function() {
         if(n.op !== Model.COMMA && (n.lbrk === TK_LEFTBRACE && n.rbrk === TK_RIGHTBRACE)) {
           n = newNode(Model.COMMA, [n])
         }
-        assert(!hd(), message(1003, [scan.pos(), scan.lexeme()]));
+        assert(!hd(), message(1003, [scan.pos(), scan.lexeme(), "'" + src.substring(scan.pos() - 1) + "'"]));
         return n
       }
       return nodeNone
@@ -2139,6 +2138,14 @@ var Model = function() {
       var lexemeToToken = {"\\cdot":TK_MUL, "\\times":TK_MUL, "\\div":TK_DIV, "\\dfrac":TK_FRAC, "\\frac":TK_FRAC, "\\sqrt":TK_SQRT, "\\vec":TK_VEC, "\\pm":TK_PM, "\\sin":TK_SIN, "\\cos":TK_COS, "\\tan":TK_TAN, "\\sec":TK_SEC, "\\cot":TK_COT, "\\csc":TK_CSC, "\\arcsin":TK_ARCSIN, "\\arccos":TK_ARCCOS, "\\arctan":TK_ARCTAN, "\\sinh":TK_SINH, "\\cosh":TK_COSH, "\\tanh":TK_TANH, "\\sech":TK_SECH, "\\coth":TK_COTH, "\\csch":TK_CSCH, "\\arcsinh":TK_ARCSINH, "\\arccosh":TK_ARCCOSH, "\\arctanh":TK_ARCTANH, 
       "\\ln":TK_LN, "\\lg":TK_LG, "\\log":TK_LOG, "\\left":null, "\\right":null, "\\big":null, "\\Big":null, "\\bigg":null, "\\Bigg":null, "\\ ":null, "\\quad":null, "\\qquad":null, "\\text":TK_TEXT, "\\textrm":TK_TEXT, "\\textit":TK_TEXT, "\\textbf":TK_TEXT, "\\lt":TK_LT, "\\le":TK_LE, "\\gt":TK_GT, "\\ge":TK_GE, "\\ne":TK_NE, "\\ngtr":TK_NGTR, "\\nless":TK_NLESS, "\\approx":TK_APPROX, "\\exists":TK_EXISTS, "\\in":TK_IN, "\\forall":TK_FORALL, "\\lim":TK_LIM, "\\exp":TK_EXP, "\\to":TK_TO, "\\sum":TK_SUM, 
       "\\int":TK_INT, "\\prod":TK_PROD, "\\%":TK_PERCENT, "\\rightarrow":TK_RIGHTARROW, "\\longrightarrow":TK_RIGHTARROW, "\\binom":TK_BINOM, "\\begin":TK_BEGIN, "\\end":TK_END, "\\colon":TK_COLON, "\\vert":TK_VERTICALBAR, "\\lvert":TK_VERTICALBAR, "\\rvert":TK_VERTICALBAR, "\\mid":TK_VERTICALBAR, "\\format":TK_FORMAT, "\\overline":TK_OVERLINE, "\\overset":TK_OVERSET, "\\underset":TK_UNDERSET, "\\backslash":TK_BACKSLASH, "\\mathbf":TK_MATHBF, "\\abs":TK_ABS, "\\dot":TK_DOT};
+      var unicodeToLaTeX = {8704:"\\forall", 8705:"\\complement", 8706:"\\partial", 8707:"\\exists", 8708:"\\nexists", 8709:"\\varnothing", 8710:"\\triangle", 8711:"\\nabla", 8712:"\\in", 8713:"\\notin", 8714:"\\in", 8715:"\\ni", 8716:"\\notni", 8717:"\\ni", 8718:"\\blacksquare", 8719:"\\sqcap", 8720:"\\amalg", 8721:"\\sigma", 8722:"-", 8723:"\\mp", 8724:"\\dotplus", 8725:"/", 8726:"\\setminus", 8727:"*", 8728:"\\circ", 8729:"\\bullet", 8730:"\\sqrt", 8731:null, 8732:null, 8733:"\\propto", 8734:"\\infty", 
+      8735:"\\llcorner", 8736:"\\angle", 8737:"\\measuredangle", 8738:"\\sphericalangle", 8739:"\\divides", 8740:"\\notdivides", 8741:"\\parallel", 8742:"\\nparallel", 8743:"\\wedge", 8744:"\\vee", 8745:"\\cap", 8746:"\\cup", 8747:"\\int", 8748:"\\iint", 8749:"\\iiint", 8750:"\\oint", 8751:"\\oiint", 8752:"\\oiiint", 8753:null, 8754:null, 8755:null, 8756:"\\therefore", 8757:"\\because", 8758:"\\colon", 8759:null, 8760:null, 8761:null, 8762:null, 8763:null, 8764:"\\sim", 8765:"\\backsim", 8766:null, 
+      8767:null, 8768:"\\wr", 8769:"\\nsim", 8770:"\\eqsim", 8771:"\\simeq", 8772:null, 8773:"\\cong", 8774:null, 8775:"\\ncong", 8776:"\\approx", 8777:null, 8778:"\\approxeq", 8779:null, 8780:null, 8781:"\\asymp", 8782:"\\Bumpeq", 8783:"\\bumpeq", 8784:"\\doteq", 8785:"\\doteqdot", 8786:"\\fallingdotseq", 8787:"\\risingdotseq", 8788:null, 8789:null, 8790:"\\eqcirc", 8791:"\\circeq", 8792:null, 8793:null, 8794:null, 8795:null, 8796:"\\triangleq", 8797:null, 8798:null, 8799:null, 8800:"\\ne", 8801:"\\equiv", 
+      8802:null, 8803:null, 8804:"\\le", 8805:"\\ge", 8806:"\\leqq", 8807:"\\geqq", 8808:"\\lneqq", 8809:"\\gneqq", 8810:"\\ll", 8811:"\\gg", 8812:"\\between", 8813:null, 8814:"\\nless", 8815:"\\ngtr", 8816:"\\nleq", 8817:"\\ngeq", 8818:"\\lessim", 8819:"\\gtrsim", 8820:null, 8821:null, 8822:"\\lessgtr", 8823:"\\gtrless", 8824:null, 8825:null, 8826:"\\prec", 8827:"\\succ", 8828:"\\preccurlyeq", 8829:"\\succcurlyeq", 8830:"\\precsim", 8831:"\\succsim", 8832:"\\nprec", 8833:"\\nsucc", 8834:"\\subset", 
+      8835:"\\supset", 8836:null, 8837:null, 8838:"\\subseteq", 8839:"\\supseteq", 8840:"\\nsubseteq", 8841:"\\nsupseteq", 8842:"\\subsetneq", 8843:"\\supsetneq", 8844:null, 8845:null, 8846:null, 8847:"\\sqsubset", 8848:"\\sqsupset", 8849:null, 8850:null, 8851:"\\sqcap", 8852:"\\sqcup", 8853:"\\oplus", 8854:"\\ominus", 8855:"\\otimes", 8856:"\\oslash", 8857:"\\odot", 8858:"\\circledcirc", 8859:"\\circledast", 8860:null, 8861:"\\circleddash", 8862:"\\boxplus", 8863:"\\boxminus", 8864:"\\boxtimes", 
+      8865:"\\boxdot", 8866:"\\vdash", 8867:"\\dashv", 8868:"\\top", 8869:"\\bot", 8870:null, 8871:"\\models", 8872:"\\vDash", 8873:"\\Vdash", 8874:"\\Vvdash", 8875:"\\VDash*", 8876:"\\nvdash", 8877:"\\nvDash", 8878:"\\nVdash", 8879:"\\nVDash", 8880:null, 8881:null, 8882:"\\vartriangleleft", 8883:"\\vartriangleright", 8884:"\\trianglelefteq", 8885:"\\trianglerighteq", 8886:null, 8887:null, 8888:"\\multimap", 8889:null, 8890:"\\intercal", 8891:"\\veebar", 8892:"\\barwedge", 8893:null, 8894:null, 8895:null, 
+      8896:"\\wedge", 8897:"\\vee", 8898:"\\cap", 8899:"\\cup", 8900:"\\diamond", 8901:"\\cdot", 8902:"\\star", 8903:null, 8904:"\\bowtie", 8905:"\\ltimes", 8906:"\\rtimes", 8907:"\\leftthreetimes", 8908:"\\rightthreetimes", 8909:"\\backsimeq", 8910:"\\curlyvee", 8911:"\\curlywedge", 8912:"\\Subset", 8913:"\\Supset", 8914:"\\Cap", 8915:"\\Cup", 8916:"\\pitchfork", 8917:"\\lessdot", 8918:"\\gtrdot", 8919:null, 8920:"\\lll", 8921:"\\ggg", 8922:"\\lesseqgtr", 8923:"\\gtreqless", 8924:null, 8925:null, 
+      8926:"\\curlyeqprec", 8927:"\\curlyeqsucc", 8928:null, 8929:null, 8930:null, 8931:null, 8932:null, 8933:null, 8934:"\\lnsim", 8935:"\\gnsim", 8936:"\\precnsim", 8937:"\\succnsim", 8938:"\\ntriangleleft", 8939:"\\ntriangleright", 8940:"\\ntrianglelefteq", 8941:"\\ntrianglerighteq", 8942:"\\vdots", 8943:"\\cdots", 8944:null, 8945:"\\ddots", 8946:null, 8947:null, 8948:null, 8949:null, 8950:null, 8951:null, 8952:null, 8953:null, 8954:null, 8955:null, 8956:null, 8957:null, 8958:null, 8959:null};
       var identifiers = keys(env);
       identifiers.push("to");
       function isAlphaCharCode(c) {
@@ -2150,6 +2157,7 @@ var Model = function() {
         }
         var c;
         lexeme = "";
+        var t;
         while(curIndex < src.length) {
           switch(c = src.charCodeAt(curIndex++)) {
             case 32:
@@ -2185,6 +2193,10 @@ var Model = function() {
               }
               lexeme = "";
               continue;
+            case 42:
+            ;
+            case 8727:
+              return TK_MUL;
             case 45:
             ;
             case 8722:
@@ -2193,27 +2205,29 @@ var Model = function() {
                 return TK_RIGHTARROW
               }
               return TK_SUB;
+            case 47:
+            ;
+            case 8725:
+              return TK_SLASH;
             case 33:
               if(src.charCodeAt(curIndex) === 61) {
                 curIndex++;
                 return TK_NE
               }
               return c;
+            case 58:
+            ;
+            case 8758:
+              return TK_COLON;
             case 37:
             ;
             case 40:
             ;
             case 41:
             ;
-            case 42:
-            ;
             case 43:
             ;
             case 44:
-            ;
-            case 47:
-            ;
-            case 58:
             ;
             case 61:
             ;
@@ -2257,15 +2271,24 @@ var Model = function() {
               if(isAlphaCharCode(c) || c === CC_SINGLEQUOTE) {
                 return variable(c)
               }else {
-                if(matchDecimalSeparator(String.fromCharCode(c)) || isNumberCharCode(c)) {
-                  if(options.oneCharToken) {
-                    lexeme += String.fromCharCode(c);
-                    return TK_NUM
+                if(t = unicodeToLaTeX[c]) {
+                  lexeme = t;
+                  var tk = lexemeToToken[lexeme];
+                  if(tk === void 0) {
+                    tk = TK_VAR
                   }
-                  return number(c)
+                  return tk
                 }else {
-                  assert(false, message(1004, [String.fromCharCode(c), c]));
-                  return 0
+                  if(matchDecimalSeparator(String.fromCharCode(c)) || isNumberCharCode(c)) {
+                    if(options.oneCharToken) {
+                      lexeme += String.fromCharCode(c);
+                      return TK_NUM
+                    }
+                    return number(c)
+                  }else {
+                    assert(false, message(1004, [String.fromCharCode(c), c]));
+                    return 0
+                  }
                 }
               }
           }
@@ -4513,7 +4536,7 @@ var BigDecimal = function(MathContext) {
 (function(ast) {
   var messages = Assert.messages;
   Assert.reserveCodeRange(2E3, 2999, "mathmodel");
-  Assert.messages[2E3] = "Internal error.";
+  messages[2E3] = "Internal error. %1";
   messages[2001] = "Factoring of multi-variate polynomials with all terms of degree greater than one is not supported";
   messages[2002] = "Expression not supported.";
   messages[2003] = "Factoring non-polynomials is not supported.";
@@ -4646,7 +4669,7 @@ var BigDecimal = function(MathContext) {
     return mv.compareTo(bigZero) < 0
   }
   function numberNode(val, doScale, roundOnly, isRepeating) {
-    assert(!(val instanceof Array));
+    assert(!(val instanceof Array), "2000: Expecting a scalar");
     var mv, node, minusOne;
     if(doScale) {
       var scale = option("decimalPlaces");
@@ -4685,7 +4708,7 @@ var BigDecimal = function(MathContext) {
     return multiplyNode([n, binaryNode(Model.POW, [d, nodeMinusOne])], true)
   }
   function unaryNode(op, args) {
-    assert(args.length === 1, "Wrong number of arguments for unary node");
+    assert(args.length === 1, "2000: Wrong number of arguments for unary node");
     if(op === Model.ADD) {
       return args[0]
     }else {
@@ -4693,7 +4716,7 @@ var BigDecimal = function(MathContext) {
     }
   }
   function variableNode(name) {
-    assert(typeof name === "string");
+    assert(typeof name === "string", "2000: Expecting a string");
     return newNode(Model.VAR, [name])
   }
   function negate(n) {
@@ -4840,7 +4863,7 @@ var BigDecimal = function(MathContext) {
         }
       }
     }
-    assert(false, "Internal error: unable to compare with zero.")
+    assert(false, "2000: Unable to compare with zero.")
   }
   function isInteger(node) {
     var mv;
@@ -4941,7 +4964,7 @@ var BigDecimal = function(MathContext) {
     return new BigDecimal(str)
   }
   function toRadians(node) {
-    assert(node.op);
+    assert(node.op, "2000: Invalid node");
     var val = bigOne, uu;
     var args = [];
     if(node.op === Model.MUL) {
@@ -5005,7 +5028,7 @@ var BigDecimal = function(MathContext) {
   normalNumber.is_normal = true;
   function Visitor(ast) {
     function visit(node, visit, resume) {
-      assert(node.op && node.args, "Visitor.visit() op=" + node.op + " args = " + node.args);
+      assert(node.op && node.args, "2000: Visitor.visit() op=" + node.op + " args = " + node.args);
       switch(node.op) {
         case Model.NUM:
           node = visit.numeric(node, resume);
@@ -5170,14 +5193,14 @@ var BigDecimal = function(MathContext) {
           break;
         default:
           if(visit.name !== "normalizeLiteral" && visit.name !== "sort") {
-            assert(false, "Should not get here. Unhandled node operator " + node.op)
+            assert(false, "2000: Should not get here. Unhandled node operator " + node.op)
           }
           break
       }
       return node
     }
     function degree(root, notAbsolute) {
-      assert(root && root.args, message(2E3));
+      assert(root && root.args, "2000: Invalid node");
       return visit(root, {name:"degree", exponential:function(node) {
         var args = node.args;
         var d;
@@ -5312,7 +5335,7 @@ var BigDecimal = function(MathContext) {
     }
     function constantPart(root) {
       var env = Model.env;
-      assert(root && root.args, message(2E3));
+      assert(root && root.args, "2000: Internal error.");
       return visit(root, {name:"constantPart", exponential:function(node) {
         if(variablePart(node) === null) {
           return node
@@ -5378,7 +5401,7 @@ var BigDecimal = function(MathContext) {
       }})
     }
     function variables(root) {
-      assert(root && root.args, message(2E3));
+      assert(root && root.args, "2000: Internal error.");
       return visit(root, {name:"variables", exponential:function(node) {
         var args = node.args;
         var val = [];
@@ -5455,7 +5478,7 @@ var BigDecimal = function(MathContext) {
       }})
     }
     function hint(root) {
-      assert(root && root.args, message(2E3));
+      assert(root && root.args, "2000: Internal error.");
       return visit(root, {name:"hints", exponential:function(node) {
         var hints = [];
         if(node.hints instanceof Array) {
@@ -5529,7 +5552,7 @@ var BigDecimal = function(MathContext) {
     }
     function variablePart(root) {
       var env = Model.env;
-      assert(root && root.args, message(2E3));
+      assert(root && root.args, "2000: Internal error.");
       return visit(root, {name:"variablePart", exponential:function(node) {
         if(variablePart(node.args[0]) || variablePart(node.args[1])) {
           return node
@@ -5594,7 +5617,7 @@ var BigDecimal = function(MathContext) {
       }})
     }
     function terms(root) {
-      assert(root && root.args, message(2E3));
+      assert(root && root.args, "2000: Internal error.");
       return visit(root, {name:"terms", exponential:function(node) {
         return[node]
       }, multiplicative:function(node) {
@@ -5733,7 +5756,7 @@ var BigDecimal = function(MathContext) {
     }
     function checkVariableFormat(fmt, id) {
       var fmtList = normalizeFormatObject(fmt);
-      assert(fmtList.length === 1);
+      assert(fmtList.length === 1, "2000: Internal error.");
       var code = fmtList[0].code;
       var length = fmtList[0].length;
       var name;
@@ -5797,7 +5820,7 @@ var BigDecimal = function(MathContext) {
       if(!ref || !ref.args) {
         ref = {args:[]}
       }
-      assert(root && root.args, message(2E3));
+      assert(root && root.args, "2000: Internal error.");
       var nid = ast.intern(root);
       var node = Model.create(visit(root, {name:"normalizeSyntax", format:function(node) {
         var fmtList = normalizeFormatObject(node.args[0]);
@@ -6194,7 +6217,7 @@ var BigDecimal = function(MathContext) {
     }
     var normalizedNodes = [];
     function normalize(root) {
-      assert(root && root.args, message(2E3));
+      assert(root && root.args, "2000: Internal error.");
       var nid = ast.intern(root);
       if(root.normalizeNid === nid) {
         return root
@@ -6215,11 +6238,11 @@ var BigDecimal = function(MathContext) {
         return node
       }, additive:function(node) {
         if(node.op === Model.SUB) {
-          assert(node.args.length === 2);
+          assert(node.args.length === 2, "2000: Internal error.");
           node = binaryNode(Model.ADD, [node.args[0], negate(node.args[1])], true)
         }else {
           if(node.op === Model.PM) {
-            assert(node.args.length === 2, "Operator pm can only be used on binary nodes");
+            assert(node.args.length === 2, "2000: Operator pm can only be used on binary nodes");
             node = binaryNode(Model.ADD, [node.args[0], unaryNode(Model.PM, [node.args[1]])])
           }
         }
@@ -6230,7 +6253,7 @@ var BigDecimal = function(MathContext) {
         node = flattenNestedNodes(node);
         return sort(node)
       }, multiplicative:function(node) {
-        assert(node.op !== Model.DIV, "Divsion should be eliminated during parsing");
+        assert(node.op !== Model.DIV, "2000: Divsion should be eliminated during parsing");
         if(node.op === Model.FRAC) {
           if(node.args[1].op === Model.POW) {
             var denom = node.args[1];
@@ -6395,7 +6418,7 @@ var BigDecimal = function(MathContext) {
         var node = newNode(node.op, vals);
         return sort(node)
       }, equals:function(node) {
-        assert(node.args.length === 2);
+        assert(node.args.length === 2, "2000: Internal error.");
         var args = [];
         forEach(node.args, function(n) {
           n = normalize(n);
@@ -6434,7 +6457,7 @@ var BigDecimal = function(MathContext) {
       return node
     }
     function normalizeCalculate(root) {
-      assert(root && root.args, message(2E3));
+      assert(root && root.args, "2000: Internal error.");
       var nid = ast.intern(root);
       if(root.normalizeCalculateNid === nid) {
         return root
@@ -6451,11 +6474,11 @@ var BigDecimal = function(MathContext) {
         return node
       }, additive:function(node) {
         if(node.op === Model.SUB) {
-          assert(node.args.length === 2);
+          assert(node.args.length === 2, "2000: Internal error.");
           node = binaryNode(Model.ADD, [node.args[0], negate(node.args[1])], true)
         }else {
           if(node.op === Model.PM) {
-            assert(node.args.length === 2, "Operator pm can only be used on binary nodes");
+            assert(node.args.length === 2, "2000: Operator pm can only be used on binary nodes");
             node = binaryNode(Model.ADD, [node.args[0], unaryNode(Model.PM, [node.args[1]])])
           }
         }
@@ -6466,7 +6489,7 @@ var BigDecimal = function(MathContext) {
         node = flattenNestedNodes(node);
         return sort(node)
       }, multiplicative:function(node) {
-        assert(node.op !== Model.DIV, "Divsion should be eliminated during parsing");
+        assert(node.op !== Model.DIV, "2000: Divsion should be eliminated during parsing");
         if(node.op === Model.FRAC) {
           node = multiplyNode([node.args[0], newNode(Model.POW, [node.args[1], nodeMinusOne])])
         }
@@ -6599,9 +6622,9 @@ var BigDecimal = function(MathContext) {
         return sort(node)
       }, equals:function(node) {
         assert(node.args.length === 2, message(2006));
-        assert(isZero(node.args[1]));
+        assert(isZero(node.args[1]), "2000: Internal error.");
         var coeffs = isPolynomial(node);
-        assert(coeffs.length === 2);
+        assert(coeffs.length === 2, "2000: Internal error.");
         var c0 = coeffs[0] === undefined ? "1" : coeffs[0];
         var c1 = coeffs[1] === undefined ? "1" : coeffs[1];
         return fractionNode(multiplyNode([nodeMinusOne, numberNode(c0)]), numberNode(c1))
@@ -6616,7 +6639,7 @@ var BigDecimal = function(MathContext) {
     var sortedNodes = [];
     function sort(root) {
       Assert.checkTimeout();
-      assert(root && root.args, message(2E3));
+      assert(root && root.args, "2000: Internal error.");
       var nid = ast.intern(root);
       if(root.sortNid === nid) {
         return root
@@ -6889,7 +6912,7 @@ var BigDecimal = function(MathContext) {
     var sortedLiteralNodes = [];
     function sortLiteral(root) {
       Assert.checkTimeout();
-      assert(root && root.args, message(2E3));
+      assert(root && root.args, "2000: Internal error.");
       var nid = ast.intern(root);
       if(root.sortLiteralNid === nid) {
         return root
@@ -7017,7 +7040,7 @@ var BigDecimal = function(MathContext) {
       return node
     }
     function normalizeLiteral(root) {
-      assert(root && root.args, message(2E3));
+      assert(root && root.args, "2000: Internal error.");
       var nid = ast.intern(root);
       if(root.normalizeLiteralNid === nid) {
         return root
@@ -7030,7 +7053,7 @@ var BigDecimal = function(MathContext) {
           args.push(normalizeLiteral(n))
         });
         if(Model.option("ignoreOrder") && node.op === Model.SUB) {
-          assert(args.length === 2);
+          assert(args.length === 2, "2000: Internal error.");
           return binaryNode(Model.ADD, [args[0], negate(args[1])])
         }
         return binaryNode(node.op, args)
@@ -7042,11 +7065,11 @@ var BigDecimal = function(MathContext) {
             args.push(normalizeLiteral(n))
           }else {
             if(n.isPolynomial) {
-              assert(args.length > 0);
+              assert(args.length > 0, "2000: Internal error.");
               args.push(binaryNode(Model.COEFF, [args.pop(), normalizeLiteral(n)], flatten))
             }else {
               if(n.isImplicit) {
-                assert(args.length > 0);
+                assert(args.length > 0, "2000: Internal error.");
                 args.push(multiplyNode([args.pop(), normalizeLiteral(n)], flatten))
               }else {
                 args.push(normalizeLiteral(n))
@@ -7062,7 +7085,7 @@ var BigDecimal = function(MathContext) {
           args.push(normalizeLiteral(n))
         });
         if(Model.option("ignoreOrder") && node.op === Model.SUB) {
-          assert(args.length === 1);
+          assert(args.length === 1, "2000: Internal error.");
           return negate(args[0])
         }
         return newNode(node.op, args)
@@ -7088,7 +7111,7 @@ var BigDecimal = function(MathContext) {
           args.push(normalizeLiteral(n))
         });
         if(option("ignoreOrder") && (node.op === Model.GT || (node.op === Model.GE || node.op === Model.NGTR))) {
-          assert(args.length === 2, "Internal error: comparisons have only two operands");
+          assert(args.length === 2, "2000: Comparisons have only two operands.");
           var t = args[0];
           args[0] = args[1];
           args[1] = t;
@@ -7103,7 +7126,7 @@ var BigDecimal = function(MathContext) {
       return node
     }
     function normalizeExpanded(root) {
-      assert(root && root.args, message(2E3));
+      assert(root && root.args, "2000: Internal error.");
       var nid = ast.intern(root);
       if(root.normalizeExpandedNid === nid) {
         return root
@@ -7169,63 +7192,13 @@ var BigDecimal = function(MathContext) {
     function isMultiplicative(node) {
       return node.op === Model.MUL || (node.op === Model.TIMES || (node.op === Model.COEFF || node.op === Model.DIV))
     }
-    function isInteger(node) {
-      var mv;
-      if(!node) {
-        return false
-      }
-      if(node.op === Model.NUM && ((mv = mathValue(node, true)) !== null && isInteger(mv))) {
-        return true
-      }else {
-        if(node instanceof BigDecimal) {
-          return node.remainder(bigOne).compareTo(bigZero) === 0
-        }
-      }
-      return false
-    }
-    function isEven(n) {
-      if(n === null) {
-        return false
-      }else {
-        if(n instanceof BigDecimal) {
-          return toNumber(n) % 2 === 0
-        }else {
-          if(typeof n === "number") {
-            return n % 2 === 0
-          }else {
-            if(n.op === Model.NUM) {
-              return isEven(mathValue(n))
-            }else {
-              return false
-            }
-          }
-        }
-      }
-    }
-    function isOdd(n) {
-      return isInteger(n) && !isEven(n)
-    }
-    function isDecimal(node) {
-      var mv;
-      if(!node) {
-        return false
-      }
-      if(node.op === Model.NUM && ((mv = mathValue(node, true)) !== null && !isInteger(mv))) {
-        return true
-      }else {
-        if(node instanceof BigDecimal && !isInteger(node)) {
-          return true
-        }
-      }
-      return false
-    }
     function isRepeating(node) {
-      assert(node.op === Model.NUM);
+      assert(node.op === Model.NUM, "2000: Internal error.");
       return node.isRepeating
     }
     function findRepeatingPattern(s, p, x) {
       if(!p) {
-        assert(typeof s === "string" && s.length > 0);
+        assert(typeof s === "string" && s.length > 0, "2000: Internal error.");
         p = s.charAt(0);
         s = s.substring(1);
         x = ""
@@ -7245,7 +7218,7 @@ var BigDecimal = function(MathContext) {
       }
     }
     function repeatingDecimalToFraction(node) {
-      assert(isRepeating(node));
+      assert(isRepeating(node), "2000: Internal error.");
       var str = node.args[0];
       if(str.charAt(0) === "0") {
         str = str.slice(1)
@@ -7259,7 +7232,7 @@ var BigDecimal = function(MathContext) {
       return fractionNode(numer, denom)
     }
     function decimalToFraction(node) {
-      assert(node.op === Model.NUM);
+      assert(node.op === Model.NUM, "2000: Internal error.");
       if(isRepeating(node)) {
         return repeatingDecimalToFraction(node)
       }
@@ -7400,7 +7373,7 @@ var BigDecimal = function(MathContext) {
           f = Math.atanh;
           break;
         default:
-          assert(false);
+          assert(false, "2000: Internal error.");
           break
       }
       return toDecimal(f(n))
@@ -7491,7 +7464,7 @@ var BigDecimal = function(MathContext) {
           }
           break;
         default:
-          assert(false);
+          assert(false, "2000: Internal error.");
           break
       }
       return node
@@ -7515,7 +7488,7 @@ var BigDecimal = function(MathContext) {
       return binaryNode(node.op, args)
     }
     function factorGroupingKey(root) {
-      assert(root && root.args, message(2E3));
+      assert(root && root.args, "2000: Internal error.");
       return visit(root, {name:"factorGroupingKey", exponential:function(node) {
         return factorGroupingKey(node.args[1]) + Model.POW + factorGroupingKey(node.args[0])
       }, multiplicative:function(node) {
@@ -7550,7 +7523,7 @@ var BigDecimal = function(MathContext) {
       if(node.op !== Model.MUL && node.op !== Model.ADD) {
         return node
       }
-      assert(node.args.length > 1);
+      assert(node.args.length > 1, "2000: Internal error.");
       var nid = ast.intern(node);
       var cachedNode;
       if((cachedNode = groupedNodes[nid]) !== undefined) {
@@ -7589,7 +7562,7 @@ var BigDecimal = function(MathContext) {
             key = n
           }
         }
-        assert(key);
+        assert(key, "2000: Internal error.");
         if(typeof key === "string") {
           key = variableNode(key)
         }
@@ -7601,7 +7574,7 @@ var BigDecimal = function(MathContext) {
       var numberArgs = [];
       forEach(keys(hash), function(k) {
         var exprs = hash[k];
-        assert(exprs);
+        assert(exprs, "2000: Internal error.");
         var cp = [];
         var vp = [];
         forEach(exprs, function(n) {
@@ -7782,7 +7755,7 @@ var BigDecimal = function(MathContext) {
     }
     function diffSets(n1, n2) {
       if(n1.op === Model.MUL) {
-        assert(n1.args.length === 2);
+        assert(n1.args.length === 2, "2000: Internal error.");
         assert(n1.args[1].op === Model.COMMA, message(2002));
         var t = n2;
         n2 = n1.args[1];
@@ -7806,12 +7779,8 @@ var BigDecimal = function(MathContext) {
     }
     var simplifiedNodes = [];
     function simplify(root, env, resume) {
-      if(!root || !root.args) {
-        assert(false, "Should not get here. Illformed node.");
-        return 0
-      }
-      assert(root.op !== Model.MUL || root.args.length > 1);
-      assert(root.op !== Model.MUL || root.args.length > 1, message(2E3));
+      assert(root && root.args, "2000: Internal error.");
+      assert(root.op !== Model.MUL || root.args.length > 1, "2000: Internal error.");
       var nid = ast.intern(root);
       if(root.simplifyNid === nid) {
         return root
@@ -7819,7 +7788,7 @@ var BigDecimal = function(MathContext) {
       var node = Model.create(visit(root, {name:"simplify", numeric:function(node) {
         return node
       }, additive:function(node) {
-        assert(node.op !== Model.SUB, "simplify() additive node not normalized: " + JSON.stringify(node));
+        assert(node.op !== Model.SUB, "2000: simplify() additive node not normalized: " + JSON.stringify(node));
         if(node.op === Model.PM) {
           return node
         }
@@ -7859,7 +7828,7 @@ var BigDecimal = function(MathContext) {
         }else {
           node = binaryNode(node.op, n0)
         }
-        assert(node.args.length > 0);
+        assert(node.args.length > 0, "2000: Internal error.");
         return node;
         function commonDenom(node) {
           var n0 = node.args;
@@ -8023,7 +7992,7 @@ var BigDecimal = function(MathContext) {
           return[lnode, rnode]
         }
       }, multiplicative:function(node) {
-        assert(node.op === Model.MUL, "simplify() multiplicative node not normalized: " + JSON.stringify(node));
+        assert(node.op === Model.MUL, "2000: simplify() multiplicative node not normalized: " + JSON.stringify(node));
         node = cancelFactors(node);
         if(!env || !env.dontGroup) {
           node = groupLikes(node)
@@ -8044,7 +8013,7 @@ var BigDecimal = function(MathContext) {
         if(n0.length < 2) {
           node = n0[0]
         }else {
-          assert(n0.length);
+          assert(n0.length, "2000: Internal error.");
           node = sort(flattenNestedNodes(multiplyNode(n0)))
         }
         node = cancelFactors(node);
@@ -8176,7 +8145,7 @@ var BigDecimal = function(MathContext) {
                       if(lvpart && (rvpart && ast.intern(lvpart) === ast.intern(rvpart))) {
                         var lnode = multiplyNode([lcoeff, rcoeff]);
                         if(lvpart.op === Model.POW) {
-                          assert(lvpart.args.length === 2 && rvpart.args.length === 2, "Exponents of exponents not handled here.");
+                          assert(lvpart.args.length === 2 && rvpart.args.length === 2, "2000: Exponents of exponents not handled here.");
                           var lexpo = lvpart.args[1];
                           var rexpo = rvpart.args[1];
                           var rnode = binaryNode(Model.POW, [lvpart.args[0], binaryNode(Model.ADD, [lexpo, rexpo])])
@@ -8461,7 +8430,7 @@ var BigDecimal = function(MathContext) {
         forEach(node.args, function(n) {
           args = args.concat(simplify(n, env))
         });
-        assert(args.length === 2);
+        assert(args.length === 2, "2000: Internal error.");
         if(isZero(args[1])) {
           var mv = mathValue(args[0], true);
           if(mv !== null) {
@@ -8552,7 +8521,7 @@ var BigDecimal = function(MathContext) {
       if(!root) {
         return null
       }
-      assert(root && root.args, message(2E3));
+      assert(root && root.args, "2000: Internal error.");
       if(env === undefined) {
         env = Model.env
       }else {
@@ -8621,17 +8590,17 @@ var BigDecimal = function(MathContext) {
             var args = [];
             if(node.args[0].op === Model.MUL) {
               forEach(node.args[0].args, function(n) {
-                assert(n.op === Model.VAR, "Internal error: invalid arguments to the M tag");
+                assert(n.op === Model.VAR, "2000: Invalid arguments to the M tag");
                 var sym = Model.env[n.args[0]];
-                assert(sym && sym.mass, "Internal error: missing chemical symbol");
+                assert(sym && sym.mass, "2000: Missing chemical symbol");
                 var count = n.args[1] ? toNumber(mathValue(n.args[1], env, allowDecimal, normalizeUnits)) : 1;
                 args.push(numberNode(sym.mass * count))
               })
             }else {
               var n = node.args[0];
-              assert(n.op === Model.VAR, "Internal error: invalid arguments to the M tag");
+              assert(n.op === Model.VAR, "2000: Invalid arguments to the M tag");
               var sym = Model.env[n.args[0]];
-              assert(sym && sym.mass, "Internal error: missing chemical symbol");
+              assert(sym && sym.mass, "2000: Missing chemical symbol");
               var count = n.args[1] ? toNumber(mathValue(n.args[1], env, allowDecimal, normalizeUnits)) : 1;
               args.push(numberNode(sym.mass * count))
             }
@@ -8697,7 +8666,7 @@ var BigDecimal = function(MathContext) {
           })
         }else {
           if(op === Model.LOG) {
-            assert(args.length === 1);
+            assert(args.length === 1, "2000: Internal error.");
             var mv;
             var emv = val;
             var base = args[0];
@@ -8747,7 +8716,7 @@ var BigDecimal = function(MathContext) {
       return a
     }
     function units(root, env) {
-      assert(root && root.args, message(2E3));
+      assert(root && root.args, "2000: Internal error.");
       return visit(root, {name:"units", exponential:function(node) {
         var uu = units(node.args[0], env);
         if(uu.length > 0) {
@@ -8914,7 +8883,7 @@ var BigDecimal = function(MathContext) {
     }
     var expandedNodes = [];
     function expand(root, env) {
-      assert(root && root.args, message(2E3));
+      assert(root && root.args, "2000: Internal error.");
       var nid = ast.intern(root);
       if(root.expandNid === nid) {
         return root
@@ -8925,7 +8894,7 @@ var BigDecimal = function(MathContext) {
       }
       var rootNid = nid;
       var node = Model.create(visit(root, {name:"expand", numeric:function(node) {
-        assert(typeof node.args[0] === "string");
+        assert(typeof node.args[0] === "string", "2000: Internal error.");
         return node
       }, additive:function(node) {
         var nid = ast.intern(node);
@@ -8998,7 +8967,7 @@ var BigDecimal = function(MathContext) {
           return result
         }
       }, unary:function(node) {
-        assert(node.op !== Model.SQRT, "Internal error: SQRT removed during parsing");
+        assert(node.op !== Model.SQRT, "2000: SQRT removed during parsing");
         switch(node.op) {
           case Model.ABS:
             var arg0 = expand(node.args[0]);
@@ -9156,7 +9125,7 @@ var BigDecimal = function(MathContext) {
       return node
     }
     function factors(root, env, ignorePrimeFactors, preserveNeg, factorAdditive) {
-      assert(root && root.args, message(2E3));
+      assert(root && root.args, "2000: Internal error.");
       return visit(root, {name:"factors", numeric:function(node) {
         if(ignorePrimeFactors || isInfinity(node)) {
           return[node]
@@ -9203,7 +9172,7 @@ var BigDecimal = function(MathContext) {
             });
             return ff;
           default:
-            assert(false, "Node not normalized");
+            assert(false, "2000: Node not normalized");
             break
         }
         return[node]
@@ -9313,14 +9282,14 @@ var BigDecimal = function(MathContext) {
       return[multiplyNode(args)]
     }
     function makeTerm(args) {
-      assert(args.length > 0, "Too few arguments in makeTerm()");
+      assert(args.length > 0, "2000: Too few arguments in makeTerm()");
       if(args.length === 1) {
         return args[0]
       }
       return binaryNode(Model.ADD, args)
     }
     function scale(root) {
-      assert(root && root.args, message(2E3));
+      assert(root && root.args, "2000: Internal error.");
       var node = Model.create(visit(root, {name:"scale", exponential:function(node) {
         var mv, nd;
         if((mv = mathValue(node, true)) && (nd = numberNode(String(mv), true))) {
@@ -9366,7 +9335,7 @@ var BigDecimal = function(MathContext) {
               lc = constantPart(n);
               args.push(variablePart(n))
             }else {
-              assert(lc);
+              assert(lc, "2000: Internal error.");
               args.push(fractionNode(n, lc))
             }
           });
@@ -9442,7 +9411,7 @@ var BigDecimal = function(MathContext) {
       return node
     }
     function isFactorised(root, env) {
-      assert(root && root.args, message(2E3));
+      assert(root && root.args, "2000: Internal error.");
       return visit(root, {name:"isFactorised", numeric:function(node) {
         return true
       }, additive:function(node) {
@@ -9510,7 +9479,7 @@ var BigDecimal = function(MathContext) {
             });
             return result ? !hasLikeFactors(node) : false;
           default:
-            assert(false, "isFactorised(): node not normalized");
+            assert(false, "2000: isFactorised(): node not normalized");
             break
         }
         return false
@@ -9564,7 +9533,7 @@ var BigDecimal = function(MathContext) {
       return some(rr, function(r) {
         r = toNumber(mathValue(r, true));
         var nn = variables(node);
-        assert(nn.length === 1);
+        assert(nn.length === 1, "2000: Internal error.");
         var env = {};
         env[nn[0]] = {type:"const", value:r};
         var x = toNumber(mathValue(node, env, true));
@@ -10127,13 +10096,13 @@ var BigDecimal = function(MathContext) {
       forEach(uu, function(u) {
         var unit;
         if(u.op === Model.POW) {
-          assert(u.args[0].op === Model.VAR);
+          assert(u.args[0].op === Model.VAR, "2000: Internal error.");
           unit = env[u.args[0].args[0]]
         }else {
-          assert(u.op === Model.VAR);
+          assert(u.op === Model.VAR, "2000: Internal error.");
           unit = env[u.args[0]]
         }
-        assert(unit && unit.type === "unit");
+        assert(unit && unit.type === "unit", "2000: Internal error.");
         if(indexOf(baseUnits, unit.base) < 0) {
           baseUnits.push(unit.base)
         }
@@ -10579,7 +10548,7 @@ var BigDecimal = function(MathContext) {
         if(re === "not latex") {
           re = /^[^\\]/
         }else {
-          assert(false, "Expecting 'latex' or 'not latex'")
+          assert(false, "2000: Expecting 'latex' or 'not latex'")
         }
       }
     }
@@ -10752,7 +10721,7 @@ var MathCore = function() {
       return e
     }
   }
-  var timeoutDuration = 3E6;
+  var timeoutDuration = 3E4;
   function setTimeoutDuration(duration) {
     timeoutDuration = duration
   }
