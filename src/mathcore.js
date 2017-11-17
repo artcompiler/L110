@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 7ee3d81
+ * Mathcore unversioned - 58e1e5f
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -9043,28 +9043,34 @@ var BigDecimal = function(MathContext) {
               }else {
                 if(isInteger(emv)) {
                   var ea = Math.abs(toNumber(emv));
+                  var bmv;
                   if(isZero(emv)) {
                     args.push(nodeOne)
                   }else {
-                    if(ea < 10 && (isAdditive(n) || !dontExpandPowers)) {
-                      var invert = isNeg(emv);
-                      for(var i = 0;i < ea;i++) {
-                        if(invert) {
-                          if(n.op === Model.POW && isMinusOne(n.args[1])) {
-                            args.push(n.args[0])
-                          }else {
-                            if((isOne(n) || isMinusOne(n)) && isMinusOne(emv)) {
-                              args.push(n)
-                            }else {
-                              args.push(binaryNode(Model.POW, [n, nodeMinusOne]))
-                            }
-                          }
-                        }else {
-                          args.push(n)
-                        }
-                      }
+                    if(isNeg(bmv = mathValue(n)) && emv) {
+                      var mv = pow(bmv, emv);
+                      args.push(numberNode(mv))
                     }else {
-                      args.push(newNode(op, [n, expo]))
+                      if(ea < 10 && (isAdditive(n) || !dontExpandPowers)) {
+                        var invert = isNeg(emv);
+                        for(var i = 0;i < ea;i++) {
+                          if(invert) {
+                            if(n.op === Model.POW && isMinusOne(n.args[1])) {
+                              args.push(n.args[0])
+                            }else {
+                              if((isOne(n) || isMinusOne(n)) && isMinusOne(emv)) {
+                                args.push(n)
+                              }else {
+                                args.push(binaryNode(Model.POW, [n, nodeMinusOne]))
+                              }
+                            }
+                          }else {
+                            args.push(n)
+                          }
+                        }
+                      }else {
+                        args.push(newNode(op, [n, expo]))
+                      }
                     }
                   }
                 }else {
