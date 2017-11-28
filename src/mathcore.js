@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 58e1e5f
+ * Mathcore unversioned - 5891a7f
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -4554,6 +4554,7 @@ var BigDecimal = function(MathContext) {
   messages[2015] = "Invalid format name '%1'.";
   messages[2016] = "Exponents should be wrapped in braces.";
   messages[2017] = "Units with different base units not allowed in a single expression. Found: %1";
+  var visitor = new Visitor(ast);
   var bigZero = new BigDecimal("0");
   var bigOne = new BigDecimal("1");
   var bigTwo = new BigDecimal("2");
@@ -4652,7 +4653,8 @@ var BigDecimal = function(MathContext) {
       return false
     }
     if(n.op) {
-      mv = mathValue(n, true);
+      var cp = constantPart(n);
+      mv = mathValue(cp, true);
       if(!mv) {
         if(n.op === Model.MUL && isMinusOne(n.args[0]) || n.op === Model.NUM && n.args[0] === "-Infinity") {
           return true
@@ -4729,7 +4731,18 @@ var BigDecimal = function(MathContext) {
           args.shift();
           return binaryNode(n.op, args, true)
         }else {
-          return binaryNode(n.op, [negate(args.shift())].concat(args), true)
+          var didNegate = false;
+          done:for(var i = 0;i < args.length;i++) {
+            if(isNeg(args[i])) {
+              args[i] = negate(args[i]);
+              didNegate = true;
+              break done
+            }
+          }
+          if(!didNegate) {
+            args = [negate(args.shift())].concat(args)
+          }
+          return binaryNode(n.op, args, true)
         }
       }else {
         if(n.op === Model.NUM) {
@@ -6139,7 +6152,104 @@ var BigDecimal = function(MathContext) {
       }
       return binaryNode(node.op, [larg, rarg])
     }
+    function factorCommonExpressions(node) {
+      if(node.op !== Model.ADD || node.args.length !== 2) {
+        return node
+      }
+      var n1 = node.args[0];
+      var n2 = node.args[1];
+      var changed = false;
+      var nn1 = {};
+      var nn2 = {};
+      var args = n1.op === Model.MUL ? n1.args : [n1];
+      forEach(args, function(n, i) {
+        var mv = mathValue(n, true);
+        var key = mv !== null ? String(mv) : n.op === Model.POW && mathValue(n.args[1]) ? "nid$" + ast.intern(n.args[0]) : "nid$" + ast.intern(n);
+        if(!nn1[key]) {
+          nn1[key] = []
+        }
+        nn1[key].push(n)
+      });
+      var args = n2.op === Model.MUL ? n2.args : [n2];
+      forEach(args, function(n, i) {
+        var mv = mathValue(n, true);
+        var key = mv !== null ? String(mv) : n.op === Model.POW && mathValue(n.args[1]) ? "nid$" + ast.intern(n.args[0]) : "nid$" + ast.intern(n);
+        if(!nn2[key]) {
+          nn2[key] = []
+        }
+        nn2[key].push(n)
+      });
+      var nKeys = keys(nn1);
+      var dKeys = keys(nn2);
+      if(nKeys.length === 0 || (dKeys.length === 0 || dKeys.length === 1 && dKeys[0] === "-1")) {
+        return binaryNode(Model.ADD, [n1, n2])
+      }
+      var ff = [];
+      forEach(nKeys, function(k) {
+        if(!isNaN(+k)) {
+          return
+        }
+        var nn = nn1[k];
+        var dd = nn2[k];
+        if(dd) {
+          while(nn.length > 0 && dd.length > 0) {
+            var n1 = nn.pop();
+            var n2 = dd.pop();
+            var e1 = n1.op === Model.POW && mathValue(n1.args[1]) ? mathValue(n1.args[1], true) : bigOne;
+            var e2 = n2.op === Model.POW && mathValue(n2.args[1]) ? mathValue(n2.args[1], true) : bigOne;
+            if(isLessThan(e1, e2)) {
+              var e = e2.subtract(e1);
+              var b = n1.op === Model.POW && mathValue(n1.args[1], true) ? n1.args[0] : n1;
+              dd.push(isOne(e) ? b : newNode(Model.POW, [b, numberNode(e)]));
+              ff.push(isOne(e1) ? b : newNode(Model.POW, [b, numberNode(e1)]))
+            }else {
+              var e = e1.subtract(e2);
+              var b = n1.op === Model.POW && mathValue(n1.args[1], true) ? n1.args[0] : n1;
+              nn.push(isOne(e) ? b : newNode(Model.POW, [b, numberNode(e)]));
+              ff.push(isOne(e2) ? b : newNode(Model.POW, [b, numberNode(e2)]))
+            }
+          }
+          changed = true
+        }
+      });
+      if(!changed) {
+        return node
+      }
+      var args = [];
+      forEach(nKeys, function(k) {
+        args = args.concat(nn1[k])
+      });
+      if(args.length === 0) {
+        n1 = nodeOne
+      }else {
+        if(args.length === 1) {
+          n1 = args[0]
+        }else {
+          n1 = newNode(Model.MUL, args)
+        }
+      }
+      var args = [];
+      forEach(dKeys, function(k) {
+        args = args.concat(nn2[k])
+      });
+      if(args.length === 0) {
+        n2 = nodeOne
+      }else {
+        if(args.length === 1) {
+          n2 = args[0]
+        }else {
+          n2 = newNode(Model.MUL, args)
+        }
+      }
+      return binaryNode(Model.MUL, ff.concat(binaryNode(Model.ADD, [n1, n2])))
+    }
     function eraseCommonExpressions(n1, n2) {
+      if(n1.op === Model.ADD) {
+        n1 = factorCommonExpressions(n1)
+      }
+      if(n2.op === Model.ADD) {
+        n2 = factorCommonExpressions(n2)
+      }
       n1 = cancelFactors(n1);
       n2 = cancelFactors(n2);
       if(n1.op !== n2.op || n1.op !== Model.MUL) {
@@ -6150,7 +6260,7 @@ var BigDecimal = function(MathContext) {
       var nn2 = {};
       forEach(n1.args, function(n, i) {
         var mv = mathValue(n, true);
-        var key = mv !== null ? String(mv) : "nid$" + ast.intern(n);
+        var key = mv !== null ? String(mv) : n.op === Model.POW && mathValue(n.args[1]) ? "nid$" + ast.intern(n.args[0]) : "nid$" + ast.intern(n);
         if(!nn1[key]) {
           nn1[key] = []
         }
@@ -6158,7 +6268,7 @@ var BigDecimal = function(MathContext) {
       });
       forEach(n2.args, function(n, i) {
         var mv = mathValue(n, true);
-        var key = mv !== null ? String(mv) : "nid$" + ast.intern(n);
+        var key = mv !== null ? String(mv) : n.op === Model.POW && mathValue(n.args[1]) ? "nid$" + ast.intern(n.args[0]) : "nid$" + ast.intern(n);
         if(!nn2[key]) {
           nn2[key] = []
         }
@@ -6176,9 +6286,21 @@ var BigDecimal = function(MathContext) {
         var nn = nn1[k];
         var dd = nn2[k];
         if(dd) {
-          var count = dd.length > nn.length ? nn.length : dd.length;
-          nn1[k] = nn.slice(count);
-          nn2[k] = dd.slice(count);
+          while(nn.length > 0 && dd.length > 0) {
+            var n1 = nn.pop();
+            var n2 = dd.pop();
+            var e1 = n1.op === Model.POW && mathValue(n1.args[1]) ? mathValue(n1.args[1], true) : bigOne;
+            var e2 = n2.op === Model.POW && mathValue(n2.args[1]) ? mathValue(n2.args[1], true) : bigOne;
+            if(isLessThan(e1, e2)) {
+              var e = e2.subtract(e1);
+              var b = n1.op === Model.POW && mathValue(n1.args[1], true) ? n1.args[0] : n1;
+              dd.push(isOne(e) ? b : newNode(Model.POW, [b, numberNode(e)]))
+            }else {
+              var e = e1.subtract(e2);
+              var b = n1.op === Model.POW && mathValue(n1.args[1], true) ? n1.args[0] : n1;
+              nn.push(isOne(e) ? b : newNode(Model.POW, [b, numberNode(e)]))
+            }
+          }
           changed = true
         }
       });
@@ -9047,7 +9169,7 @@ var BigDecimal = function(MathContext) {
                   if(isZero(emv)) {
                     args.push(nodeOne)
                   }else {
-                    if(isNeg(bmv = mathValue(n)) && emv) {
+                    if(isNeg(bmv = mathValue(n)) && !isNeg(emv)) {
                       var mv = pow(bmv, emv);
                       args.push(numberNode(mv))
                     }else {
@@ -9678,7 +9800,6 @@ var BigDecimal = function(MathContext) {
     this.hint = hint;
     this.eraseCommonExpressions = eraseCommonExpressions
   }
-  var visitor = new Visitor(ast);
   function degree(node, notAbsolute) {
     return visitor.degree(node, notAbsolute)
   }
@@ -10230,7 +10351,8 @@ var BigDecimal = function(MathContext) {
     var n2o = n2;
     var result;
     var inverseResult = option("inverseResult");
-    if(!inverseResult && !option("strict")) {
+    var strict = option("strict");
+    if(!inverseResult && !strict) {
       var ignoreOrder = option("ignoreOrder", false);
       try {
         var result = Model.fn.equivLiteral(n1, n2);
@@ -10304,8 +10426,10 @@ var BigDecimal = function(MathContext) {
         n1r = nn[0];
         n2r = nn[1];
         option("inverseResult", false);
+        option("strict", true);
         var result1 = equivSymbolic(Model.create(n1l), Model.create(n2l));
         var result2 = equivSymbolic(Model.create(n1r), Model.create(n2r));
+        option("strict", strict);
         option("inverseResult", inverseResult);
         var result = result1 && result2
       }else {
