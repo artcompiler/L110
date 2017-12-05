@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 9ded2c0
+ * Mathcore unversioned - cc31232
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -1255,6 +1255,8 @@ var Model = function() {
           next();
           var expr1 = braceExpr();
           var expr2 = braceExpr();
+          expr1 = expr1.args.length === 0 ? newNode(Model.COMMA, [nodeNone]) : expr1;
+          expr2 = expr1.args.length === 0 ? newNode(Model.COMMA, [nodeNone]) : expr2;
           e = newNode(Model.FRAC, [expr1, expr2]);
           e.isFraction = isSimpleFraction(e);
           break;
@@ -5988,7 +5990,7 @@ var BigDecimal = function(MathContext) {
         if(dd) {
           var count = dd.length > nn.length ? nn.length : dd.length;
           numers[k] = nn.slice(count);
-          denoms[k] = dd.slice(count);
+          denoms[k] = k === "0" ? dd.slice(0, 1) : dd.slice(count);
           changed = true
         }
       });
