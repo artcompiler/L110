@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 5891a7f
+ * Mathcore unversioned - 9ded2c0
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -1922,7 +1922,9 @@ var Model = function() {
     }
     function isENotation(args, expr, t) {
       var n;
-      if(args.length > 0 && (isNumber(args[args.length - 1]) && (expr.op === Model.VAR && ((expr.args[0] === "E" || expr.args[0] === "e") && (hd() === TK_NUM || (hd() === 45 || hd() === 43) && lookahead() === TK_NUM))))) {
+      var variables = Model.option("treatAsVariable") || [];
+      var eulers = Model.option("allowEulersNumber");
+      if(args.length > 0 && (isNumber(args[args.length - 1]) && (expr.op === Model.VAR && ((expr.args[0] === "E" && indexOf(variables, "E") < 0 || expr.args[0] === "e" && (!eulers && indexOf(variables, "e") < 0)) && (hd() === TK_NUM || (hd() === 45 || hd() === 43) && lookahead() === TK_NUM))))) {
         return true
       }
       return false
@@ -2321,9 +2323,11 @@ var Model = function() {
           if(!isAlphaCharCode(c)) {
             break
           }
+          var variables = Model.option("treatAsVariable") || [];
           var ch = String.fromCharCode(c);
           var match = some(identifiers, function(u) {
-            return indexOf(u, identifier + ch) === 0
+            var ident = identifier + ch;
+            return variables.indexOf(ident) < 0 && indexOf(u, ident) === 0
           });
           if(!match) {
             break
@@ -4606,6 +4610,13 @@ var BigDecimal = function(MathContext) {
   function isUndefined(node) {
     return node.isUndefined
   }
+  function isImaginary(node) {
+    if(node.op) {
+      var vars = Model.option("treatAsVariable");
+      return indexOf(vars, "i") < 0 && ast.intern(nodeImaginary) === ast.intern(node)
+    }
+    return false
+  }
   function newNode(op, args) {
     return{op:op, args:args}
   }
@@ -4837,6 +4848,7 @@ var BigDecimal = function(MathContext) {
     }
   }
   function isOne(n) {
+    var mv;
     if(n === null) {
       return false
     }else {
@@ -4847,8 +4859,10 @@ var BigDecimal = function(MathContext) {
           return n === 1
         }else {
           if(n.op === Model.NUM) {
-            return!bigOne.compareTo(mathValue(n))
-          }else {
+            var mv = mathValue(n);
+            if(mv) {
+              return!bigOne.compareTo(mv)
+            }
             return false
           }
         }
@@ -4961,7 +4975,7 @@ var BigDecimal = function(MathContext) {
   }
   function toDecimal(val) {
     var str;
-    if(val === null || (isNaN(val) || (isInfinity(val) || typeof val === "string" && indexOf(val, "Infinity") >= 0))) {
+    if(val === null || (isNaN(val) || (isInfinity(val) || (isImaginary(val) || typeof val === "string" && indexOf(val, "Infinity") >= 0)))) {
       return null
     }else {
       if(val instanceof BigDecimal) {
@@ -8184,6 +8198,10 @@ var BigDecimal = function(MathContext) {
                     if(ldegr === 0 && rdegr === 0) {
                       if(isOne(rcoeffmv) && isOne(lcoeffmv)) {
                         return nodeOne
+                      }else {
+                        if(isImaginary(lnode) && isImaginary(rnode)) {
+                          return nodeMinusOne
+                        }
                       }
                       var lexpo = exponent(lnode);
                       var rexpo = exponent(rnode);
@@ -8470,7 +8488,7 @@ var BigDecimal = function(MathContext) {
                   if(isOne(emv)) {
                     return[base]
                   }else {
-                    if(ast.intern(base) === ast.intern(nodeImaginary) && emv !== null) {
+                    if(isImaginary(base) && emv !== null) {
                       if(emv.remainder(bigFour).compareTo(bigZero) === 0) {
                         return[nodeOne]
                       }else {
@@ -8654,7 +8672,7 @@ var BigDecimal = function(MathContext) {
         }
       }
       return visit(root, {name:"mathValue", numeric:function(node) {
-        if(isUndefined(node) || isRepeating(node)) {
+        if(isUndefined(node) || (isRepeating(node) || isImaginary(node))) {
           return null
         }
         return toDecimal(node.args[0])
@@ -9255,7 +9273,7 @@ var BigDecimal = function(MathContext) {
     function factors(root, env, ignorePrimeFactors, preserveNeg, factorAdditive) {
       assert(root && root.args, "2000: Internal error.");
       return visit(root, {name:"factors", numeric:function(node) {
-        if(ignorePrimeFactors || isInfinity(node)) {
+        if(ignorePrimeFactors || (isInfinity(node) || isImaginary(node))) {
           return[node]
         }
         var ff = [];
@@ -9718,7 +9736,7 @@ var BigDecimal = function(MathContext) {
     }
     function primeFactors(n) {
       var absN = Math.abs(n);
-      if(absN <= 1 || (isNaN(n) || isInfinity(n))) {
+      if(absN <= 1 || (isNaN(n) || (isInfinity(n) || isImaginary(n)))) {
         return[]
       }else {
         if(isPrime(absN)) {
@@ -10726,7 +10744,7 @@ var BigDecimal = function(MathContext) {
     var options = Model.options;
     var opt = options && options[p];
     if(v !== undefined) {
-      Model.options = options = options ? options : {};
+      Model.options = options = options || {};
       options[p] = v
     }
     if(opt === undefined) {
@@ -10752,7 +10770,12 @@ var BigDecimal = function(MathContext) {
         case "strict":
         ;
         case "compatibility":
+        ;
+        case "allowEulersNumber":
           opt = undefined;
+          break;
+        case "treatAsVariable":
+          opt = [];
           break;
         default:
           opt = false;
@@ -10911,13 +10934,17 @@ var MathCore = function() {
       case "keepTextWhitespace":
       ;
       case "strict":
+      ;
+      case "allowEulersNumber":
         if(typeof v === "undefined" || typeof v === "boolean") {
           break
         }
         assert(false, message(3007, [p, v]));
         break;
       case "setThousandsSeparator":
-        if(typeof v === "undefined" || (typeof v === "string" && v.length === 1 || v instanceof Array)) {
+      ;
+      case "treatAsVariable":
+        if(typeof v === "undefined" || (typeof v === "string" || v instanceof Array)) {
           break
         }
         assert(false, message(3007, [p, v]));

@@ -90,6 +90,8 @@ var transformer = function() {
     "IGNORE-TRAILING-ZEROS": ignoreTrailingZeros,
     "HIDE-EXPECTED": hideExpected,
     "IN": inData,
+    "ALLOW-EULERS-NUMBER": allowEulersNumber,
+    "TREAT-AS-VARIABLE": treatAsVariable,
   }];
 
   var nodePool;
@@ -840,6 +842,22 @@ var transformer = function() {
       visit(node.elts[1], options, function (err, val) {
         resume(err, val);
       });
+    });
+  }
+
+  function treatAsVariable(node, options, resume) {
+    visit(node.elts[0], options, function (err, val) {
+      option(options, "treatAsVariable", val);
+      visit(node.elts[1], options, function (err, val) {
+        resume(err, val);
+      });
+    });
+  }
+
+  function allowEulersNumber(node, options, resume) {
+    visit(node.elts[0], options, function (err, val) {
+      option(options, "allowEulersNumber", true);
+      resume(err, val);
     });
   }
 
