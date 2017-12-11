@@ -616,6 +616,7 @@ var transformer = function() {
     var errs = [];
     var source = val;
     if (source) {
+      delete options.data; // Synthetic option.
       Core.translate(options, source, function (err, val) {
         delete options.strict;
         if (err && err.length) {
