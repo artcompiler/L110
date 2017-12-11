@@ -635,6 +635,7 @@ var transformer = function() {
       errs = errs.concat(err);
       let latex = val;
       let opts;
+      var methods = "validSyntax " + (val.methods || "");
       if (latex) {
         if (options) {
           // Add item options to global options.
