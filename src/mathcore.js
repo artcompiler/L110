@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 6ec6d49
+ * Mathcore unversioned - b57356d
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -1924,9 +1924,8 @@ var Model = function() {
     }
     function isENotation(args, expr, t) {
       var n;
-      var variables = Model.option("treatAsVariable") || [];
       var eulers = Model.option("allowEulersNumber");
-      if(args.length > 0 && (isNumber(args[args.length - 1]) && (expr.op === Model.VAR && ((expr.args[0] === "E" && indexOf(variables, "E") < 0 || expr.args[0] === "e" && (!eulers && indexOf(variables, "e") < 0)) && (hd() === TK_NUM || (hd() === 45 || hd() === 43) && lookahead() === TK_NUM))))) {
+      if(args.length > 0 && (isNumber(args[args.length - 1]) && (expr.op === Model.VAR && ((expr.args[0] === "E" || expr.args[0] === "e" && !eulers) && (hd() === TK_NUM || (hd() === 45 || hd() === 43) && lookahead() === TK_NUM))))) {
         return true
       }
       return false
@@ -2325,11 +2324,10 @@ var Model = function() {
           if(!isAlphaCharCode(c)) {
             break
           }
-          var variables = Model.option("treatAsVariable") || [];
           var ch = String.fromCharCode(c);
           var match = some(identifiers, function(u) {
             var ident = identifier + ch;
-            return variables.indexOf(ident) < 0 && indexOf(u, ident) === 0
+            return indexOf(u, ident) === 0
           });
           if(!match) {
             break
@@ -4614,8 +4612,7 @@ var BigDecimal = function(MathContext) {
   }
   function isImaginary(node) {
     if(node.op) {
-      var vars = Model.option("treatAsVariable");
-      return indexOf(vars, "i") < 0 && ast.intern(nodeImaginary) === ast.intern(node)
+      return ast.intern(nodeImaginary) === ast.intern(node)
     }
     return false
   }
@@ -4734,7 +4731,7 @@ var BigDecimal = function(MathContext) {
     assert(typeof name === "string", "2000: Expecting a string");
     return newNode(Model.VAR, [name])
   }
-  function negate(n) {
+  function negate(n, isNormalizing) {
     if(typeof n === "number") {
       return-n
     }else {
@@ -4758,31 +4755,39 @@ var BigDecimal = function(MathContext) {
           return binaryNode(n.op, args, true)
         }
       }else {
-        if(n.op === Model.NUM) {
-          if(n.args[0] === "1") {
-            return nodeMinusOne
-          }else {
-            if(n.args[0] === "-1") {
-              return nodeOne
+        if(n.op === Model.ADD && !isNormalizing) {
+          var args = [];
+          n.args.forEach(function(n) {
+            args.push(negate(n))
+          });
+          return binaryNode(n.op, args, true)
+        }else {
+          if(n.op === Model.NUM) {
+            if(n.args[0] === "1") {
+              return nodeMinusOne
             }else {
-              if(n.args[0] === "Infinity") {
-                return nodeNegativeInfinity
+              if(n.args[0] === "-1") {
+                return nodeOne
               }else {
-                if(n.args[0] === "-Infinity") {
-                  return nodePositiveInfinity
+                if(n.args[0] === "Infinity") {
+                  return nodeNegativeInfinity
                 }else {
-                  if(n.args[0].charAt(0) === "-") {
-                    return unaryNode(Model.SUB, [n])
+                  if(n.args[0] === "-Infinity") {
+                    return nodePositiveInfinity
                   }else {
-                    return numberNode("-" + n.args[0])
+                    if(n.args[0].charAt(0) === "-") {
+                      return unaryNode(Model.SUB, [n])
+                    }else {
+                      return numberNode("-" + n.args[0])
+                    }
                   }
                 }
               }
             }
-          }
-        }else {
-          if(n.op === Model.POW && isMinusOne(n.args[1])) {
-            return binaryNode(Model.POW, [negate(n.args[0]), nodeMinusOne])
+          }else {
+            if(n.op === Model.POW && isMinusOne(n.args[1])) {
+              return binaryNode(Model.POW, [negate(n.args[0]), nodeMinusOne])
+            }
           }
         }
       }
@@ -5905,7 +5910,7 @@ var BigDecimal = function(MathContext) {
             if(ref && (ref.op === Model.FORMAT && checkNumberFormat(ref.args[0], node.args[0]))) {
               return normalNumber
             }
-            node = negate(arg0);
+            node = negate(arg0, true);
             break;
           default:
             node = unaryNode(node.op, [arg0]);
@@ -6377,7 +6382,7 @@ var BigDecimal = function(MathContext) {
       }, additive:function(node) {
         if(node.op === Model.SUB) {
           assert(node.args.length === 2, "2000: Internal error.");
-          node = binaryNode(Model.ADD, [node.args[0], negate(node.args[1])], true)
+          node = binaryNode(Model.ADD, [node.args[0], negate(node.args[1], true)], true)
         }else {
           if(node.op === Model.PM) {
             assert(node.args.length === 2, "2000: Operator pm can only be used on binary nodes");
@@ -6397,7 +6402,7 @@ var BigDecimal = function(MathContext) {
             var denom = node.args[1];
             var b = denom.args[0];
             var e = denom.args[1];
-            node = multiplyNode([node.args[0], newNode(Model.POW, [b, negate(e)])])
+            node = multiplyNode([node.args[0], newNode(Model.POW, [b, negate(e, true)])])
           }else {
             node = multiplyNode([node.args[0], newNode(Model.POW, [node.args[1], nodeMinusOne])])
           }
@@ -6460,7 +6465,7 @@ var BigDecimal = function(MathContext) {
             if(node.args[0].op === Model.POW && isNeg(node.args[0].args[1])) {
               node = multiplyNode([nodeMinusOne, node.args[0]])
             }else {
-              node = negate(node.args[0])
+              node = negate(node.args[0], true)
             }
             break;
           case Model.PERCENT:
@@ -6474,7 +6479,7 @@ var BigDecimal = function(MathContext) {
           case Model.PM:
             if(isNeg(mathValue(args[0], true))) {
               var args = node.args.slice(0);
-              node = newNode(node.op, [negate(args.shift())].concat(args))
+              node = newNode(node.op, [negate(args.shift(), true)].concat(args))
             }
             break;
           case Model.FACT:
@@ -7100,7 +7105,7 @@ var BigDecimal = function(MathContext) {
         var args = [];
         forEach(node.args, function(n, i) {
           if(i > 0 && node.op === Model.SUB) {
-            n = negate(n)
+            n = negate(n, true)
           }
           args.push(sortLiteral(n))
         });
@@ -7226,7 +7231,7 @@ var BigDecimal = function(MathContext) {
         });
         if(Model.option("ignoreOrder") && node.op === Model.SUB) {
           assert(args.length === 2, "2000: Internal error.");
-          return binaryNode(Model.ADD, [args[0], negate(args[1])])
+          return binaryNode(Model.ADD, [args[0], negate(args[1], true)])
         }
         return binaryNode(node.op, args)
       }, multiplicative:function(node) {
@@ -7258,7 +7263,7 @@ var BigDecimal = function(MathContext) {
         });
         if(Model.option("ignoreOrder") && node.op === Model.SUB) {
           assert(args.length === 1, "2000: Internal error.");
-          return negate(args[0])
+          return negate(args[0], true)
         }
         return newNode(node.op, args)
       }, exponential:function(node) {
@@ -7551,31 +7556,27 @@ var BigDecimal = function(MathContext) {
       return toDecimal(f(n))
     }
     function normalizeTrigIdent(op, args) {
+      var neg = sign(args[0]) < 0;
       var tt = terms(args[0]);
       var mv = bigZero;
       var cp = [], vp = [];
-      var neg = false;
       tt.forEach(function(t, i) {
         if(variablePart(t) === null) {
           mv = mv.add(mathValue(t, true, true));
           cp.push(t)
         }else {
-          if(isNeg(constantPart(t))) {
-            neg = !neg
-          }
           vp.push(t)
         }
       });
-      var cycles = -1 * toNumber(mv) / (2 * Math.PI);
-      var phase = toNumber(mv) % (2 * Math.PI) / Math.PI;
+      var shift = toNumber(mv) % (2 * Math.PI);
+      var phase = shift / Math.PI;
       var node;
-      var shift = binaryNode(Model.MUL, [numberNode(cycles), numberNode("2"), variableNode("\\pi")]);
       var arg;
       if(vp.length > 0) {
-        if(cycles) {
-          arg = binaryNode(Model.ADD, vp.concat(cp).concat(shift))
+        if(shift) {
+          arg = binaryNode(Model.ADD, vp.concat(numberNode(shift)))
         }else {
-          arg = binaryNode(Model.ADD, vp.concat(cp))
+          arg = binaryNode(Model.ADD, vp)
         }
       }else {
         vp.push(nodeZero);
@@ -7583,56 +7584,74 @@ var BigDecimal = function(MathContext) {
       }
       switch(op) {
         case Model.SIN:
-          switch(phase) {
-            case 1:
-              arg = neg ? multiplyNode(vp.concat(nodeMinusOne), true) : binaryNode(Model.ADD, vp);
-              node = unaryNode(Model.SIN, [arg]);
-              node = !neg ? multiplyNode([nodeMinusOne, node]) : node;
-              break;
-            case 1 / 2:
-              node = unaryNode(Model.COS, vp);
-              break;
-            case 0:
-              if(vp.length === 1) {
-                arg = neg ? multiplyNode([nodeMinusOne, arg]) : arg;
+          if(neg) {
+            arg = negate(arg);
+            node = unaryNode(Model.SIN, [arg]);
+            node = neg ? negate(node) : node
+          }else {
+            switch(phase) {
+              case 1:
+              ;
+              case -1:
+                arg = binaryNode(Model.ADD, vp);
                 node = unaryNode(Model.SIN, [arg]);
-                node = neg ? multiplyNode([nodeMinusOne, node]) : node
-              }else {
-                var arg1 = vp[0];
-                var arg2 = multiplyNode(vp.slice(1).concat(cp));
-                node = binaryNode(Model.ADD, [multiplyNode([unaryNode(Model.SIN, [arg1]), unaryNode(Model.COS, [arg2])]), multiplyNode([unaryNode(Model.COS, [arg1]), unaryNode(Model.SIN, [arg2])])])
-              }
-              break;
-            default:
-              node = unaryNode(op, args);
-              break
+                node = negate(node);
+                break;
+              case 1 / 2:
+                node = unaryNode(Model.COS, vp);
+                break;
+              case -1 / 2:
+                node = negate(unaryNode(Model.COS, vp));
+                break;
+              case 0:
+                if(vp.length === 1) {
+                  node = unaryNode(Model.SIN, [arg])
+                }else {
+                  var arg1 = vp[0];
+                  var arg2 = multiplyNode(vp.slice(1).concat(cp));
+                  node = binaryNode(Model.ADD, [multiplyNode([unaryNode(Model.SIN, [arg1]), unaryNode(Model.COS, [arg2])]), multiplyNode([unaryNode(Model.COS, [arg1]), unaryNode(Model.SIN, [arg2])])])
+                }
+                break;
+              default:
+                node = unaryNode(Model.SIN, [arg]);
+                break
+            }
           }
           break;
         case Model.COS:
-          switch(phase) {
-            case 1:
-              arg = neg ? multiplyNode(vp.concat(nodeMinusOne), true) : binaryNode(Model.ADD, vp);
-              node = unaryNode(Model.COS, [arg]);
-              node = multiplyNode([nodeMinusOne, node]);
-              break;
-            case 1 / 2:
-              arg = neg ? multiplyNode(vp.concat(nodeMinusOne), true) : binaryNode(Model.ADD, vp);
-              node = unaryNode(Model.SIN, [arg]);
-              node = !neg ? multiplyNode([nodeMinusOne, node]) : node;
-              break;
-            case 0:
-              if(vp.length === 1) {
-                arg = neg ? multiplyNode([nodeMinusOne, arg]) : arg;
-                node = unaryNode(Model.COS, [arg])
-              }else {
-                var arg1 = vp[0];
-                var arg2 = multiplyNode(vp.slice(1).concat(cp));
-                node = binaryNode(Model.ADD, [multiplyNode([unaryNode(Model.COS, [arg1]), unaryNode(Model.COS, [arg2])]), multiplyNode([nodeMinusOne, unaryNode(Model.SIN, [arg1]), unaryNode(Model.SIN, [arg2])])])
-              }
-              break;
-            default:
-              node = unaryNode(op, args);
-              break
+          if(neg) {
+            arg = negate(arg);
+            node = unaryNode(Model.COS, [arg])
+          }else {
+            switch(phase) {
+              case 1:
+              ;
+              case -1:
+                arg = binaryNode(Model.ADD, vp);
+                node = unaryNode(Model.COS, [arg]);
+                node = multiplyNode([nodeMinusOne, node]);
+                break;
+              case 1 / 2:
+                arg = binaryNode(Model.ADD, vp);
+                node = negate(unaryNode(Model.SIN, [arg]));
+                break;
+              case -1 / 2:
+                arg = binaryNode(Model.ADD, vp);
+                node = unaryNode(Model.SIN, [arg]);
+                break;
+              case 0:
+                if(vp.length === 1) {
+                  node = unaryNode(Model.COS, [arg])
+                }else {
+                  var arg1 = vp[0];
+                  var arg2 = multiplyNode(vp.slice(1).concat(cp));
+                  node = binaryNode(Model.ADD, [multiplyNode([unaryNode(Model.COS, [arg1]), unaryNode(Model.COS, [arg2])]), multiplyNode([nodeMinusOne, unaryNode(Model.SIN, [arg1]), unaryNode(Model.SIN, [arg2])])])
+                }
+                break;
+              default:
+                node = unaryNode(op, args);
+                break
+            }
           }
           break;
         case Model.SINH:
@@ -8714,7 +8733,7 @@ var BigDecimal = function(MathContext) {
         }
       }
       return visit(root, {name:"mathValue", numeric:function(node) {
-        if(isUndefined(node) || (isRepeating(node) || isImaginary(node))) {
+        if(isUndefined(node) || isRepeating(node)) {
           return null
         }
         return toDecimal(node.args[0])
@@ -9299,7 +9318,7 @@ var BigDecimal = function(MathContext) {
     function factors(root, env, ignorePrimeFactors, preserveNeg, factorAdditive) {
       assert(root && root.args, "2000: Internal error.");
       return visit(root, {name:"factors", numeric:function(node) {
-        if(ignorePrimeFactors || (isInfinity(node) || isImaginary(node))) {
+        if(ignorePrimeFactors || isInfinity(node)) {
           return[node]
         }
         var ff = [];
@@ -10800,9 +10819,6 @@ var BigDecimal = function(MathContext) {
         case "allowEulersNumber":
           opt = undefined;
           break;
-        case "treatAsVariable":
-          opt = [];
-          break;
         default:
           opt = false;
           break
@@ -10968,8 +10984,6 @@ var MathCore = function() {
         assert(false, message(3007, [p, v]));
         break;
       case "setThousandsSeparator":
-      ;
-      case "treatAsVariable":
         if(typeof v === "undefined" || (typeof v === "string" || v instanceof Array)) {
           break
         }
