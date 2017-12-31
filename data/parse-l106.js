@@ -149,6 +149,10 @@ function decomp(node) {
       numArgs = 1;
       str = " allowDecimal";
       break;
+    case "ALLOW-EULERS-NUMBER":
+      numArgs = 1;
+      str = " allowEulersNumber";
+      break;
     case "ALLOW-INTERVAL":
       numArgs = 1;
       str = " allowInterval";
@@ -215,7 +219,13 @@ function decomp(node) {
             str += "," + decomp(n);
           } else {
             if (i <= numArgs) {
-              str += decomp(n);
+              let s = decomp(n);
+              if (s.substring(0, s.indexOf(" "))) {
+                // We have more than one method, so toss the firt one.
+                str = s;
+              } else {
+                str += s;
+              }
               let i = str.indexOf("inverseResult");
               if (i > 0) {
                 str = str.substring(0, i) + str.substring(i + "inverseResult".length);
@@ -431,6 +441,7 @@ function parse(str, lineNum) {
       val = scanStringOrNumber();
       break;
     case "allowDecimal":
+    case "allowEulersNumber":
     case "allowInterval":
     case "dontExpandPowers":
     case "dontFactorDenominators":

@@ -194,6 +194,7 @@ function parse(str, lineNum) {
       break;
     case "allowDecimal":
     case "allowInterval":
+    case "allowEulersNumber":
     case "dontExpandPowers":
     case "dontFactorDenominators":
     case "dontFactorTerms":
