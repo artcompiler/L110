@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - b57356d
+ * Mathcore unversioned - 9e4c264
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -4602,13 +4602,25 @@ var BigDecimal = function(MathContext) {
   function isChemCore() {
     return!!Model.env["Au"]
   }
-  function undefinedNode() {
-    var node = numberNode((new Date).getTime() + Math.random());
+  function undefinedNode(node) {
+    if(isUndefined(node)) {
+      return node
+    }
+    var node = numberNode(JSON.stringify(node));
     node.isUndefined = true;
     return node
   }
   function isUndefined(node) {
-    return node.isUndefined
+    if(node.op === Model.NUM) {
+      return!!node.isUndefined
+    }else {
+      if(node.args) {
+        return some(node.args, function(n) {
+          return isUndefined(n)
+        })
+      }
+    }
+    return false
   }
   function isImaginary(node) {
     if(node.op) {
@@ -4757,7 +4769,7 @@ var BigDecimal = function(MathContext) {
       }else {
         if(n.op === Model.ADD && !isNormalizing) {
           var args = [];
-          n.args.forEach(function(n) {
+          forEach(n.args, function(n) {
             args.push(negate(n))
           });
           return binaryNode(n.op, args, true)
@@ -5994,7 +6006,7 @@ var BigDecimal = function(MathContext) {
         var dd = denoms[k];
         if(dd) {
           var count = dd.length > nn.length ? nn.length : dd.length;
-          numers[k] = nn.slice(count);
+          numers[k] = k === "0" ? nn.slice(0, 1) : nn.slice(count);
           denoms[k] = k === "0" ? dd.slice(0, 1) : dd.slice(count);
           changed = true
         }
@@ -6373,10 +6385,6 @@ var BigDecimal = function(MathContext) {
       var node = Model.create(visit(root, {name:"normalize", numeric:function(node) {
         if(isRepeating(node) || !option("dontConvertDecimalToFraction") && isDecimal(node)) {
           node = decimalToFraction(node)
-        }else {
-          if(isNeg(node)) {
-            node = numberNode(node.args[0])
-          }
         }
         return node
       }, additive:function(node) {
@@ -7560,7 +7568,7 @@ var BigDecimal = function(MathContext) {
       var tt = terms(args[0]);
       var mv = bigZero;
       var cp = [], vp = [];
-      tt.forEach(function(t, i) {
+      forEach(tt, function(t, i) {
         if(variablePart(t) === null) {
           mv = mv.add(mathValue(t, true, true));
           cp.push(t)
@@ -8216,9 +8224,6 @@ var BigDecimal = function(MathContext) {
         node = cancelFactors(node);
         return node;
         function fold(lnode, rnode) {
-          if(isUndefined(lnode) || isUndefined(rnode)) {
-            return undefinedNode()
-          }
           var ldegr = degree(lnode);
           var rdegr = degree(rnode);
           var lvars = variables(lnode);
@@ -8229,7 +8234,7 @@ var BigDecimal = function(MathContext) {
           var rcoeff = constantPart(rnode);
           var lcoeffmv = mathValue(lcoeff, true);
           var rcoeffmv = mathValue(rcoeff, true);
-          if(ldegr === 0 && isZero(lcoeffmv) || rdegr === 0 && isZero(rcoeffmv)) {
+          if(ldegr === 0 && (isZero(lcoeffmv) && !isUndefined(rnode)) || rdegr === 0 && (isZero(rcoeffmv) && !isUndefined(lnode))) {
             if(units(lnode).length || units(rnode).length) {
               return[lnode, rnode]
             }else {
@@ -8472,7 +8477,7 @@ var BigDecimal = function(MathContext) {
             var cp = constantPart(arg);
             var vp = variablePart(arg);
             var ep;
-            if(vp.op === Model.POW && vp.args.length === 2) {
+            if(vp && (vp.op === Model.POW && vp.args.length === 2)) {
               ep = vp.args[1];
               vp = vp.args[0]
             }
@@ -8535,7 +8540,7 @@ var BigDecimal = function(MathContext) {
           if(op === Model.POW) {
             if(isZero(bmv)) {
               if(isNeg(emv)) {
-                return[undefinedNode()]
+                return[undefinedNode(newNode(op, [base, expo]))]
               }else {
                 return[nodeZero]
               }
@@ -9174,7 +9179,7 @@ var BigDecimal = function(MathContext) {
             var arg0 = expand(node.args[0]);
             if(arg0.op === Model.MUL) {
               var args = [];
-              arg0.args.forEach(function(n) {
+              forEach(arg0.args, function(n) {
                 args.push(unaryNode(Model.ABS, [n]))
               });
               node = multiplyNode(args)

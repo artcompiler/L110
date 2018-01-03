@@ -2,26 +2,33 @@
 /* vim: set shiftwidth=2 tabstop=2 autoindent cindent expandtab: */
 var fs=require('graceful-fs');
 
-var basedir = "./20161107/formulavalidations/";
+var basedir = "./20171006/math/";
 
 var walk = function(dir, done) {
   var results = [];
   fs.readdir(dir, function(err, list) {
-    if (err) return done(err);
+    if (err) {
+      console.log("walk() ERROR err=" + JSON.stringify(err));
+      return done(err);
+    }
     var i = 0;
     (function next() {
       var file = list[i++];
       if (!file) return done(null, results);
-      file = dir + '/' + file;
-      fs.stat(file, function(err, stat) {
-        if (stat && stat.isDirectory()) {
-          walk(file, function(err, res) {
-            results = results.concat(res);
+      file = dir + file;
+      fs.stat(file, function(err, stats) {
+        if (stats) {
+          if (stats.isDirectory()) {
+            walk(file, function(err, res) {
+              results = results.concat(res);
+              next();
+            });
+          } else if (stats.isFile()) {
+            results.push(file);
             next();
-          });
-        } else {
-          results.push(file);
-          next();
+          } else {
+            console.log("walk() ERROR file=" + file);
+          }
         }
       });
     })();
@@ -80,11 +87,14 @@ function makeGCOptions(options) {
     case "setThousandsSeparator":
     case "setDecimalSeparator":
       if (typeof v !== "string" &&
-          !val instanceof Array) {
+          !val instanceof Array || val.length === 0) {
         key = undefined;
       } else if (val.length > 0) {
         val = JSON.stringify(val);
       }
+      break;
+    case "ignoreLeadingAndTrailingSpaces":
+      key = undefined; // Erase it.
       break;
     default:
       break;
@@ -270,7 +280,7 @@ let makeGCItem = makeJasmineItem;
 walk(basedir, function(err, files) {
   let items = {};
   if (err) throw err;
-  //console.log("scanning " + files.length + " files");
+  console.log("scanning " + files.length + " files");
   files.forEach(function(file) {
     var name = file.substring(file.indexOf("/") + 1).substring(0, file.lastIndexOf("/")).replace(/\//g, ".").replace(/\.\./g, ".").replace("math", "lrn.math");
     fs.readFile(file, 'utf-8', function(err, data){

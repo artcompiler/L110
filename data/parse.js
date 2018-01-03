@@ -200,6 +200,7 @@ function parse(str, lineNum) {
     case "dontFactorTerms":
     case "dontConvertDecimalToFraction":
     case "dontSimplifyImaginary":
+    case "ignoreLeadingAndTrailingSpaces":
     case "ignoreOrder":
     case "inverseResult":
     case "requireThousandsSeparator":
