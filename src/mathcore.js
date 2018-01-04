@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 9e4c264
+ * Mathcore unversioned - efdfa63
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -1370,7 +1370,7 @@ var Model = function() {
             next({oneCharToken:true});
             args.push(primaryExpr())
           }else {
-            args.push(newNode(Model.VAR, ["e"]))
+            args.push(newNode(Model.NUM, ["10"]))
           }
           args.push(primaryExpr());
           return newNode(Model.LOG, args);
@@ -1784,7 +1784,18 @@ var Model = function() {
                       expr.isPolynomial = true;
                       var t = args.pop();
                       if(!t.isPolynomial) {
-                        expr = binaryNode(Model.MUL, [t, expr]);
+                        if(t.op === Model.MUL && t.args[t.args.length - 1].isPolynomial) {
+                          assert(t.args.length === 2);
+                          var prefix = t.args[0];
+                          var suffix = t.args[1];
+                          expr.isPolynomial = suffix.isPolynomial = false;
+                          expr.isImplicit = true;
+                          expr = binaryNode(Model.MUL, [prefix, binaryNode(Model.MUL, [suffix, expr], true)]);
+                          expr.args[1].isPolynomial = true;
+                          expr.args[1].isImplicit = true
+                        }else {
+                          expr = binaryNode(Model.MUL, [t, expr])
+                        }
                         expr.isImplicit = t.isImplicit;
                         t.isImplicit = undefined
                       }
@@ -1841,7 +1852,7 @@ var Model = function() {
       if(n0.op === Model.SUB && n0.args.length === 1) {
         n0 = n0.args[0]
       }
-      if(!n0.lbrk && (!n1.lbrk && (n0.op === Model.NUM && isVar(n1) || (isVar(n0) && n1.op === Model.NUM || n0.op === Model.NUM && n1.op === Model.NUM)))) {
+      if(!n0.lbrk && (!n1.lbrk && (n0.op === Model.NUM && isVar(n1) || (isVar(n0) && n1.op === Model.NUM || (n0.op === Model.NUM && n1.op === Model.NUM || n0.op === Model.MUL && (n0.args[n0.args.length - 1].isPolynomial && isVar(n1))))))) {
         return true
       }
       return false
@@ -5847,19 +5858,21 @@ var BigDecimal = function(MathContext) {
     function isEmptyNode(node) {
       return node.op === Model.VAR && node.args[0] === "0"
     }
-    function flattenNestedMultiplyNodes(node, doSimplify) {
+    function flattenNestedMultiplyNodes(node) {
       var args = [];
       if(node.op !== Model.MUL || node.isScientific) {
         return node
       }
       forEach(node.args, function(n) {
         if(n.op === Model.MUL) {
-          args = args.concat(n.args)
+          forEach(n.args, function(n) {
+            args = args.concat(flattenNestedMultiplyNodes(n))
+          })
         }else {
           args.push(n)
         }
       });
-      return multiplyNode(args)
+      return multiplyNode(args, true)
     }
     function normalizeSyntax(root, ref) {
       var options = Model.options ? Model.options : {};
