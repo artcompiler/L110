@@ -220,7 +220,7 @@ function decomp(node) {
           } else {
             if (i <= numArgs) {
               let s = decomp(n);
-              if (s.substring(0, s.indexOf(" "))) {
+              if (methods.indexOf(s.substring(0, s.indexOf(" "))) >= 0) {
                 // We have more than one method, so toss the firt one.
                 str = s;
               } else {

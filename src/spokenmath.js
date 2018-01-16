@@ -852,10 +852,6 @@ var _rules2 = require("./rules.js");
         if (val.charAt(0) === "\\") {
           val = val.substring(1);
         }
-        if (val.indexOf(".") >= 0) {
-          var i = val.indexOf(".");
-          val = val.substring(0, i) + " point " + val.substring(i + 1);
-        }
       }
       return val;
     }
@@ -1146,6 +1142,12 @@ var _rules2 = require("./rules.js");
             str = s; // Overwrite str.
           })();
         }
+        if (str.indexOf("%IP") >= 0) {
+          str = str.replace("%IP", env.ip);
+        }
+        if (str.indexOf("%FP") >= 0) {
+          str = str.replace("%FP", env.fp);
+        }
         if (str.indexOf("%M") >= 0) {
           (0, _assert.assert)(env.m);
           str = str.replace("%M", env.m);
@@ -1166,11 +1168,11 @@ var _rules2 = require("./rules.js");
           args: [str]
         };
       }
-      (0, _assert.assert)(false);
-      return {
-        op: _model.Model.VAR,
-        args: [""]
-      };
+      (0, _assert.assert)(args.length === 1 && isEmpty(args[0]));
+      return args[0];
+    }
+    function isEmpty(node) {
+      return node.op === _model.Model.VAR && node.args.length === 1 && node.args[0] === "";
     }
 
     function getPrec(op) {
@@ -1399,13 +1401,20 @@ var _rules2 = require("./rules.js");
             op: _model.Model.VAR,
             args: [lookup(node.args[0])]
           }];
+          var env = {};
+          if (node.numberFormat === "decimal") {
+            var parts = node.args[0].split(".");
+            (0, _assert.assert)(parts.length === 2);
+            env.ip = parts[0];
+            env.fp = parts[1];
+          }
           var matches = match(patterns, node);
           if (matches.length === 0) {
             return node;
           }
           // Use first match for now.
           var template = matchedTemplate(rules, matches, 1);
-          return expand(template, args);
+          return expand(template, args, env);
         },
         binary: function binary(node) {
           var matches = match(patterns, node);
@@ -2059,7 +2068,7 @@ var Core = exports.Core = function () {
       valueNode = value != undefined ? _model.Model.create(value, "spec") : undefined;
       _model.Model.popEnv();
     } catch (e) {
-      //      console.log(e.stack);
+      // console.log(e.stack);
       pendingError = e;
     }
     var evaluate = function evaluate(solution, resume) {
@@ -2085,7 +2094,7 @@ var Core = exports.Core = function () {
         _model.Model.popEnv();
         resume(null, result);
       } catch (e) {
-        //        console.log(e.stack);
+        // console.log(e.stack);
         var _message = e.message;
         resume({
           result: null,
@@ -2234,6 +2243,7 @@ var Model = exports.Model = function () {
 
   // Add messages here
   _assert.Assert.reserveCodeRange(1000, 1999, "model");
+  _assert.Assert.messages[1000] = "Internal error. %1.";
   _assert.Assert.messages[1001] = "Invalid syntax. '%1' expected, '%2' found.";
   _assert.Assert.messages[1002] = "Only one decimal separator can be specified.";
   _assert.Assert.messages[1003] = "Extra characters in input at position: %1, lexeme: %2.";
@@ -2514,189 +2524,217 @@ var Model = exports.Model = function () {
     return out;
   }
 
+  // Character defines.
+  var CC_SPACE = 0x20;
+  var CC_BANG = 0x21;
+  var CC_DOLLAR = 0x24;
+  var CC_PERCENT = 0x25;
+  var CC_LEFTPAREN = 0x28;
+  var CC_MUL = 0x2A;
+  var CC_ADD = 0x2B;
+  var CC_COMMA = 0x2C;
+  var CC_SUB = 0x2D;
+  var CC_RIGHTPAREN = 0x29;
+  var CC_SLASH = 0x2F;
+  var CC_NUM = 0x30;
+  var CC_COLON = 0x3A;
+  var CC_SEMICOLON = 0x3B;
+  var CC_EQL = 0x3D;
+  var CC_QMARK = 0x3F;
+  var CC_CONST = 0x41;
+  var CC_LEFTBRACKET = 0x5B;
+  var CC_RIGHTBRACKET = 0x5D;
+  var CC_CARET = 0x5E;
+  var CC_UNDERSCORE = 0x5F;
+  var CC_VAR = 0x61;
+  var CC_LEFTBRACE = 0x7B;
+  var CC_VERTICALBAR = 0x7C;
+  var CC_RIGHTBRACE = 0x7D;
+
+  // Token defines.
+  var TK_NONE = 0;
+  var TK_ADD = CC_ADD;
+  var TK_CARET = CC_CARET;
+  var TK_UNDERSCORE = CC_UNDERSCORE;
+  var TK_COS = 0x105;
+  var TK_COT = 0x108;
+  var TK_CSC = 0x109;
+  var TK_FRAC = 0x100;
+  var TK_SLASH = CC_SLASH;
+  var TK_EQL = CC_EQL;
+  var TK_LN = 0x107;
+  var TK_LEFTBRACE = CC_LEFTBRACE;
+  var TK_VERTICALBAR = CC_VERTICALBAR;
+  var TK_LEFTBRACKET = CC_LEFTBRACKET;
+  var TK_LEFTPAREN = CC_LEFTPAREN;
+  var TK_MUL = CC_MUL;
+  var TK_NUM = CC_NUM;
+  var TK_PM = 0x102;
+  var TK_RIGHTBRACE = CC_RIGHTBRACE;
+  var TK_RIGHTBRACKET = CC_RIGHTBRACKET;
+  var TK_RIGHTPAREN = CC_RIGHTPAREN;
+  var TK_SEC = 0x106;
+  var TK_SIN = 0x103;
+  var TK_SQRT = 0x101;
+  var TK_SUB = CC_SUB;
+  var TK_TAN = 0x104;
+  var TK_VAR = CC_VAR;
+  var TK_CONST = CC_CONST;
+  var TK_NEXT = 0x10A;
+  var TK_COMMA = CC_COMMA;
+  var TK_LG = 0x10B;
+  var TK_LOG = 0x10C;
+  var TK_TEXT = 0x10D;
+  var TK_LT = 0x10E;
+  var TK_LE = 0x10F;
+  var TK_GT = 0x110;
+  var TK_GE = 0x111;
+  var TK_EXISTS = 0x112;
+  var TK_IN = 0x113;
+  var TK_FORALL = 0x114;
+  var TK_LIM = 0x115;
+  var TK_EXP = 0x116;
+  var TK_TO = 0x117;
+  var TK_SUM = 0x118;
+  var TK_INT = 0x119;
+  var TK_PROD = 0x11A;
+  var TK_PERCENT = CC_PERCENT;
+  var TK_QMARK = CC_QMARK;
+  var TK_M = 0x11B;
+  var TK_RIGHTARROW = 0x11C;
+  var TK_BANG = CC_BANG;
+  var TK_BINOM = 0x11D;
+  var TK_NEWROW = 0x11E;
+  var TK_NEWCOL = 0x11F;
+  var TK_BEGIN = 0x120;
+  var TK_END = 0x121;
+  var TK_COLON = CC_COLON;
+  var TK_VEC = 0x122;
+  var TK_ARCSIN = 0x123;
+  var TK_ARCCOS = 0x124;
+  var TK_ARCTAN = 0x125;
+  var TK_DIV = 0x126;
+  var TK_TYPE = 0x127;
+  var TK_OVERLINE = 0x128;
+  var TK_OVERSET = 0x129;
+  var TK_UNDERSET = 0x12A;
+  var TK_BACKSLASH = 0x12B;
+  var TK_MATHBF = 0x12C;
+  var TK_NE = 0x12D;
+  var TK_APPROX = 0x12E;
+  var TK_ABS = 0x12F;
+  var TK_DOT = 0x130;
+  var TK_ARCSEC = 0x131;
+  var TK_ARCCSC = 0x132;
+  var TK_ARCCOT = 0x133;
+  var TK_MATHFIELD = 0x134;
+  var TK_CUP = 0x135;
+  var TK_BIGCUP = 0x136;
+  var TK_CAP = 0x137;
+  var TK_BIGCAP = 0x138;
+  var TK_PERP = 0x139;
+  var TK_PROPTO = 0x13A;
+  var TK_NGTR = 0x13B;
+  var TK_NLESS = 0x13C;
+  var TK_NI = 0x13D;
+  var TK_SUBSETEQ = 0x13E;
+  var TK_SUPSETEQ = 0x13F;
+  var TK_SUBSET = 0x140;
+  var TK_SUPSET = 0x141;
+  var TK_NOT = 0x142;
+  var TK_PARALLEL = 0x143;
+  var TK_NPARALLEL = 0x144;
+  var TK_SIM = 0x145;
+  var TK_CONG = 0x146;
+  var TK_LEFTARROW = 0x147;
+  var TK_LONGRIGHTARROW = 0x148;
+  var TK_LONGLEFTARROW = 0x149;
+  var TK_OVERRIGHTARROW = 0x14A;
+  var TK_OVERLEFTARROW = 0x14B;
+  var TK_LONGLEFTRIGHTARROW = 0x14C;
+  var TK_OVERLEFTRIGHTARROW = 0x14D;
+  var TK_IMPLIES = 0x14E;
+  var T0 = TK_NONE,
+      T1 = TK_NONE;
+
+  // Define mapping from token to operator
+  var tokenToOperator = {};
+  tokenToOperator[TK_SLASH] = OpStr.FRAC;
+  tokenToOperator[TK_FRAC] = OpStr.FRAC;
+  tokenToOperator[TK_SQRT] = OpStr.SQRT;
+  tokenToOperator[TK_VEC] = OpStr.VEC;
+  tokenToOperator[TK_ADD] = OpStr.ADD;
+  tokenToOperator[TK_SUB] = OpStr.SUB;
+  tokenToOperator[TK_PM] = OpStr.PM;
+  tokenToOperator[TK_NOT] = OpStr.NOT;
+  tokenToOperator[TK_CARET] = OpStr.POW;
+  tokenToOperator[TK_UNDERSCORE] = OpStr.SUBSCRIPT;
+  tokenToOperator[TK_MUL] = OpStr.MUL;
+  tokenToOperator[TK_DOT] = OpStr.DOT;
+  tokenToOperator[TK_DIV] = OpStr.DIV;
+  tokenToOperator[TK_EQL] = OpStr.EQL;
+  tokenToOperator[TK_COMMA] = OpStr.COMMA;
+  tokenToOperator[TK_TEXT] = OpStr.TEXT;
+  tokenToOperator[TK_LT] = OpStr.LT;
+  tokenToOperator[TK_LE] = OpStr.LE;
+  tokenToOperator[TK_GT] = OpStr.GT;
+  tokenToOperator[TK_GE] = OpStr.GE;
+  tokenToOperator[TK_NE] = OpStr.NE;
+  tokenToOperator[TK_NGTR] = OpStr.NGTR;
+  tokenToOperator[TK_NLESS] = OpStr.NLESS;
+  tokenToOperator[TK_NI] = OpStr.NI;
+  tokenToOperator[TK_SUBSETEQ] = OpStr.SUBSETEQ;
+  tokenToOperator[TK_SUPSETEQ] = OpStr.SUPSETEQ;
+  tokenToOperator[TK_SUBSET] = OpStr.SUBSET;
+  tokenToOperator[TK_SUPSET] = OpStr.SUPSET;
+  tokenToOperator[TK_APPROX] = OpStr.APPROX;
+  tokenToOperator[TK_PERP] = OpStr.PERP;
+  tokenToOperator[TK_PROPTO] = OpStr.PROPTO;
+  tokenToOperator[TK_PARALLEL] = OpStr.PARALLEL;
+  tokenToOperator[TK_NPARALLEL] = OpStr.NPARALLEL;
+  tokenToOperator[TK_SIM] = OpStr.SIM;
+  tokenToOperator[TK_CONG] = OpStr.CONG;
+  tokenToOperator[TK_EXISTS] = OpStr.EXISTS;
+  tokenToOperator[TK_IN] = OpStr.IN;
+  tokenToOperator[TK_FORALL] = OpStr.FORALL;
+  tokenToOperator[TK_LIM] = OpStr.LIM;
+  tokenToOperator[TK_EXP] = OpStr.EXP;
+  tokenToOperator[TK_TO] = OpStr.TO;
+  tokenToOperator[TK_VERTICALBAR] = OpStr.PIPE;
+  tokenToOperator[TK_SUM] = OpStr.SUM;
+  tokenToOperator[TK_INT] = OpStr.INT;
+  tokenToOperator[TK_PROD] = OpStr.PROD;
+  tokenToOperator[TK_CUP] = OpStr.CUP;
+  tokenToOperator[TK_BIGCUP] = OpStr.BIGCUP;
+  tokenToOperator[TK_CAP] = OpStr.CAP;
+  tokenToOperator[TK_BIGCAP] = OpStr.BIGCAP;
+  tokenToOperator[TK_M] = OpStr.M;
+  tokenToOperator[TK_IMPLIES] = OpStr.IMPLIES;
+  tokenToOperator[TK_RIGHTARROW] = OpStr.RIGHTARROW;
+  tokenToOperator[TK_LEFTARROW] = OpStr.LEFTARROW;
+  tokenToOperator[TK_LONGRIGHTARROW] = OpStr.LONGRIGHTARROW;
+  tokenToOperator[TK_LONGLEFTARROW] = OpStr.LONGLEFTARROW;
+  tokenToOperator[TK_OVERRIGHTARROW] = OpStr.OVERRIGHTARROW;
+  tokenToOperator[TK_OVERLEFTARROW] = OpStr.OVERLEFTARROW;
+  tokenToOperator[TK_LONGLEFTRIGHTARROW] = OpStr.LONGLEFTRIGHTARROW;
+  tokenToOperator[TK_OVERLEFTRIGHTARROW] = OpStr.OVERLEFTRIGHTARROW;
+
+  tokenToOperator[TK_BANG] = OpStr.FACT;
+  tokenToOperator[TK_BINOM] = OpStr.BINOM;
+  tokenToOperator[TK_NEWROW] = OpStr.ROW;
+  tokenToOperator[TK_NEWCOL] = OpStr.COL;
+  tokenToOperator[TK_COLON] = OpStr.COLON;
+  tokenToOperator[TK_TYPE] = OpStr.TYPE;
+  tokenToOperator[TK_OVERLINE] = OpStr.OVERLINE;
+  tokenToOperator[TK_OVERSET] = OpStr.OVERSET;
+  tokenToOperator[TK_UNDERSET] = OpStr.UNDERSET;
+  tokenToOperator[TK_BACKSLASH] = OpStr.BACKSLASH;
+  tokenToOperator[TK_MATHBF] = OpStr.MATHBF;
+  tokenToOperator[TK_DOT] = OpStr.DOT;
+  tokenToOperator[TK_MATHFIELD] = OpStr.MATHFIELD;
+
   var parse = function parse(src, env) {
     src = stripInvisible(src);
-    // Define lexical tokens
-    var TK_NONE = 0;
-    var TK_ADD = '+'.charCodeAt(0);
-    var TK_CARET = '^'.charCodeAt(0);
-    var TK_UNDERSCORE = '_'.charCodeAt(0);
-    var TK_COS = 0x105;
-    var TK_COT = 0x108;
-    var TK_CSC = 0x109;
-    var TK_FRAC = 0x100;
-    var TK_SLASH = '/'.charCodeAt(0);
-    var TK_EQL = '='.charCodeAt(0);
-    var TK_LN = 0x107;
-    var TK_LEFTBRACE = '{'.charCodeAt(0);
-    var TK_VERTICALBAR = '|'.charCodeAt(0);
-    var TK_LEFTBRACKET = '['.charCodeAt(0);
-    var TK_LEFTPAREN = '('.charCodeAt(0);
-    var TK_MUL = '*'.charCodeAt(0);
-    var TK_NUM = '0'.charCodeAt(0);
-    var TK_PM = 0x102;
-    var TK_RIGHTBRACE = '}'.charCodeAt(0);
-    var TK_RIGHTBRACKET = ']'.charCodeAt(0);
-    var TK_RIGHTPAREN = ')'.charCodeAt(0);
-    var TK_SEC = 0x106;
-    var TK_SIN = 0x103;
-    var TK_SQRT = 0x101;
-    var TK_SUB = '-'.charCodeAt(0);
-    var TK_TAN = 0x104;
-    var TK_VAR = 'a'.charCodeAt(0);
-    var TK_CONST = 'A'.charCodeAt(0);
-    var TK_NEXT = 0x10A;
-    var TK_COMMA = ','.charCodeAt(0);
-    var TK_LG = 0x10B;
-    var TK_LOG = 0x10C;
-    var TK_TEXT = 0x10D;
-    var TK_LT = 0x10E;
-    var TK_LE = 0x10F;
-    var TK_GT = 0x110;
-    var TK_GE = 0x111;
-    var TK_EXISTS = 0x112;
-    var TK_IN = 0x113;
-    var TK_FORALL = 0x114;
-    var TK_LIM = 0x115;
-    var TK_EXP = 0x116;
-    var TK_TO = 0x117;
-    var TK_SUM = 0x118;
-    var TK_INT = 0x119;
-    var TK_PROD = 0x11A;
-    var TK_PERCENT = '%'.charCodeAt(0);
-    var TK_QMARK = '?'.charCodeAt(0);
-    var TK_M = 0x11B;
-    var TK_RIGHTARROW = 0x11C;
-    var TK_BANG = '!'.charCodeAt(0);
-    var TK_BINOM = 0x11D;
-    var TK_NEWROW = 0x11E;
-    var TK_NEWCOL = 0x11F;
-    var TK_BEGIN = 0x120;
-    var TK_END = 0x121;
-    var TK_COLON = ':'.charCodeAt(0);
-    var TK_VEC = 0x122;
-    var TK_ARCSIN = 0x123;
-    var TK_ARCCOS = 0x124;
-    var TK_ARCTAN = 0x125;
-    var TK_DIV = 0x126;
-    var TK_TYPE = 0x127;
-    var TK_OVERLINE = 0x128;
-    var TK_OVERSET = 0x129;
-    var TK_UNDERSET = 0x12A;
-    var TK_BACKSLASH = 0x12B;
-    var TK_MATHBF = 0x12C;
-    var TK_NE = 0x12D;
-    var TK_APPROX = 0x12E;
-    var TK_ABS = 0x12F;
-    var TK_DOT = 0x130;
-    var TK_ARCSEC = 0x131;
-    var TK_ARCCSC = 0x132;
-    var TK_ARCCOT = 0x133;
-    var TK_MATHFIELD = 0x134;
-    var TK_CUP = 0x135;
-    var TK_BIGCUP = 0x136;
-    var TK_CAP = 0x137;
-    var TK_BIGCAP = 0x138;
-    var TK_PERP = 0x139;
-    var TK_PROPTO = 0x13A;
-    var TK_NGTR = 0x13B;
-    var TK_NLESS = 0x13C;
-    var TK_NI = 0x13D;
-    var TK_SUBSETEQ = 0x13E;
-    var TK_SUPSETEQ = 0x13F;
-    var TK_SUBSET = 0x140;
-    var TK_SUPSET = 0x141;
-    var TK_NOT = 0x142;
-    var TK_PARALLEL = 0x143;
-    var TK_NPARALLEL = 0x144;
-    var TK_SIM = 0x145;
-    var TK_CONG = 0x146;
-    var TK_LEFTARROW = 0x147;
-    var TK_LONGRIGHTARROW = 0x148;
-    var TK_LONGLEFTARROW = 0x149;
-    var TK_OVERRIGHTARROW = 0x14A;
-    var TK_OVERLEFTARROW = 0x14B;
-    var TK_LONGLEFTRIGHTARROW = 0x14C;
-    var TK_OVERLEFTRIGHTARROW = 0x14D;
-    var TK_IMPLIES = 0x14E;
-    var T0 = TK_NONE,
-        T1 = TK_NONE;
-    // Define mapping from token to operator
-    var tokenToOperator = {};
-    tokenToOperator[TK_SLASH] = OpStr.FRAC;
-    tokenToOperator[TK_FRAC] = OpStr.FRAC;
-    tokenToOperator[TK_SQRT] = OpStr.SQRT;
-    tokenToOperator[TK_VEC] = OpStr.VEC;
-    tokenToOperator[TK_ADD] = OpStr.ADD;
-    tokenToOperator[TK_SUB] = OpStr.SUB;
-    tokenToOperator[TK_PM] = OpStr.PM;
-    tokenToOperator[TK_NOT] = OpStr.NOT;
-    tokenToOperator[TK_CARET] = OpStr.POW;
-    tokenToOperator[TK_UNDERSCORE] = OpStr.SUBSCRIPT;
-    tokenToOperator[TK_MUL] = OpStr.MUL;
-    tokenToOperator[TK_DOT] = OpStr.DOT;
-    tokenToOperator[TK_DIV] = OpStr.DIV;
-    tokenToOperator[TK_EQL] = OpStr.EQL;
-    tokenToOperator[TK_COMMA] = OpStr.COMMA;
-    tokenToOperator[TK_TEXT] = OpStr.TEXT;
-    tokenToOperator[TK_LT] = OpStr.LT;
-    tokenToOperator[TK_LE] = OpStr.LE;
-    tokenToOperator[TK_GT] = OpStr.GT;
-    tokenToOperator[TK_GE] = OpStr.GE;
-    tokenToOperator[TK_NE] = OpStr.NE;
-    tokenToOperator[TK_NGTR] = OpStr.NGTR;
-    tokenToOperator[TK_NLESS] = OpStr.NLESS;
-    tokenToOperator[TK_NI] = OpStr.NI;
-    tokenToOperator[TK_SUBSETEQ] = OpStr.SUBSETEQ;
-    tokenToOperator[TK_SUPSETEQ] = OpStr.SUPSETEQ;
-    tokenToOperator[TK_SUBSET] = OpStr.SUBSET;
-    tokenToOperator[TK_SUPSET] = OpStr.SUPSET;
-    tokenToOperator[TK_APPROX] = OpStr.APPROX;
-    tokenToOperator[TK_PERP] = OpStr.PERP;
-    tokenToOperator[TK_PROPTO] = OpStr.PROPTO;
-    tokenToOperator[TK_PARALLEL] = OpStr.PARALLEL;
-    tokenToOperator[TK_NPARALLEL] = OpStr.NPARALLEL;
-    tokenToOperator[TK_SIM] = OpStr.SIM;
-    tokenToOperator[TK_CONG] = OpStr.CONG;
-    tokenToOperator[TK_EXISTS] = OpStr.EXISTS;
-    tokenToOperator[TK_IN] = OpStr.IN;
-    tokenToOperator[TK_FORALL] = OpStr.FORALL;
-    tokenToOperator[TK_LIM] = OpStr.LIM;
-    tokenToOperator[TK_EXP] = OpStr.EXP;
-    tokenToOperator[TK_TO] = OpStr.TO;
-    tokenToOperator[TK_VERTICALBAR] = OpStr.PIPE;
-    tokenToOperator[TK_SUM] = OpStr.SUM;
-    tokenToOperator[TK_INT] = OpStr.INT;
-    tokenToOperator[TK_PROD] = OpStr.PROD;
-    tokenToOperator[TK_CUP] = OpStr.CUP;
-    tokenToOperator[TK_BIGCUP] = OpStr.BIGCUP;
-    tokenToOperator[TK_CAP] = OpStr.CAP;
-    tokenToOperator[TK_BIGCAP] = OpStr.BIGCAP;
-    tokenToOperator[TK_M] = OpStr.M;
-    tokenToOperator[TK_IMPLIES] = OpStr.IMPLIES;
-    tokenToOperator[TK_RIGHTARROW] = OpStr.RIGHTARROW;
-    tokenToOperator[TK_LEFTARROW] = OpStr.LEFTARROW;
-    tokenToOperator[TK_LONGRIGHTARROW] = OpStr.LONGRIGHTARROW;
-    tokenToOperator[TK_LONGLEFTARROW] = OpStr.LONGLEFTARROW;
-    tokenToOperator[TK_OVERRIGHTARROW] = OpStr.OVERRIGHTARROW;
-    tokenToOperator[TK_OVERLEFTARROW] = OpStr.OVERLEFTARROW;
-    tokenToOperator[TK_LONGLEFTRIGHTARROW] = OpStr.LONGLEFTRIGHTARROW;
-    tokenToOperator[TK_OVERLEFTRIGHTARROW] = OpStr.OVERLEFTRIGHTARROW;
-
-    tokenToOperator[TK_BANG] = OpStr.FACT;
-    tokenToOperator[TK_BINOM] = OpStr.BINOM;
-    tokenToOperator[TK_NEWROW] = OpStr.ROW;
-    tokenToOperator[TK_NEWCOL] = OpStr.COL;
-    tokenToOperator[TK_COLON] = OpStr.COLON;
-    tokenToOperator[TK_TYPE] = OpStr.TYPE;
-    tokenToOperator[TK_OVERLINE] = OpStr.OVERLINE;
-    tokenToOperator[TK_OVERSET] = OpStr.OVERSET;
-    tokenToOperator[TK_UNDERSET] = OpStr.UNDERSET;
-    tokenToOperator[TK_BACKSLASH] = OpStr.BACKSLASH;
-    tokenToOperator[TK_MATHBF] = OpStr.MATHBF;
-    tokenToOperator[TK_DOT] = OpStr.DOT;
-    tokenToOperator[TK_MATHFIELD] = OpStr.MATHFIELD;
-
     function newNode(op, args) {
       return {
         op: op,
@@ -2931,9 +2969,8 @@ var Model = exports.Model = function () {
           expr1 = void 0,
           expr2 = void 0;
       switch (tk = hd()) {
-        case 'A'.charCodeAt(0):
-        case 'a'.charCodeAt(0):
-        case TK_VAR:
+        case CC_CONST:
+        case CC_VAR:
           args = [lexeme()];
           next();
           // // Collect the subscript if there is one. Subscripts make multipart variable names.
@@ -3348,11 +3385,6 @@ var Model = exports.Model = function () {
           next();
           expr = newNode(tokenToOperator[t], [unaryExpr()]);
           break;
-        case TK_PM:
-          next();
-          expr = unaryExpr();
-          expr = newNode(tokenToOperator[t], [expr]);
-          break;
         case TK_UNDERSCORE:
           // _1, _1^2, _+^-
           op = tokenToOperator[t];
@@ -3500,6 +3532,7 @@ var Model = exports.Model = function () {
       }
       // While lookahead is not a lower precedent operator
       // FIXME need a better way to organize this condition
+      var loopCount = 0;
       while ((t = hd()) && !isAdditive(t) && !isRelational(t) && !isImplies(t) && t !== TK_COMMA && !isEquality(t) && t !== TK_RIGHTBRACE && t !== TK_RIGHTPAREN && t !== TK_RIGHTBRACKET && t !== TK_RIGHTARROW && t !== TK_LT && t !== TK_VERTICALBAR && t !== TK_NEWROW && t !== TK_NEWCOL && t !== TK_END) {
         explicitOperator = false;
         if (isMultiplicative(t)) {
@@ -3567,6 +3600,7 @@ var Model = exports.Model = function () {
         } else {
           args.push(expr);
         }
+        (0, _assert.assert)(loopCount++ < 1000, message(1000, ["Stuck in loop in mutliplicativeExpr()"]));
       }
       if (args.length > 1) {
         return binaryNode(Model.MUL, args);
@@ -4159,12 +4193,12 @@ var Model = exports.Model = function () {
       function latex() {
         var c = void 0;
         c = src.charCodeAt(curIndex++);
-        if (c === '$'.charCodeAt(0)) {
+        if (c === CC_DOLLAR) {
           // don't include \
           _lexeme = String.fromCharCode(c);
-        } else if (c === '%'.charCodeAt(0)) {
+        } else if (c === CC_PERCENT) {
           _lexeme += String.fromCharCode(c);
-        } else if ((0, _backward.indexOf)([' '.charCodeAt(0), ':'.charCodeAt(0), ';'.charCodeAt(0), ','.charCodeAt(0), '!'.charCodeAt(0)], c) >= 0) {
+        } else if ((0, _backward.indexOf)([CC_SPACE, CC_COLON, CC_SEMICOLON, CC_COMMA, CC_BANG], c) >= 0) {
           _lexeme = "\\ ";
         } else {
           while (isAlphaCharCode(c)) {
@@ -4179,12 +4213,12 @@ var Model = exports.Model = function () {
         } else if (tk === TK_TEXT || tk === TK_TYPE) {
           c = src.charCodeAt(curIndex++);
           // Skip whitespace before '{'
-          while (c && c !== "{".charCodeAt(0)) {
+          while (c && c !== CC_LEFTBRACE) {
             c = src.charCodeAt(curIndex++);
           }
           _lexeme = "";
           c = src.charCodeAt(curIndex++);
-          while (c && c !== "}".charCodeAt(0)) {
+          while (c && c !== CC_RIGHTBRACE) {
             var ch = String.fromCharCode(c);
             _lexeme += ch;
             c = src.charCodeAt(curIndex++);
@@ -4231,7 +4265,7 @@ var Model = exports.Model = function () {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-var rules = exports.rules = { "words": { "A": "cap a", "B": "cap b", "C": "cap c", "D": "cap d", "E": "cap e", "F": "cap f", "G": "cap g", "H": "cap h", "I": "cap i", "J": "cap j", "K": "cap k", "L": "cap l", "M": "cap m", "N": "cap n", "O": "cap o", "P": "cap p", "Q": "cap q", "R": "cap r", "S": "cap s", "T": "cap t", "U": "cap u", "V": "cap v", "W": "cap w", "X": "cap x", "Y": "cap y", "Z": "cap z", "\\varepsilon": "epsilon", "\\Alpha": "cap alpha", "\\Beta": "cap beta", "\\Gamma": "cap gamma", "\\Delta": "cap delta", "\\Epsilon": "cap epsilon", "\\Zeta": "cap zeta", "\\Eta": "cap eta", "\\Theta": "cap theta", "\\Iota": "cap iota", "\\Kappa": "cap kappa", "\\Lambda": "cap lambda", "\\Mu": "cap mu", "\\Nu": "cap nu ", "\\Xi": "cap xi", "\\Omicron": "cap omicron", "\\Pi": "cap pi", "\\Rho": "cap rho", "\\Sigma": "cap sigma", "\\Tau": "cap tau", "\\Upsilon": "cap upsilon", "\\Phi": "cap phi", "\\Chi": "cap chi", "\\Psi": "cap psi", "\\Omega": "cap omega", "\\ldots": "dot dot dot", "\\vdots": "vertical dot dot dot", "\\ddots": "diagonal dot dot dot", "\\infty": "infinity", "\\measuredangle": "measure of angle", "\\cong": "congruent", "\\sin": "sine", "\\cos": "cosine", "\\tan": "tangent", "\\csc": "cosecant", "\\sec": "secant", "\\cot": "cotangent", "\\sinh": "hyperbolic sine", "\\cosh": "hyperbolic cosine", "\\tanh": "hyperbolic tangent", "\\csch": "hyperbolic cosecant", "\\sech": "hyperbolic secant", "\\coth": "hyperbolic cotangent", "'": "prime", "\\notin": "is not in", "\\mathbb": "bold", "\\backslash": "backslash", "\\emptyset": "empty set", "\\circledot": "circle", "\\longleftarrow": "long left arrow", "\\longleftrightarrow": "long left right arrow", "\\overleftrightarrow": "over left right arrow", "\\overrightarrow": "over right arrow", "\\overleftarrow": "over left arrow", "\\leftarrow": "left arrow", "\\addmatrixcol": "add matrix columns", "\\addmatrixrow": "add matrix rows" }, "types": { "functionName": ["f", "g", "h", "F", "G", "H", "\\ln", "\\lg", "\\log", "\\sin", "\\cos", "\\tan", "\\csc", "\\sec", "\\cot", "\\sinh", "\\cosh", "\\tanh", "\\csch", "\\sech", "\\coth"], "numberPosNeg": ["\\type{number}", "-\\type{number}"], "numberOrLetter": ["\\type{numberPosNeg}", "\\type{variable}"], "matrix": ["\\begin{bmatrix}?&?&?\\end{bmatrix}"], "functionComposition": ["(\\type{functionName}+\\type{functionName})", "(\\type{functionName}-\\type{functionName})", "(\\type{functionName}\\cdot\\type{functionName})", "(\\frac{\\type{functionName}}{\\type{functionName}})"], "function": ["\\type{function}^{?}", "\\type{function}_{?}", "\\type{functionComposition}", "\\type{functionName}"], "functionCall": ["\\type{function}(?)", "\\type{function}[?]", "\\type{variable}(\\type{number})", "\\type{variable}(\\type{variable})", "\\type{variable}(?,?)", "\\type{variable}[\\type{number}]", "\\type{variable}[\\type{variable}]", "\\type{variable}[?,?]"], "commonFraction": ["\\frac{\\type{integer}}{2}", "\\frac{\\type{integer}}{3}", "\\frac{\\type{integer}}{4}", "\\frac{\\type{integer}}{5}", "\\frac{\\type{integer}}{6}", "\\frac{\\type{integer}}{7}", "\\frac{\\type{integer}}{8}", "\\frac{\\type{integer}}{9}", "\\frac{\\type{integer}}{10}"], "simpleExpression": ["\\type{numberOrLetter}", "\\type{commonFraction}", "\\type{function}(?)", "\\type{function}[?]", "\\type{number}", "-\\type{variable}", "\\type{variable}", "\\type{number}\\degrees", "\\type{variable}\\degrees", "\\type{variable}", "\\type{variable}\\type{variable}", "\\type{number}\\type{variable}"], "simpleFractionPart": ["-\\type{commonFraction}", "\\type{simpleExpression}", "\\type{commonFraction}"], "simpleFractionExtended": ["\\frac{\\type{simpleFractionPart}}{\\type{simpleFractionPart}}"], "simpleNumericExponent": ["\\type{number}", "\\type{commonFraction}"], "simpleExponent": ["\\type{simpleNumericExponent}", "\\type{variable}"] }, "rules": { "\\type{decimal}\\overline{\\type{integer}}": [{ "the repeating decimal %1 with repeating digit %2": { "?": "%1" } }], "\\type{decimal}(\\type{integer})": [{ "the repeating decimal %1 with repeating digit %2": { "?": "%1" } }], "\\overline{?}": ["line segment %1"], "\\type{numberOrLetter}\\degree \\type{numberOrLetter}' \\type{numberOrLetter}''": [{ "%1 %2 %3": { "1\\degree": "%1 degree", "?\\degree": "%1 degrees", "-?\\degree": "negative %1 degrees", "1'": "%1 minute", "?'": "%1 minutes", "1''": "%1 second", "?''": "%1 seconds" } }], "\\type{numberOrLetter}\\degree \\type{numberOrLetter}'": [{ "%1 %2": { "1\\degree": "%1 degree", "?\\degree": "%1 degrees", "1'": "%1 minute", "?'": "%1 minutes" } }], "\\type{numberOrLetter}\\degree \\type{numberOrLetter}''": [{ "%1 %2": { "1\\degree": "%1 degree", "?\\degree": "%1 degrees", "1''": "%1 second", "?''": "%1 seconds" } }], "\\type{numberOrLetter}\\degree": [{ "%1": { "1": "1 degree", "?": "%1 degrees" } }], "?\\degree": ["%1 degrees"], "\\type{numberPosNeg}' \\type{numberPosNeg}''": [{ "%1 %2": { "1'": "1 foot", "?'": "%1 feet", "1''": "1 inch", "?''": "%1 inches" } }], "\\type{numberPosNeg}''": ["%1 inches"], "\\type{numberPosNeg}'": ["%1 feet"], "?^\\prime": ["%1 prime"], "?'''": ["%1 triple prime"], "?''": ["%1 double prime"], "?'": ["%1 prime"], "\\log\\type{simpleExpression}": ["log %2"], "\\log ?": ["the log of %2"], "\\log_{?} \\type{simpleExpression}": [{ "the log base %1 of %2": { "\\log_{?}": "%2" } }], "\\ln\\type{simpleExpression}": ["natural log %2"], "\\ln ?": ["the natural log of %2"], "{?}": [{ "start set %1 end set": { "?:?": "%1 such that %2", "?|?": "%1 such that %2" } }], "?|_?": [{ "%1 evaluated at %2": { "?^?": "%2 minus the same expression evaluated at %1" } }], "?|?": ["%1 divides %2"], "\\type{simpleSmallRowMatrix}": [{ "the 1 by %N row matrix %1": { "\\type{row}": "%1", "\\type{column}": "%*" } }], "\\type{smallRowMatrix}": [{ "the 1 by %N row matrix %1": { "\\type{row}": "%1", "\\type{column}": "column %N %*" } }], "\\type{simpleSmallColumnMatrix}": [{ "the %M by 1 column matrix %1": { "\\type{row}": "%*", "\\type{column}": "%1" } }], "\\type{smallColumnMatrix}": [{ "the %M by 1 column matrix %1": { "\\type{row}": "row %M %*", "\\type{column}": "%1" } }], "\\type{simpleSmallMatrix}": [{ "the %M by %N matrix %1": { "\\type{row}": "row %M, %*", "\\type{column}": "%*" } }], "\\type{matrix}": [{ "the %M by %N matrix, %1": { "\\type{row}": "row %M, %*", "\\type{column}": "column %N, %*" } }], "\\sum_?^??": [{ "the sum from %1 to %2 of %3": { "?=?": "%1 is equal to %2" } }], "\\sum_?^?": [{ "the sum from %1 to %2": { "?=?": "%1 is equal to %2" } }], "\\sum_? ?": [{ "the sum over %1 of %2": { "?=?": "%1 is equal to %2" } }], "\\sum ?": ["the sum of %1"], "\\sum": ["the sum"], "\\prod_?^??": [{ "the product from %1 to %2 of %3": { "?=?": "%1 is equal to %2" } }], "\\prod_?^?": [{ "the product from %1 to %2": { "?=?": "%1 is equal to %2" } }], "\\prod_? ?": [{ "the product over %1 of %2": { "?=?": "%1 is equal to %2" } }], "\\prod ?": ["the product of %1"], "\\prod": ["the product"], "\\int_?^??": [{ "the integral from %1 to %2 of %3": { "?=?": "%1 is equal to %2" } }], "\\int_?^?": [{ "the integral from %1 to %2": { "?=?": "%1 is equal to %2" } }], "\\int_? ?": [{ "the integral over %1 of %2": { "?=?": "%1 is equal to %2" } }], "\\int ?": ["the integral of %1"], "\\int": ["the integral"], "? \\cup ?": [{ "the union of %1 and %2": { "?": "%1" } }], "\\cup_?^??": [{ "the union from %1 to %2 of %3": { "?=?": "%1 is equal to %2" } }], "\\cup_?^?": [{ "the union from %1 to %2": { "?=?": "%1 is equal to %2" } }], "\\cup_? ?": [{ "the union over %1 of %2": { "?=?": "%1 is equal to %2" } }], "\\cup ?": ["the union of %1"], "\\cup": ["the union"], "\\bigcup_?^??": [{ "the union from %1 to %2 of %3": { "?=?": "%1 is equal to %2" } }], "\\bigcup_?^?": [{ "the union from %1 to %2": { "?=?": "%1 is equal to %2" } }], "\\bigcup_? ?": [{ "the union over %1 of %2": { "?=?": "%1 is equal to %2" } }], "\\bigcup ?": ["the union of %1"], "\\bigcup": ["the union"], "? \\cap ?": [{ "the intersection of %1 and %2": { "?": "%1" } }], "\\cap_?^??": [{ "the intersection from %1 to %2 of %3": { "?=?": "%1 is equal to %2" } }], "\\cap_?^?": [{ "the intersection from %1 to %2": { "?=?": "%1 is equal to %2" } }], "\\cap_? ?": [{ "the intersection over %1 of %2": { "?=?": "%1 is equal to %2" } }], "\\cap ?": ["the intersection of %1"], "\\cap": ["the intersection"], "\\bigcap_?^??": [{ "the intersection from %1 to %2 of %3": { "?=?": "%1 is equal to %2" } }], "\\bigcap_?^?": [{ "the intersection from %1 to %2": { "?=?": "%1 is equal to %2" } }], "\\bigcap_? ?": [{ "the intersection over %1 of %2": { "?=?": "%1 is equal to %2", "??": "%1" } }], "\\bigcap ?": ["the intersection of %1"], "\\bigcap": ["the intersection"], "? \\text{and} ?": ["%1 %2"], "1g": ["1 gram"], "?g": ["%1 grams"], "1s": ["1 second"], "?s": ["%1 seconds"], "1m": ["1 meter"], "?m": ["%1 meters"], "1L": ["1 liter"], "?L": ["%1 liters"], "1kg": ["1 kilogram"], "?kg": ["%1 kilograms"], "1ks": ["1 kilosecond"], "?ks": ["%1 kiloseconds"], "1km": ["1 kilometer"], "?km": ["%1 kilometers"], "1kL": ["1 kiloliter"], "?kL": ["%1 kiloliters"], "1cg": ["1 centigram"], "?cg": ["%1 centigrams"], "1cs": ["1 centisecond"], "?cs": ["%1 centiseconds"], "1cm": ["1 centimeter"], "?cm": ["%1 centimeters"], "1cL": ["1 centiliter"], "?cL": ["%1 centiliters"], "1mg": ["1 milligram"], "?mg": ["%1 milligrams"], "1ms": ["1 millisecond"], "?ms": ["%1 milliseconds"], "1mm": ["1 millimeter"], "?mm": ["%1 millimeters"], "1mL": ["1 milliliter"], "?mL": ["%1 milliliters"], "1\\mug": ["1 microgram"], "?\\mug": ["%1 micrograms"], "1\\mus": ["1 microsecond"], "?\\mus": ["%1 microseconds"], "1\\mum": ["1 micrometer"], "?\\mum": ["%1 micrometers"], "1\\muL": ["1 microliter"], "?\\muL": ["%1 microliters"], "1ng": ["1 nanogram"], "?ng": ["%1 nanograms"], "1ns": ["1 nanosecond"], "?ns": ["%1 nanoseconds"], "1nm": ["1 nanometer"], "?nm": ["%1 nanometers"], "1nL": ["1 nanoliter"], "?nL": ["%1 nanoliters"], "1lb": ["1 pound"], "?lb": ["%1 pounds"], "1in": ["1 inch"], "?in": ["%1 inches"], "1ft": ["1 foot"], "?ft": ["%1 feet"], "1mi": ["1 mile"], "?mi": ["%1 miles"], "1cup": ["1 cup"], "?cup": ["%1 cups"], "1pt": ["1 pint"], "?pt": ["%1 pints"], "1qt": ["1 quart"], "?qt": ["%1 quarts"], "1gal": ["1 gallon"], "?gal": ["%1 gallons"], "1oz": ["1 ounce"], "?oz": ["%1 ounces"], "\\mathbb{R}": ["the real numbers"], "\\mathbb{C}": ["the complex numbers"], "\\mathbb{Z}": ["the integers"], "\\mathbb{Q}": ["the rational numbers"], "\\mathbb{N}": ["the natural numbers"], "\\mathbb{Z}^+": ["the positive integers"], "\\mathbb{?}^?": [{ "%2": { "\\type{integer}": "%1", "R": "r", "C": "c", "Z": "z", "Q": "q", "N": "n", "?^?": "%1 %2" } }], "\\mathbb{?}^3": ["%1 three "], "\\mathbb{?}^n": ["%1 n"], "\\mathbb{?}^\\infty": ["%1 infinty"], "\\Delta": ["triangle"], "$?": ["%2 dollars"], "?, ?": ["%1 comma %2"], "\\type{commonFraction}": [{ "%%": { "\\frac{1}{2}": "1 half", "\\frac{\\type{integer}}{2}": "%1 halves", "\\frac{1}{3}": "1 third", "\\frac{\\type{integer}}{3}": "%1 thirds", "\\frac{1}{4}": "1 fourth", "\\frac{\\type{integer}}{4}": "%1 fourths", "\\frac{1}{5}": "1 fifth", "\\frac{\\type{integer}}{5}": "%1 fifths", "\\frac{1}{6}": "1 sixth", "\\frac{\\type{integer}}{6}": "%1 sixths", "\\frac{1}{7}": "1 seventh", "\\frac{\\type{integer}}{7}": "%1 sevenths", "\\frac{1}{8}": "1 eighth", "\\frac{\\type{integer}}{8}": "%1 eighths", "\\frac{1}{9}": "1 ninths", "\\frac{\\type{integer}}{9}": "%1 ninths", "\\frac{1}{10}": "1 tenths", "\\frac{\\type{integer}}{10}": "%1 tenths" } }], "\\type{simpleFractionExtended}": ["%1 over %2"], "\\frac{?}{?}": ["the fraction with numerator %1 and denominator %2"], "\\type{function}(?)": ["%1 of %2"], "\\type{function}[?]": ["%1 of %2"], "\\sin ?": ["sine %2"], "\\cos{?}": ["cosine %2"], "\\tan{?}": ["tangent %2"], "\\csc{?}": ["cosecant %2"], "\\sec{?}": ["secant %2"], "\\cot{?}": ["cotangent %2"], "\\sin^{-1}{?}": ["inverse sine %2"], "\\cos^{-1}{?}": ["inverse cosine %2"], "\\tan^{-1}{?}": ["inverse tangent %2"], "\\csc^{-1}{?}": ["inverse cosecant %2"], "\\sec^{-1}{?}": ["inverse secant %2"], "\\cot^{-1}{?}": ["inverse cotangent %2"], "\\sinh^{-1}{?}": ["inverse hyperbolic sine %2"], "\\cosh^{-1}{?}": ["inverse hyperbolic cosine %2"], "\\tanh^{-1}{?}": ["inverse hyperbolic tangent %2"], "\\csch^{-1}{?}": ["inverse hyperbolic cosecant %2"], "\\sech^{-1}{?}": ["inverse hyperbolic secant %2"], "\\coth^{-1}{?}": ["inverse hyperbolic cotangent %2"], "?^{-1}": ["%1 inverse"], "?^{0}": ["%1 to the 0 power"], "?^{2}": ["%1 squared"], "?^{3}": ["%1 cubed"], "\\type{function}^{\\type{integer}}": ["%2th power of %1"], "?^\\type{integer}": ["%1 to the %2th power"], "?^\\type{variable}": ["%1 to the %2th power"], "?^{-\\type{integer}}": ["%1 to the %2 power"], "?^{\\type{decimal}}": ["%1 raised to the %2 power"], "?^{\\type{simpleExponent}}^{2}": ["%1 raised to the %2 power"], "?^{\\type{simpleExponent}}^{3}": ["%1 raised to the %2 power"], "?^{\\type{simpleNumericExponent}\\type{variable}}^{2}": ["%1 raised to the %2 power"], "?^{\\type{simpleNumericExponent}\\type{variable}}^{3}": ["%1 raised to the %2 power"], "?^?^?": ["%1 raised to the exponent %2 end exponent"], "?^?": ["%1 raised to the %2 power"], "\\sqrt{\\type{simpleExpression}}": [{ "options": { "EndRoot": true }, "value": "square root of %1 end root" }, "square root of %1"], "\\sqrt[3]{\\type{simpleExpression}}": ["cube root of %1"], "\\sqrt[\\type{integer}]{\\type{simpleExpression}}": ["%2th root of %1"], "\\sqrt{?}": ["square root of %1 end root"], "\\sqrt[3]{?}": [{ "options": { "EndRoot": true }, "value": "cube root of %1 end root" }, "cube root of %1"], "\\sqrt[\\type{integer}]{?}": [{ "options": { "EndRoot": true }, "value": "%2th root of %1 end root" }, "%2th root of %1"], "\\sqrt[?]{?}": [{ "options": { "EndRoot": true }, "value": "%2th root of %1 end root" }, "%2th root of %1"], "-?": ["negative %1"], "? \\cong ?": ["%1 is congruent to %2"], "? \\parallel ?": ["%1 is parallel to %2"], "? \\nparallel ?": ["%1 is not parallel to %2"], "? \\sim ?": ["%1 approximates %2"], "\\partial": ["partial derivative"], "\\lim_{?\\to?}": ["limit x to y"], "\\type{mixedFraction}": ["%1 and %2"], "\\type{integer}+\\frac{\\type{integer}}{\\type{integer}}": ["%1 and %2"], "\\type{scientific}": ["%1 times %2"], "\\type{fraction}": ["%1 over %2"], "\\type{integer}": ["%1"], "\\type{decimal}": ["%1"], "\\type{number}": ["%1"], "?(?)": ["%1 times %2"], "(?)?": ["%1 times %2"], "(?)(?)": ["%1 times %2"], "? \\not\\in ?": ["%1 is not in %2"], "? \\not\\ni ?": ["%1 does not contain %2"], "? \\not\\subseteq ?": ["%1 is not a subset of %2"], "? \\not\\subset ?": ["%1 is not a strict subset of %2"], "? \\not\\supseteq ?": ["%1 is not a superset of %2"], "? \\not\\supset ?": ["%1 is not a strict superset of %2"], "? \\in ?": ["%1 is in %2"], "? \\ni ?": ["%1 contains %2"], "? \\subseteq ?": ["%1 is a subset of %2"], "? \\subset ?": ["%1 is a strict subset of %2"], "? \\supseteq ?": ["%1 is a superset of %2"], "? \\supset ?": ["%1 is a strict superset of %2"], "{}": ["left brace right brace"], "[]": ["left bracket right bracket"], "[?,?]": ["left bracket %1 right bracket"], "(?,?]": ["left parenthesis %1 right bracket"], "[?,?)": ["left bracket %1 right parenthesis"], "? \\rightarrow ?": ["%1 right arrow %2"], "? \\leftarrow ?": ["%1 left arrow %2"], "? \\longrightarrow ?": ["%1 long right arrow %2"], "? \\longleftarrow ?": ["%1 long left arrow %2"], "? \\overrightarrow ?": ["%1 over right arrow %2"], "? \\overleftarrow ?": ["%1 over left arrow %2"], "? \\longleftrightarrow ?": ["%1 long left right arrow %2"], "? \\overleftrightarrow ?": ["%1 over left right arrow %2"], "\\rightarrow ?": ["right arrow %1"], "\\leftarrow ?": ["left arrow %1"], "\\longrightarrow ?": ["long right arrow %1"], "\\longleftarrow ?": ["long left arrow %1"], "\\overrightarrow ?": ["over right arrow %1"], "\\overleftarrow ?": ["over left arrow %1"], "\\longleftrightarrow ?": ["long left right arrow %1"], "\\overleftrightarrow ?": ["over left right arrow %1"], "? \\implies ?": ["%1 implies %2"], "?\\'": ["%1 prime"], "? \\text{dx}": ["with respect to x of %1"], "?_?": ["%1 sub %2"], "?:?": ["ratio of %1 to %2"], "? \\perp ?": ["%1 perpendicular to %2"], "? \\propto ?": ["%1 proportional to %2"], "?+?": ["%1 plus %2"], "?-?": ["%1 minus %2"], "?*?": ["%1 times %2"], "?\\cdot?": ["%1 times %2"], "?\\cdotp?": ["%1 times %2"], "?<?": ["%1 is less than %2"], "?<=?": ["%1 is less than or equal to %2"], "?>?": ["%1 is greater than %2"], "?>=?": ["%1 is greater than or equal to %2"], "?=?": ["%1 is equal to %2"], "?\\approx?": ["%1 almost equal to %2"], "?!": ["%1 factorial"], "?%": ["%1 percent "], "? \\pm ?": ["%1 plus or minus %2"], "? \\ne ?": ["%1 is not equal to %2"], "? \\neq ?": ["%1 is not equal to %2"], "? \\ngtr ?": ["%1 is not greater than %2"], "? \\nless ?": ["%1 is not less than %2"], "? \\div ?": ["%1 divided by %2"], "? \\backslash ?": ["%1 left divided by %2"], "?^? ?": ["%1 %2"], "? ?^?": ["%1 %2"], "(\\type{simpleExpression})": ["%1"], "(?)": ["open paren %1 close paren"], "[\\type{simpleExpression}]": ["%1"], "[?]": ["open bracket %1 close bracket"], "|\\type{simpleExpression}|": ["absolute value of %1"], "|?|": ["start absolute value %1 end absolute value"], "{?} ?": ["%1 %2"], "? ?": ["%1 %2"], "?": ["%1 "] } };
+var rules = exports.rules = { "words": { "A": "cap a", "B": "cap b", "C": "cap c", "D": "cap d", "E": "cap e", "F": "cap f", "G": "cap g", "H": "cap h", "I": "cap i", "J": "cap j", "K": "cap k", "L": "cap l", "M": "cap m", "N": "cap n", "O": "cap o", "P": "cap p", "Q": "cap q", "R": "cap r", "S": "cap s", "T": "cap t", "U": "cap u", "V": "cap v", "W": "cap w", "X": "cap x", "Y": "cap y", "Z": "cap z", "\\varepsilon": "epsilon", "\\Alpha": "cap alpha", "\\Beta": "cap beta", "\\Gamma": "cap gamma", "\\Delta": "cap delta", "\\Epsilon": "cap epsilon", "\\Zeta": "cap zeta", "\\Eta": "cap eta", "\\Theta": "cap theta", "\\Iota": "cap iota", "\\Kappa": "cap kappa", "\\Lambda": "cap lambda", "\\Mu": "cap mu", "\\Nu": "cap nu ", "\\Xi": "cap xi", "\\Omicron": "cap omicron", "\\Pi": "cap pi", "\\Rho": "cap rho", "\\Sigma": "cap sigma", "\\Tau": "cap tau", "\\Upsilon": "cap upsilon", "\\Phi": "cap phi", "\\Chi": "cap chi", "\\Psi": "cap psi", "\\Omega": "cap omega", "\\ldots": "dot dot dot", "\\vdots": "vertical dot dot dot", "\\ddots": "diagonal dot dot dot", "\\infty": "infinity", "\\measuredangle": "measure of angle", "\\cong": "congruent", "\\sin": "sine", "\\cos": "cosine", "\\tan": "tangent", "\\csc": "cosecant", "\\sec": "secant", "\\cot": "cotangent", "\\sinh": "hyperbolic sine", "\\cosh": "hyperbolic cosine", "\\tanh": "hyperbolic tangent", "\\csch": "hyperbolic cosecant", "\\sech": "hyperbolic secant", "\\coth": "hyperbolic cotangent", "'": "prime", "\\notin": "is not in", "\\mathbb": "bold", "\\backslash": "backslash", "\\emptyset": "empty set", "\\circledot": "circle", "\\longleftarrow": "long left arrow", "\\longleftrightarrow": "long left right arrow", "\\overleftrightarrow": "over left right arrow", "\\overrightarrow": "over right arrow", "\\overleftarrow": "over left arrow", "\\leftarrow": "left arrow", "\\addmatrixcol": "add matrix columns", "\\addmatrixrow": "add matrix rows" }, "types": { "functionName": ["f", "g", "h", "F", "G", "H", "\\ln", "\\lg", "\\log", "\\sin", "\\cos", "\\tan", "\\csc", "\\sec", "\\cot", "\\sinh", "\\cosh", "\\tanh", "\\csch", "\\sech", "\\coth"], "numberPosNeg": ["\\type{number}", "-\\type{number}"], "numberOrLetter": ["\\type{numberPosNeg}", "\\type{variable}"], "matrix": ["\\begin{bmatrix}?&?&?\\end{bmatrix}"], "functionComposition": ["(\\type{functionName}+\\type{functionName})", "(\\type{functionName}-\\type{functionName})", "(\\type{functionName}\\cdot\\type{functionName})", "(\\frac{\\type{functionName}}{\\type{functionName}})"], "function": ["\\type{function}^{?}", "\\type{function}_{?}", "\\type{functionComposition}", "\\type{functionName}"], "functionCall": ["\\type{function}(?)", "\\type{function}[?]", "\\type{variable}(\\type{number})", "\\type{variable}(\\type{variable})", "\\type{variable}(?,?)", "\\type{variable}[\\type{number}]", "\\type{variable}[\\type{variable}]", "\\type{variable}[?,?]"], "commonFraction": ["\\frac{\\type{integer}}{2}", "\\frac{\\type{integer}}{3}", "\\frac{\\type{integer}}{4}", "\\frac{\\type{integer}}{5}", "\\frac{\\type{integer}}{6}", "\\frac{\\type{integer}}{7}", "\\frac{\\type{integer}}{8}", "\\frac{\\type{integer}}{9}", "\\frac{\\type{integer}}{10}"], "simpleExpression": ["\\type{numberOrLetter}", "\\type{commonFraction}", "\\type{function}(?)", "\\type{function}[?]", "\\type{number}", "-\\type{variable}", "\\type{variable}", "\\type{number}\\degrees", "\\type{variable}\\degrees", "\\type{variable}", "\\type{variable}\\type{variable}", "\\type{number}\\type{variable}"], "simpleFractionPart": ["-\\type{commonFraction}", "\\type{simpleExpression}", "\\type{commonFraction}"], "simpleFractionExtended": ["\\frac{\\type{simpleFractionPart}}{\\type{simpleFractionPart}}"], "simpleNumericExponent": ["\\type{number}", "\\type{commonFraction}"], "simpleExponent": ["\\type{simpleNumericExponent}", "\\type{variable}"] }, "rules": { "\\type{decimal}\\overline{\\type{integer}}": [{ "the repeating decimal %1 with repeating digit %2": { "?": "%1" } }], "\\type{decimal}(\\type{integer})": [{ "the repeating decimal %1 with repeating digit %2": { "?": "%1" } }], "\\overline{?}": ["line segment %1"], "\\type{numberOrLetter}\\degree \\type{numberOrLetter}' \\type{numberOrLetter}''": [{ "%1 %2 %3": { "1\\degree": "%1 degree", "?\\degree": "%1 degrees", "-?\\degree": "negative %1 degrees", "1'": "%1 minute", "?'": "%1 minutes", "1''": "%1 second", "?''": "%1 seconds" } }], "\\type{numberOrLetter}\\degree \\type{numberOrLetter}'": [{ "%1 %2": { "1\\degree": "%1 degree", "?\\degree": "%1 degrees", "1'": "%1 minute", "?'": "%1 minutes" } }], "\\type{numberOrLetter}\\degree \\type{numberOrLetter}''": [{ "%1 %2": { "1\\degree": "%1 degree", "?\\degree": "%1 degrees", "1''": "%1 second", "?''": "%1 seconds" } }], "\\type{numberOrLetter}\\degree": [{ "%1": { "1": "1 degree", "?": "%1 degrees" } }], "?\\degree": ["%1 degrees"], "\\type{numberPosNeg}' \\type{numberPosNeg}''": [{ "%1 %2": { "1'": "1 foot", "?'": "%1 feet", "1''": "1 inch", "?''": "%1 inches" } }], "\\type{numberPosNeg}''": ["%1 inches"], "\\type{numberPosNeg}'": ["%1 feet"], "?^\\prime": ["%1 prime"], "?'''": ["%1 triple prime"], "?''": ["%1 double prime"], "?'": ["%1 prime"], "\\log\\type{simpleExpression}": ["log %2"], "\\log ?": ["the log of %2"], "\\log_{?} \\type{simpleExpression}": [{ "the log base %1 of %2": { "\\log_{?}": "%2" } }], "\\ln\\type{simpleExpression}": ["natural log %2"], "\\ln ?": ["the natural log of %2"], "{?}": [{ "start set %1 end set": { "?:?": "%1 such that %2", "?|?": "%1 such that %2" } }], "?|_?": [{ "%1 evaluated at %2": { "?^?": "%2 minus the same expression evaluated at %1" } }], "?|?": ["%1 divides %2"], "\\type{simpleSmallRowMatrix}": [{ "the 1 by %N row matrix %1": { "\\type{row}": "%1", "\\type{column}": "%*" } }], "\\type{smallRowMatrix}": [{ "the 1 by %N row matrix %1": { "\\type{row}": "%1", "\\type{column}": "column %N %*" } }], "\\type{simpleSmallColumnMatrix}": [{ "the %M by 1 column matrix %1": { "\\type{row}": "%*", "\\type{column}": "%1" } }], "\\type{smallColumnMatrix}": [{ "the %M by 1 column matrix %1": { "\\type{row}": "row %M %*", "\\type{column}": "%1" } }], "\\type{simpleSmallMatrix}": [{ "the %M by %N matrix %1": { "\\type{row}": "row %M, %*", "\\type{column}": "%*" } }], "\\type{matrix}": [{ "the %M by %N matrix, %1": { "\\type{row}": "row %M, %*", "\\type{column}": "column %N, %*" } }], "\\sum_?^??": [{ "the sum from %1 to %2 of %3": { "?=?": "%1 is equal to %2", "??": "%1" } }], "\\sum_?^?": [{ "the sum from %1 to %2": { "?=?": "%1 is equal to %2", "??": "%1" } }], "\\sum_? ?": [{ "the sum over %1 of %2": { "?=?": "%1 is equal to %2", "??": "%1" } }], "\\sum ?": ["the sum of %1"], "\\sum": ["the sum"], "\\prod_?^??": [{ "the product from %1 to %2 of %3": { "?=?": "%1 is equal to %2", "??": "%1" } }], "\\prod_?^?": [{ "the product from %1 to %2": { "?=?": "%1 is equal to %2", "??": "%1" } }], "\\prod_? ?": [{ "the product over %1 of %2": { "?=?": "%1 is equal to %2", "??": "%1" } }], "\\prod ?": ["the product of %1"], "\\prod": ["the product"], "\\int_?^??": [{ "the integral from %1 to %2 of %3": { "?=?": "%1 is equal to %2", "??": "%1" } }], "\\int_?^?": [{ "the integral from %1 to %2": { "?=?": "%1 is equal to %2", "??": "%1" } }], "\\int_? ?": [{ "the integral over %1 of %2": { "?=?": "%1 is equal to %2", "??": "%1" } }], "\\int ?": ["the integral of %1"], "\\int": ["the integral"], "? \\cup ?": [{ "the union of %1 and %2": { "?": "%1" } }], "\\cup_?^??": [{ "the union from %1 to %2 of %3": { "?=?": "%1 is equal to %2", "??": "%1" } }], "\\cup_?^?": [{ "the union from %1 to %2": { "?=?": "%1 is equal to %2", "??": "%1" } }], "\\cup_? ?": [{ "the union over %1 of %2": { "?=?": "%1 is equal to %2", "??": "%1" } }], "\\cup ?": ["the union of %1"], "\\cup": ["the union"], "\\bigcup_?^??": [{ "the union from %1 to %2 of %3": { "?=?": "%1 is equal to %2", "??": "%1" } }], "\\bigcup_?^?": [{ "the union from %1 to %2": { "?=?": "%1 is equal to %2", "??": "%1" } }], "\\bigcup_? ?": [{ "the union over %1 of %2": { "?=?": "%1 is equal to %2", "??": "%1" } }], "\\bigcup ?": ["the union of %1"], "\\bigcup": ["the union"], "? \\cap ?": [{ "the intersection of %1 and %2": { "?": "%1" } }], "\\cap_?^??": [{ "the intersection from %1 to %2 of %3": { "?=?": "%1 is equal to %2", "??": "%1" } }], "\\cap_?^?": [{ "the intersection from %1 to %2": { "?=?": "%1 is equal to %2", "??": "%1" } }], "\\cap_? ?": [{ "the intersection over %1 of %2": { "?=?": "%1 is equal to %2", "??": "%1" } }], "\\cap ?": ["the intersection of %1"], "\\cap": ["the intersection"], "\\bigcap_?^??": [{ "the intersection from %1 to %2 of %3": { "?=?": "%1 is equal to %2", "??": "%1" } }], "\\bigcap_?^?": [{ "the intersection from %1 to %2": { "?=?": "%1 is equal to %2", "??": "%1" } }], "\\bigcap_? ?": [{ "the intersection over %1 of %2": { "?=?": "%1 is equal to %2", "??": "%1" } }], "\\bigcap ?": ["the intersection of %1"], "\\bigcap": ["the intersection"], "? \\text{and} ?": ["%1 %2"], "1g": ["1 gram"], "?g": ["%1 grams"], "1s": ["1 second"], "?s": ["%1 seconds"], "1m": ["1 meter"], "?m": ["%1 meters"], "1L": ["1 liter"], "?L": ["%1 liters"], "1kg": ["1 kilogram"], "?kg": ["%1 kilograms"], "1ks": ["1 kilosecond"], "?ks": ["%1 kiloseconds"], "1km": ["1 kilometer"], "?km": ["%1 kilometers"], "1kL": ["1 kiloliter"], "?kL": ["%1 kiloliters"], "1cg": ["1 centigram"], "?cg": ["%1 centigrams"], "1cs": ["1 centisecond"], "?cs": ["%1 centiseconds"], "1cm": ["1 centimeter"], "?cm": ["%1 centimeters"], "1cL": ["1 centiliter"], "?cL": ["%1 centiliters"], "1mg": ["1 milligram"], "?mg": ["%1 milligrams"], "1ms": ["1 millisecond"], "?ms": ["%1 milliseconds"], "1mm": ["1 millimeter"], "?mm": ["%1 millimeters"], "1mL": ["1 milliliter"], "?mL": ["%1 milliliters"], "1\\mug": ["1 microgram"], "?\\mug": ["%1 micrograms"], "1\\mus": ["1 microsecond"], "?\\mus": ["%1 microseconds"], "1\\mum": ["1 micrometer"], "?\\mum": ["%1 micrometers"], "1\\muL": ["1 microliter"], "?\\muL": ["%1 microliters"], "1ng": ["1 nanogram"], "?ng": ["%1 nanograms"], "1ns": ["1 nanosecond"], "?ns": ["%1 nanoseconds"], "1nm": ["1 nanometer"], "?nm": ["%1 nanometers"], "1nL": ["1 nanoliter"], "?nL": ["%1 nanoliters"], "1lb": ["1 pound"], "?lb": ["%1 pounds"], "1in": ["1 inch"], "?in": ["%1 inches"], "1ft": ["1 foot"], "?ft": ["%1 feet"], "1mi": ["1 mile"], "?mi": ["%1 miles"], "1cup": ["1 cup"], "?cup": ["%1 cups"], "1pt": ["1 pint"], "?pt": ["%1 pints"], "1qt": ["1 quart"], "?qt": ["%1 quarts"], "1gal": ["1 gallon"], "?gal": ["%1 gallons"], "1oz": ["1 ounce"], "?oz": ["%1 ounces"], "\\mathbb{R}": ["the real numbers"], "\\mathbb{C}": ["the complex numbers"], "\\mathbb{Z}": ["the integers"], "\\mathbb{Q}": ["the rational numbers"], "\\mathbb{N}": ["the natural numbers"], "\\mathbb{Z}^+": ["the positive integers"], "\\mathbb{?}^?": [{ "%2": { "\\type{integer}": "%1", "R": "r", "C": "c", "Z": "z", "Q": "q", "N": "n", "?^?": "%1 %2" } }], "\\mathbb{?}^3": ["%1 three "], "\\mathbb{?}^n": ["%1 n"], "\\mathbb{?}^\\infty": ["%1 infinty"], "\\Delta": ["triangle"], "$?": ["%2 dollars"], "?, ?": ["%1 comma %2"], "\\type{commonFraction}": [{ "%%": { "\\frac{1}{2}": "1 half", "\\frac{\\type{integer}}{2}": "%1 halves", "\\frac{1}{3}": "1 third", "\\frac{\\type{integer}}{3}": "%1 thirds", "\\frac{1}{4}": "1 fourth", "\\frac{\\type{integer}}{4}": "%1 fourths", "\\frac{1}{5}": "1 fifth", "\\frac{\\type{integer}}{5}": "%1 fifths", "\\frac{1}{6}": "1 sixth", "\\frac{\\type{integer}}{6}": "%1 sixths", "\\frac{1}{7}": "1 seventh", "\\frac{\\type{integer}}{7}": "%1 sevenths", "\\frac{1}{8}": "1 eighth", "\\frac{\\type{integer}}{8}": "%1 eighths", "\\frac{1}{9}": "1 ninths", "\\frac{\\type{integer}}{9}": "%1 ninths", "\\frac{1}{10}": "1 tenths", "\\frac{\\type{integer}}{10}": "%1 tenths" } }], "\\type{simpleFractionExtended}": ["%1 over %2"], "\\frac{?}{?}": ["the fraction with numerator %1 and denominator %2"], "\\type{function}(?)": ["%1 of %2"], "\\type{function}[?]": ["%1 of %2"], "\\sin ?": ["sine %2"], "\\cos{?}": ["cosine %2"], "\\tan{?}": ["tangent %2"], "\\csc{?}": ["cosecant %2"], "\\sec{?}": ["secant %2"], "\\cot{?}": ["cotangent %2"], "\\sin^{-1}{?}": ["inverse sine %2"], "\\cos^{-1}{?}": ["inverse cosine %2"], "\\tan^{-1}{?}": ["inverse tangent %2"], "\\csc^{-1}{?}": ["inverse cosecant %2"], "\\sec^{-1}{?}": ["inverse secant %2"], "\\cot^{-1}{?}": ["inverse cotangent %2"], "\\sinh^{-1}{?}": ["inverse hyperbolic sine %2"], "\\cosh^{-1}{?}": ["inverse hyperbolic cosine %2"], "\\tanh^{-1}{?}": ["inverse hyperbolic tangent %2"], "\\csch^{-1}{?}": ["inverse hyperbolic cosecant %2"], "\\sech^{-1}{?}": ["inverse hyperbolic secant %2"], "\\coth^{-1}{?}": ["inverse hyperbolic cotangent %2"], "?^{-1}": ["%1 inverse"], "?^{0}": ["%1 to the 0 power"], "?^{2}": ["%1 squared"], "?^{3}": ["%1 cubed"], "\\type{function}^{\\type{integer}}": ["%2th power of %1"], "?^\\type{integer}": ["%1 to the %2th power"], "?^\\type{variable}": ["%1 to the %2th power"], "?^{-\\type{integer}}": ["%1 to the %2 power"], "?^{\\type{decimal}}": ["%1 raised to the %2 power"], "?^{\\type{simpleExponent}}^{2}": ["%1 raised to the %2 power"], "?^{\\type{simpleExponent}}^{3}": ["%1 raised to the %2 power"], "?^{\\type{simpleNumericExponent}\\type{variable}}^{2}": ["%1 raised to the %2 power"], "?^{\\type{simpleNumericExponent}\\type{variable}}^{3}": ["%1 raised to the %2 power"], "?^?^?": ["%1 raised to the exponent %2 end exponent"], "?^?": ["%1 raised to the %2 power"], "\\sqrt{\\type{simpleExpression}}": [{ "options": { "EndRoot": true }, "value": "square root of %1 end root" }, "square root of %1"], "\\sqrt[3]{\\type{simpleExpression}}": ["cube root of %1"], "\\sqrt[\\type{integer}]{\\type{simpleExpression}}": ["%2th root of %1"], "\\sqrt{?}": ["square root of %1 end root"], "\\sqrt[3]{?}": [{ "options": { "EndRoot": true }, "value": "cube root of %1 end root" }, "cube root of %1"], "\\sqrt[\\type{integer}]{?}": [{ "options": { "EndRoot": true }, "value": "%2th root of %1 end root" }, "%2th root of %1"], "\\sqrt[?]{?}": [{ "options": { "EndRoot": true }, "value": "%2th root of %1 end root" }, "%2th root of %1"], "-?": ["negative %1"], "? \\cong ?": ["%1 is congruent to %2"], "? \\parallel ?": ["%1 is parallel to %2"], "? \\nparallel ?": ["%1 is not parallel to %2"], "? \\sim ?": ["%1 approximates %2"], "\\partial": ["partial derivative"], "\\lim_{?\\to?}": ["limit x to y"], "\\type{mixedFraction}": ["%1 and %2"], "\\type{integer}+\\frac{\\type{integer}}{\\type{integer}}": ["%1 and %2"], "\\type{scientific}": ["%1 times %2"], "\\type{fraction}": ["%1 over %2"], "\\type{integer}": ["%1"], "\\type{decimal}": ["%IP point %FP"], "\\type{number}": ["%1"], "?(?)": ["%1 times %2"], "(?)?": ["%1 times %2"], "(?)(?)": ["%1 times %2"], "? \\not\\in ?": ["%1 is not in %2"], "? \\not\\ni ?": ["%1 does not contain %2"], "? \\not\\subseteq ?": ["%1 is not a subset of %2"], "? \\not\\subset ?": ["%1 is not a strict subset of %2"], "? \\not\\supseteq ?": ["%1 is not a superset of %2"], "? \\not\\supset ?": ["%1 is not a strict superset of %2"], "? \\in ?": ["%1 is in %2"], "? \\ni ?": ["%1 contains %2"], "? \\subseteq ?": ["%1 is a subset of %2"], "? \\subset ?": ["%1 is a strict subset of %2"], "? \\supseteq ?": ["%1 is a superset of %2"], "? \\supset ?": ["%1 is a strict superset of %2"], "{}": ["left brace right brace"], "[]": ["left bracket right bracket"], "[?,?]": ["left bracket %1 right bracket"], "(?,?]": ["left parenthesis %1 right bracket"], "[?,?)": ["left bracket %1 right parenthesis"], "? \\rightarrow ?": ["%1 right arrow %2"], "? \\leftarrow ?": ["%1 left arrow %2"], "? \\longrightarrow ?": ["%1 long right arrow %2"], "? \\longleftarrow ?": ["%1 long left arrow %2"], "? \\overrightarrow ?": ["%1 over right arrow %2"], "? \\overleftarrow ?": ["%1 over left arrow %2"], "? \\longleftrightarrow ?": ["%1 long left right arrow %2"], "? \\overleftrightarrow ?": ["%1 over left right arrow %2"], "\\rightarrow ?": ["right arrow %1"], "\\leftarrow ?": ["left arrow %1"], "\\longrightarrow ?": ["long right arrow %1"], "\\longleftarrow ?": ["long left arrow %1"], "\\overrightarrow ?": ["over right arrow %1"], "\\overleftarrow ?": ["over left arrow %1"], "\\longleftrightarrow ?": ["long left right arrow %1"], "\\overleftrightarrow ?": ["over left right arrow %1"], "? \\implies ?": ["%1 implies %2"], "?\\'": ["%1 prime"], "? \\text{dx}": ["with respect to x of %1"], "?_?": ["%1 sub %2"], "?:?": ["ratio of %1 to %2"], "? \\perp ?": ["%1 perpendicular to %2"], "? \\propto ?": ["%1 proportional to %2"], "?+?": ["%1 plus %2"], "?-?": ["%1 minus %2"], "?*?": ["%1 times %2"], "?\\cdot?": ["%1 times %2"], "?\\cdotp?": ["%1 times %2"], "?<?": ["%1 is less than %2"], "?<=?": ["%1 is less than or equal to %2"], "?>?": ["%1 is greater than %2"], "?>=?": ["%1 is greater than or equal to %2"], "?=?": ["%1 is equal to %2"], "?\\approx?": ["%1 almost equal to %2"], "?!": ["%1 factorial"], "?%": ["%1 percent "], "? \\pm ?": ["%1 plus or minus %2"], "? \\ne ?": ["%1 is not equal to %2"], "? \\neq ?": ["%1 is not equal to %2"], "? \\ngtr ?": ["%1 is not greater than %2"], "? \\nless ?": ["%1 is not less than %2"], "? \\div ?": ["%1 divided by %2"], "? \\backslash ?": ["%1 left divided by %2"], "?^? ?": ["%1 %2"], "? ?^?": ["%1 %2"], "(\\type{simpleExpression})": ["%1"], "(?)": ["open paren %1 close paren"], "[\\type{simpleExpression}]": ["%1"], "[?]": ["open bracket %1 close bracket"], "|\\type{simpleExpression}|": ["absolute value of %1"], "|?|": ["start absolute value %1 end absolute value"], "{?} ?": ["%1 %2"], "? ?": ["%1 %2"], "?": ["%1 "] } };
 },{}],7:[function(require,module,exports){
 "use strict";
 

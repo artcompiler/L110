@@ -24,6 +24,8 @@ function load() {
         return;
       }
       //item = escapeXML(item);
+      var id = item.substring(0, item.indexOf("|"));
+      item = item.substring(id.length + 1);
       try {
         var obj = JSON.parse(item);
         if (typeof obj === "string") {
