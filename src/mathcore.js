@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - efdfa63
+ * Mathcore unversioned - 51045a5
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -4579,6 +4579,7 @@ var BigDecimal = function(MathContext) {
   var bigMinusOne = new BigDecimal("-1");
   var nodeOne = numberNode("1");
   var nodeMinusOne = numberNode("-1");
+  var nidMinusOne = ast.intern(nodeMinusOne);
   var nodeZero = numberNode("0");
   var nodePositiveInfinity = numberNode("Infinity");
   var nodeNegativeInfinity = numberNode("-Infinity");
@@ -4766,10 +4767,25 @@ var BigDecimal = function(MathContext) {
         }else {
           var didNegate = false;
           done:for(var i = 0;i < args.length;i++) {
-            if(isNeg(args[i])) {
-              args[i] = negate(args[i]);
+            if(isMinusOne(args[i])) {
+              if(i === 0) {
+                args.shift()
+              }else {
+                if(i === args.length - 1) {
+                  args.pop()
+                }else {
+                  args = args.slice(0, i).concat(args.slice(i + 1))
+                }
+              }
+              i--;
               didNegate = true;
               break done
+            }else {
+              if(isNeg(args[i])) {
+                args[i] = negate(args[i]);
+                didNegate = true;
+                break done
+              }
             }
           }
           if(!didNegate) {
@@ -4903,13 +4919,16 @@ var BigDecimal = function(MathContext) {
     if(n === null || (n === undefined || typeof n === "string")) {
       return false
     }else {
-      if(n instanceof BigDecimal) {
-        return!bigMinusOne.compareTo(n)
+      if(typeof n === "number") {
+        return n === -1
       }else {
-        if(typeof n === "number") {
-          return n === -1
+        if(n instanceof BigDecimal) {
+          return!bigMinusOne.compareTo(n)
         }else {
-          if(n.op !== undefined) {
+          if(n.op) {
+            if(ast.intern(n) === nidMinusOne) {
+              return true
+            }
             var mv = mathValue(n, true);
             if(mv) {
               return!bigMinusOne.compareTo(mathValue(n, true))
@@ -4981,6 +5000,31 @@ var BigDecimal = function(MathContext) {
     var n = multiplyNode(nn);
     var d = multiplyNode(dd);
     return isOdd(n) && isOdd(d)
+  }
+  function isPolynomial(node) {
+    var n0 = JSON.parse(JSON.stringify(node));
+    var tt = terms(expand(n0));
+    var a = bigZero, b = bigZero, c = bigZero, notPolynomial = false;
+    var cc = [];
+    forEach(tt, function(v) {
+      var d = degree(v, true);
+      if(d === Number.POSITIVE_INFINITY || (d < 0 || (d !== Math.floor(d) || (d > 10 || mathValue(constantPart(v), true) === null)))) {
+        notPolynomial = true;
+        return
+      }
+      if(cc[d] === undefined) {
+        var i = d;
+        while(i >= 0 && cc[i] === undefined) {
+          cc[i] = 0;
+          i--
+        }
+      }
+      cc[d] = cc[d] + toNumber(mathValue(constantPart(v), true))
+    });
+    if(notPolynomial || variables(node).length > 1) {
+      return null
+    }
+    return cc
   }
   function toNumber(n) {
     var str;
@@ -6585,11 +6629,6 @@ var BigDecimal = function(MathContext) {
             }else {
               args.push(normalize(node.args[0]))
             }
-            var base = node.args[0];
-            var expo = node.args[1];
-            if(!isE(base)) {
-              return multiplyNode([binaryNode(Model.LOG, [nodeE, expo]), binaryNode(Model.POW, [binaryNode(Model.LOG, [nodeE, base]), nodeMinusOne])])
-            }
             break;
           case Model.POW:
             if(isMinusOne(node.args[0]) && toNumber(mathValue(node.args[1], true)) === 0.5) {
@@ -6597,6 +6636,14 @@ var BigDecimal = function(MathContext) {
             }else {
               if(isMinusOne(node.args[0]) && isMinusOne(node.args[1])) {
                 return nodeMinusOne
+              }else {
+                if(node.args.length === 2 && node.args[1].op === Model.LOG) {
+                  var n1 = node.args[0];
+                  var n2 = node.args[1].args[1];
+                  var base = node.args[1].args[0];
+                  var args = sort(binaryNode(Model.MUL, [n1, n2])).args;
+                  return binaryNode(Model.POW, [args[0], binaryNode(node.args[1].op, [base, args[1]])])
+                }
               }
             }
           ;
@@ -8610,9 +8657,13 @@ var BigDecimal = function(MathContext) {
                                 base = numberNode(b);
                                 return base
                               }else {
-                                var b = pow(bmv, emv);
-                                if(b !== null) {
-                                  return numberNode(b)
+                                if(expo.op === Model.LOG && ast.intern(base) === ast.intern(expo.args[0])) {
+                                  return expo.args[1]
+                                }else {
+                                  var b = pow(bmv, emv);
+                                  if(b !== null) {
+                                    return numberNode(b)
+                                  }
                                 }
                               }
                             }
@@ -8630,6 +8681,14 @@ var BigDecimal = function(MathContext) {
                 var mv = toDecimal(Math.log(toNumber(emv)));
                 if(isInteger(mv)) {
                   return numberNode(mv)
+                }
+              }else {
+                if(ast.intern(base) === ast.intern(expo)) {
+                  return nodeOne
+                }else {
+                  if(!option("dontExpandPowers") && !isE(base)) {
+                    return multiplyNode([binaryNode(Model.LOG, [nodeE, expo]), binaryNode(Model.POW, [binaryNode(Model.LOG, [nodeE, base]), nodeMinusOne])])
+                  }
                 }
               }
             }
@@ -9542,7 +9601,10 @@ var BigDecimal = function(MathContext) {
           forEach(node.args, function(n, i) {
             if(i === 0) {
               lc = constantPart(n);
-              args.push(variablePart(n))
+              var vp = variablePart(n);
+              if(vp) {
+                args.push(vp)
+              }
             }else {
               assert(lc, "2000: Internal error.");
               args.push(fractionNode(n, lc))
@@ -9748,31 +9810,6 @@ var BigDecimal = function(MathContext) {
         var x = toNumber(mathValue(node, env, true));
         return x === 0 && (field === "integer" && r === (r | 0) || field === "real")
       })
-    }
-    function isPolynomial(node) {
-      var n0 = JSON.parse(JSON.stringify(node));
-      var tt = terms(expand(n0));
-      var a = bigZero, b = bigZero, c = bigZero, notPolynomial = false;
-      var cc = [];
-      forEach(tt, function(v) {
-        var d = degree(v, true);
-        if(d === Number.POSITIVE_INFINITY || (d < 0 || (d !== Math.floor(d) || (d > 10 || mathValue(constantPart(v), true) === null)))) {
-          notPolynomial = true;
-          return
-        }
-        if(cc[d] === undefined) {
-          var i = d;
-          while(i >= 0 && cc[i] === undefined) {
-            cc[i] = 0;
-            i--
-          }
-        }
-        cc[d] = cc[d] + toNumber(mathValue(constantPart(v), true))
-      });
-      if(notPolynomial || variables(node).length > 1) {
-        return null
-      }
-      return cc
     }
     function solveQuadratic(a, b, c) {
       a = toNumber(a);
@@ -10709,6 +10746,11 @@ var BigDecimal = function(MathContext) {
           result = false
         }
       }else {
+        node = normalize(node);
+        var vp;
+        if(isNeg(node) && (!(vp = variablePart(node)) || vp.op !== Model.ADD)) {
+          node = negate(node)
+        }
         n1 = normalize(node);
         n2 = normalize(simplify(expand(normalize(node))));
         nid1 = ast.intern(n1);
