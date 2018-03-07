@@ -74,6 +74,7 @@ var transformer = function() {
     "CALCULATE": calculate,
     "TRANSLATE": trans,
     "SPEAK": speak,
+    "FORMAT": format,
     "VALID-SYNTAX": validSyntax,
     "INVERSE-RESULT": inverseResult,
     "DECIMAL-PLACES": decimalPlaces,
@@ -629,6 +630,42 @@ var transformer = function() {
   function speak(node, options, resume) {
     //options.dialect = "clearSpeak";
     return trans(node, options, resume);
+  }
+  function format(node, options, resume) {
+    var errs = [];
+    visit(node.elts[0], options, function (err, val) {
+      errs = errs.concat(err);
+      var pattern = val.result ? val.result : val;
+      visit(node.elts[1], options, function (err, val) {
+        errs = errs.concat(err);
+        let response = val.response || val;
+        let score = val.score || 1;
+        let methods = "format " + (val.methods || "");
+        if (response) {
+          options.strict = true;
+          delete options.data;
+          console.log("format() pattern=" + pattern);
+          MathCore.evaluateVerbose({
+            method: "format",
+            options: options,
+            value: pattern,
+          }, response, function (err, val) {
+            delete options.strict;
+            if (err && err.length) {
+              errs = errs.concat(error(err, node.elts[1]));
+            }
+            resume(errs, {
+              score: score > 0 && val && val.result ? 1 : -1,
+              response: response,
+              result: val.result,
+              value: pattern,
+              methods: methods,
+              validation: composeValidation("format", options, pattern)
+            });
+          });
+        }
+      });
+    });
   }
   function trans(node, options, resume) {
     var errs = [];
