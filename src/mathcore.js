@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 92a66c8
+ * Mathcore unversioned - 189b893
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -541,7 +541,7 @@ var Model = function() {
     });
     return model
   };
-  Model.fromLaTex = Mp.fromLaTex = function fromLaTex(src) {
+  Model.fromLaTeX = Mp.fromLaTeX = function fromLaTex(src) {
     assert(typeof src === "string", "1000: Model.prototype.fromLaTex");
     if(!this) {
       return Model.create(src)
@@ -10814,7 +10814,7 @@ var BigDecimal = function(MathContext) {
   Model.fn.format = function(n1, n2) {
     var prevLocation = Assert.location;
     var node = formatMath(n2, n1);
-    return ast.toLaTex(node)
+    return ast.toLaTeX(node)
   };
   Model.fn.calculate = function(n1) {
     var prevLocation = Assert.location;
