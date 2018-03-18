@@ -4,8 +4,7 @@
   "description": "L106 compiler as a service",
   "main": "index.js",
   "scripts": {
-    "start": "node --harmony index.js",
-    "build": "cp spokenmath/build/* src && cp mathcore/lib/mathcore.js src"
+    "start": "node --harmony index.js"
   },
   "dependencies": {
     "express": "~3.4.x",

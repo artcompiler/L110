@@ -6,7 +6,6 @@ default: lib run
 lib: $(LIB)
 lib/%.js: src/%.js
 	mkdir -p $(@D)
-	npm run build
 	babel --modules common $< -o $@
 
 run:

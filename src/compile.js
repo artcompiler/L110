@@ -497,7 +497,6 @@ var transformer = function() {
   function isSimplified(node, options, resume) {
     var errs = [];
     visit(node.elts[0], options, function (err, val) {
-      console.log("isSimplified() val=" + JSON.stringify(val));
       errs = errs.concat(err);
       let response = options.data && options.data.response || val.response || val;
       let score = val.score || 1;
@@ -644,7 +643,6 @@ var transformer = function() {
         if (response) {
           options.strict = true;
           delete options.data;
-          console.log("format() pattern=" + pattern);
           MathCore.evaluateVerbose({
             method: "format",
             options: options,
@@ -656,7 +654,7 @@ var transformer = function() {
             }
             resume(errs, {
               score: score > 0 && val && val.result ? 1 : -1,
-              response: response,
+              response: val.result,
               result: val.result,
               value: pattern,
               methods: methods,
