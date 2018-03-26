@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 5508f2a
+ * Mathcore unversioned - be51d78
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -4650,6 +4650,7 @@ var Model = function() {
     return{op:op, args:args}
   }
   function binaryNode(op, args, flatten) {
+    assert(args.length > 0, "2000: Invalid node shape.");
     if(args.length < 2) {
       return args[0]
     }
@@ -6244,32 +6245,54 @@ var Model = function() {
       var numers = {};
       var denoms = {};
       forEach(node.args, function(n, i) {
-        var isDenom = false;
         var f;
         if(isMinusOne(n)) {
           n = newNode(Model.POW, [nodeMinusOne, nodeMinusOne]);
           changed = true
         }
-        if(n.op === Model.POW && isMinusOne(n.args[1])) {
-          f = n.args[0];
-          isDenom = true
-        }else {
-          f = n
-        }
-        var mv = mathValue(f, true);
-        var key = mv !== null ? String(mv) : "nid$" + ast.intern(f);
-        if(isDenom) {
-          if(!denoms[key]) {
-            denoms[key] = []
+        var ff = factors(n, {}, false, true, true);
+        forEach(ff, function(f) {
+          var isDenom = f.op === Model.POW && isMinusOne(f.args[1]);
+          var mv = mathValue(isDenom ? f.args[0] : f, true);
+          if(isOne(mv)) {
+            return
           }
-          denoms[key].push(n)
-        }else {
-          if(!numers[key]) {
-            numers[key] = []
+          var key = mv !== null ? String(mv) : "nid$" + ast.intern(isDenom ? f.args[0] : f);
+          if(isDenom) {
+            if(!denoms[key]) {
+              denoms[key] = []
+            }
+            denoms[key].push(f)
+          }else {
+            if(!numers[key]) {
+              numers[key] = []
+            }
+            numers[key].push(f)
           }
-          numers[key].push(n)
-        }
+        })
       });
+      assert(!numers["1"] && !denoms["1"], "2000: Identity multiplicateion should be factored out by now.");
+      if(numers["-1"]) {
+        if(numers["-1"].length % 2 === 0) {
+          delete numers["-1"]
+        }else {
+          if(denoms.length > 0) {
+            delete numers["-1"];
+            denoms["-1"] = (denoms["-1"] || []).concat(binaryNode(Model.POW, [nodeMinusOne, nodeMinusOne]))
+          }else {
+            numers["-1"] = [].concat(numers["-1"][0])
+          }
+        }
+        changed = true
+      }
+      if(denoms["-1"]) {
+        if(denoms["-1"].length % 2 === 0) {
+          delete denoms["-1"]
+        }else {
+          denoms["-1"] = [].concat(denoms["-1"][0])
+        }
+        changed = true
+      }
       var nKeys = keys(numers);
       var dKeys = keys(denoms);
       if(nKeys.length === 0 || (dKeys.length === 0 || dKeys.length === 1 && dKeys[0] === "-1")) {
@@ -6298,12 +6321,12 @@ var Model = function() {
       });
       var n, d;
       if(nargs.length) {
-        n = multiplyNode(nargs)
+        n = multiplyNode(nargs, true)
       }else {
         n = null
       }
       if(dargs.length) {
-        d = multiplyNode(dargs)
+        d = multiplyNode(dargs, true)
       }else {
         d = null
       }
@@ -6316,7 +6339,7 @@ var Model = function() {
           if(!n) {
             return d
           }else {
-            return multiplyNode([n, d])
+            return multiplyNode([n, d], true)
           }
         }
       }
@@ -6459,6 +6482,16 @@ var Model = function() {
       }
       return binaryNode(node.op, [larg, rarg])
     }
+    function factorQuadratic(node) {
+      var coeffs, vars, roots;
+      if((coeffs = isPolynomial(node)) && (coeffs.length === 3 && (vars = variables(node)).length === 1)) {
+        roots = solveQuadratic(coeffs[2], coeffs[1], coeffs[0]);
+        if(roots) {
+          node = multiplyNode([binaryNode(Model.ADD, [variableNode(vars[0]), negate(numberNode(roots[0]))]), binaryNode(Model.ADD, [variableNode(vars[0]), negate(numberNode(roots[1]))])])
+        }
+      }
+      return node
+    }
     function factorCommonExpressions(node) {
       if(node.op !== Model.ADD || node.args.length !== 2) {
         return node
@@ -6507,13 +6540,21 @@ var Model = function() {
             if(isLessThan(e1, e2)) {
               var e = e2.subtract(e1);
               var b = n1.op === Model.POW && mathValue(n1.args[1], true) ? n1.args[0] : n1;
-              dd.push(isOne(e) ? b : newNode(Model.POW, [b, numberNode(e)]));
-              ff.push(isOne(e1) ? b : newNode(Model.POW, [b, numberNode(e1)]))
+              if(!isZero(e)) {
+                dd.push(isOne(e) ? b : newNode(Model.POW, [b, numberNode(e)]))
+              }
+              if(!isZero(e2)) {
+                ff.push(isOne(e1) ? b : newNode(Model.POW, [b, numberNode(e1)]))
+              }
             }else {
               var e = e1.subtract(e2);
               var b = n1.op === Model.POW && mathValue(n1.args[1], true) ? n1.args[0] : n1;
-              nn.push(isOne(e) ? b : newNode(Model.POW, [b, numberNode(e)]));
-              ff.push(isOne(e2) ? b : newNode(Model.POW, [b, numberNode(e2)]))
+              if(!isZero(e)) {
+                nn.push(isOne(e) ? b : newNode(Model.POW, [b, numberNode(e)]))
+              }
+              if(!isZero(e2)) {
+                ff.push(isOne(e2) ? b : newNode(Model.POW, [b, numberNode(e2)]))
+              }
             }
           }
           changed = true
@@ -6551,12 +6592,8 @@ var Model = function() {
       return binaryNode(Model.MUL, ff.concat(binaryNode(Model.ADD, [n1, n2])))
     }
     function eraseCommonExpressions(n1, n2) {
-      if(n1.op === Model.ADD) {
-        n1 = factorCommonExpressions(n1)
-      }
-      if(n2.op === Model.ADD) {
-        n2 = factorCommonExpressions(n2)
-      }
+      n1 = factorCommonExpressions(n1);
+      n2 = factorCommonExpressions(n2);
       n1 = cancelFactors(n1);
       n2 = cancelFactors(n2);
       if(n1.op !== n2.op || n1.op !== Model.MUL) {
@@ -6605,7 +6642,9 @@ var Model = function() {
             }else {
               var e = e1.subtract(e2);
               var b = n1.op === Model.POW && mathValue(n1.args[1], true) ? n1.args[0] : n1;
-              nn.push(isOne(e) ? b : newNode(Model.POW, [b, numberNode(e)]))
+              if(!isZero(e)) {
+                nn.push(isOne(e) ? b : newNode(Model.POW, [b, numberNode(e)]))
+              }
             }
           }
           changed = true
@@ -8319,7 +8358,7 @@ var Model = function() {
             forEach(n0, function(n1) {
               denoms = denom(n1, denoms)
             });
-            if(denoms.length > 1 || denoms.length === 1 && !isOne(denoms[0])) {
+            if(denoms.length > 1 || denoms.length === 1 && (!isMinusOne(denoms[0]) && !isOne(denoms[0]))) {
               var denominator = binaryNode(Model.POW, [multiplyNode(denoms, true), nodeMinusOne]);
               var n2 = [];
               forEach(n0, function(n1) {
@@ -8378,7 +8417,7 @@ var Model = function() {
           var d0, dd = [];
           forEach(ff, function(n) {
             d0 = n.args[0];
-            if(n.op === Model.POW) {
+            if(n.op === Model.POW && !isOne(n.args[0])) {
               if(isMinusOne(n.args[1])) {
                 dd.push(d0)
               }else {
@@ -8498,7 +8537,6 @@ var Model = function() {
           assert(n0.length, "2000: Internal error.");
           node = sort(flattenNestedNodes(multiplyNode(n0)))
         }
-        node = cancelFactors(node);
         return node;
         function fold(lnode, rnode) {
           var ldegr = degree(lnode);
@@ -8511,12 +8549,16 @@ var Model = function() {
           var rcoeff = constantPart(rnode);
           var lcoeffmv = mathValue(lcoeff, true);
           var rcoeffmv = mathValue(rcoeff, true);
+          var lmv, rmv;
           if(ldegr === 0 && (isZero(lcoeffmv) && !isUndefined(rnode)) || rdegr === 0 && (isZero(rcoeffmv) && !isUndefined(lnode))) {
             if(units(lnode).length || units(rnode).length) {
               return[lnode, rnode]
             }else {
               return nodeZero
             }
+          }
+          if(isInteger(lmv = mathValue(lnode)) && isInteger(rmv = mathValue(rnode))) {
+            return numberNode(lmv.multiply(rmv))
           }else {
             if(ldegr === 0 && isOne(lcoeffmv)) {
               return rnode
@@ -9633,6 +9675,10 @@ var Model = function() {
         if(!factorAdditive) {
           return[node]
         }
+        node = factorQuadratic(node);
+        if(node.op === Model.MUL) {
+          return[node]
+        }
         var args = node.args.slice(0);
         var n0 = [multiplyNode(factors(args.shift(), {}, true, true))];
         forEach(args, function(n1, i) {
@@ -9651,6 +9697,10 @@ var Model = function() {
       }, multiplicative:function(node) {
         switch(node.op) {
           case Model.MUL:
+          ;
+          case Model.COEFF:
+          ;
+          case Model.TIMES:
             var ff = [];
             forEach(node.args, function(n) {
               ff = ff.concat(factors(n, env, ignorePrimeFactors, preserveNeg))
@@ -9664,21 +9714,28 @@ var Model = function() {
       }, unary:function(node) {
         return[node]
       }, exponential:function(node) {
+        if(option("dontExpandPowers")) {
+          return[node]
+        }
         if(node.op === Model.POW) {
-          if(mathValue(node.args[1]) < 0) {
-            return[node]
-          }else {
-            var ff = [];
-            var e = mathValue(node.args[1]);
-            var ea = Math.abs(toNumber(e));
-            if(e !== null && (isInteger(e) && ea < 5)) {
-              for(var i = toNumber(e);i > 0;i--) {
-                ff.push(node.args[0])
+          var isDenom;
+          if(isNeg(node.args[1])) {
+            isDenom = true
+          }
+          var ff = [];
+          var e = mathValue(node.args[1]);
+          var ea = Math.abs(toNumber(e));
+          if(e !== null && (isInteger(e) && (ea < 5 || !isAdditive(node.args[0]) && ea < 10))) {
+            var args = factors(node.args[0], {}, false, true, true);
+            for(var j = 0;j < args.length;j++) {
+              var f = isDenom ? newNode(Model.POW, [args[j], nodeMinusOne]) : args[j];
+              for(var i = ea;i > 0;i--) {
+                ff.push(f)
               }
-              return ff
-            }else {
-              return[node]
             }
+            return ff
+          }else {
+            return[node]
           }
         }else {
           if(node.op === Model.LOG) {
@@ -9688,11 +9745,7 @@ var Model = function() {
       }, variable:function(node) {
         return[node]
       }, comma:function(node) {
-        var args = [];
-        forEach(node.args, function(n) {
-          args = args.concat(factors(n))
-        });
-        return[newNode(node.op, args)]
+        return[node]
       }, equals:function(node) {
         return[node]
       }})
@@ -10037,9 +10090,9 @@ var Model = function() {
       var opt = option("field");
       var hasSolution = opt === "integer" && (x0 === (x0 | 0) && x1 === (x1 | 0)) || (opt === "real" && b * b - 4 * a * c >= 0 || opt === "complex");
       if(hasSolution) {
-        return true
+        return[x0, x1]
       }
-      return false
+      return null
     }
     function getRoots(a, b, c) {
       a = toNumber(a);
@@ -11153,6 +11206,7 @@ var MathCore = function() {
   "matrix":{}, "pmatrix":{}, "bmatrix":{}, "Bmatrix":{}, "vmatrix":{}, "Vmatrix":{}, "array":{}, "\\alpha":{type:"var"}, "\\beta":{type:"var"}, "\\gamma":{type:"var"}, "\\delta":{type:"var"}, "\\epsilon":{type:"var"}, "\\zeta":{type:"var"}, "\\eta":{type:"var"}, "\\theta":{type:"var"}, "\\iota":{type:"var"}, "\\kappa":{type:"var"}, "\\lambda":{type:"var"}, "\\mu":{type:"const", value:mu}, "\\nu":{type:"var"}, "\\xi":{type:"var"}, "\\pi":{type:"const", value:Math.PI}, "e":{type:"const", value:Math.E}, 
   "\\rho":{type:"var"}, "\\sigma":{type:"var"}, "\\tau":{type:"var"}, "\\upsilon":{type:"var"}, "\\phi":{type:"var"}, "\\chi":{type:"var"}, "\\psi":{type:"var"}, "\\omega":{type:"var"}};
   function evaluate(spec, solution, resume) {
+    var t = new Date;
     try {
       assert(spec, message(3001, [spec]));
       assert(solution != undefined, message(3002, [solution]));
@@ -11165,6 +11219,7 @@ var MathCore = function() {
       trace(e + "\n" + e.stack);
       resume(e.stack, undefined)
     }
+    return result
   }
   function evaluateVerbose(spec, solution, resume) {
     var model, result;
