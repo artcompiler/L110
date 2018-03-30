@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - be51d78
+ * Mathcore unversioned - 125c540
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -3297,7 +3297,10 @@ var Model = function() {
       return newNode(op, args)
     }
     function binaryNode(op, args, flatten) {
-      assert(args.length > 1, "1000: Too few argument for binary node");
+      assert(args.length > 0, "1000: Too few argument for binary node");
+      if(args.length < 2) {
+        return args[0]
+      }
       var aa = [];
       forEach(args, function(n) {
         if(flatten && n.op === op) {
@@ -3568,9 +3571,9 @@ var Model = function() {
           args.push(primaryExpr());
           return newNode(tokenToOperator[tk], args);
           break;
-        case TK_SUM:
-        ;
         case TK_INT:
+        ;
+        case TK_SUM:
         ;
         case TK_PROD:
           next();
@@ -3581,7 +3584,11 @@ var Model = function() {
             eat(TK_CARET, {oneCharToken:true});
             args.push(primaryExpr())
           }
-          args.push(commaExpr());
+          if(tk === TK_INT) {
+            args.push(integralExpr())
+          }else {
+            args.push(commaExpr())
+          }
           return newNode(tokenToOperator[tk], args);
         case TK_EXISTS:
           next();
@@ -4142,6 +4149,37 @@ var Model = function() {
           case TK_PM:
             expr = binaryNode(Model.PM, [expr, expr2]);
             break;
+          case TK_SUB:
+            expr = binaryNode(Model.SUB, [expr, expr2]);
+            break;
+          default:
+            expr = binaryNode(Model.ADD, [expr, expr2], true);
+            break
+        }
+      }
+      return expr
+    }
+    function hasDX(node) {
+      var len = node.args.length;
+      var dvar = node.args[len - 2];
+      var ivar = node.args[len - 1];
+      return node && (node.op === Model.MUL && (dvar.op === Model.VAR && (dvar.args[0] === "d" && ivar.op === Model.VAR)))
+    }
+    function stripDX(node) {
+      assert(node.op === Model.MUL);
+      return multiplyNode(node.args.slice(0, node.args.length - 2))
+    }
+    function integralExpr() {
+      var expr = multiplicativeExpr();
+      var t;
+      var foundDX = hasDX(expr);
+      expr = foundDX ? stripDX(expr) : expr;
+      while(isAdditive(t = hd()) && !foundDX) {
+        next();
+        var expr2 = multiplicativeExpr();
+        foundDX = hasDX(expr2);
+        expr2 = foundDX ? stripDX(expr2) : expr2;
+        switch(t) {
           case TK_SUB:
             expr = binaryNode(Model.SUB, [expr, expr2]);
             break;
@@ -4833,6 +4871,10 @@ var Model = function() {
           }else {
             if(n.op === Model.POW && isMinusOne(n.args[1])) {
               return binaryNode(Model.POW, [negate(n.args[0]), nodeMinusOne])
+            }else {
+              if(n.op === Model.INT && n.args.length === 3) {
+                return newNode(Model.INT, [n.args[1], n.args[0], n.args[2]])
+              }
             }
           }
         }
@@ -6811,6 +6853,9 @@ var Model = function() {
               node = unaryNode(node.op, [args[0]])
             }
             break;
+          case Model.INT:
+            node = normalizeIntegral(node);
+            break;
           case Model.SIN:
           ;
           case Model.COS:
@@ -7987,6 +8032,51 @@ var Model = function() {
         default:
           assert(false, "2000: Internal error.");
           break
+      }
+      return node
+    }
+    function integralNode(start, stop, expr) {
+      if(start) {
+        return newNode(Model.INT, [start, stop, expr])
+      }else {
+        return newNode(Model.INT, [expr])
+      }
+    }
+    function normalizeIntegral(node) {
+      var start, stop, expr;
+      if(node.args.length === 3) {
+        start = node.args[0];
+        stop = node.args[1];
+        expr = node.args[2]
+      }else {
+        expr = node.args[0]
+      }
+      var cp, vp;
+      if(start && ast.intern(start) === ast.intern(stop)) {
+        node = nodeZero
+      }else {
+        if(isAdditive(expr)) {
+          var args = [];
+          forEach(expr.args, function(e) {
+            args.push(integralNode(start, stop, e))
+          });
+          node = binaryNode(expr.op, args)
+        }else {
+          if(cp = constantPart(expr)) {
+            vp = variablePart(expr);
+            if(vp) {
+              if(isOne(cp)) {
+                node = integralNode(start, stop, vp)
+              }else {
+                node = multiplyNode([cp, integralNode(start, stop, vp)])
+              }
+            }else {
+              if(start) {
+                node = multiplyNode([cp, binaryNode(Model.ADD, [stop, negate(start)])])
+              }
+            }
+          }
+        }
       }
       return node
     }
@@ -11264,7 +11354,7 @@ var MathCore = function() {
       return e
     }
   }
-  var timeoutDuration = 3E4;
+  var timeoutDuration = 3E6;
   function setTimeoutDuration(duration) {
     timeoutDuration = duration
   }
