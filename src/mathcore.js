@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 125c540
+ * Mathcore unversioned - c5addaa
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -4789,7 +4789,6 @@ var Model = function() {
     return multiplyNode([n, binaryNode(Model.POW, [d, nodeMinusOne])], true)
   }
   function unaryNode(op, args) {
-    assert(args.length === 1, "2000: Wrong number of arguments for unary node");
     if(op === Model.ADD) {
       return args[0]
     }else {
@@ -5135,8 +5134,6 @@ var Model = function() {
         }
       });
       node = multiplyNode(args)
-    }else {
-      node = node
     }
     return node
   }
@@ -5451,6 +5448,8 @@ var Model = function() {
               return nodePositiveInfinity
             }
             return 0;
+          case Model.INT:
+            return Number.POSITIVE_INFINITY;
           case Model.DEGREE:
           ;
           case Model.NONE:
@@ -6242,7 +6241,11 @@ var Model = function() {
             node = negate(arg0, true);
             break;
           default:
-            node = unaryNode(node.op, [arg0]);
+            var args = [];
+            forEach(node.args, function(n) {
+              args = args.concat(normalize(n))
+            });
+            node = newNode(node.op, args);
             break
         }
         return node
@@ -8065,6 +8068,12 @@ var Model = function() {
           if(cp = constantPart(expr)) {
             vp = variablePart(expr);
             if(vp) {
+              if(start && isNeg(cp)) {
+                cp = negate(cp);
+                var t = start;
+                start = stop;
+                stop = t
+              }
               if(isOne(cp)) {
                 node = integralNode(start, stop, vp)
               }else {
@@ -8874,7 +8883,7 @@ var Model = function() {
       }, unary:function(node) {
         var args = [];
         forEach(node.args, function(n) {
-          args = args.concat(simplify(n))
+          args = args.concat(simplify(n, env))
         });
         node = newNode(node.op, args);
         switch(node.op) {
@@ -8915,10 +8924,9 @@ var Model = function() {
             }
             break;
           case Model.PM:
-            node = unaryNode(node.op, [simplify(node.args[0], env)]);
-            break;
+          ;
           default:
-            node = unaryNode(node.op, [simplify(node.args[0], env)])
+            node = unaryNode(node.op, args)
         }
         return node
       }, exponential:function(node) {
@@ -9613,7 +9621,11 @@ var Model = function() {
             node.args[0] = expand(node.args[0]);
             break;
           default:
-            node = unaryNode(node.op, [expand(node.args[0])]);
+            var args = [];
+            forEach(node.args, function(n) {
+              args.push(expand(n))
+            });
+            node = unaryNode(node.op, args);
             break
         }
         return node
@@ -9998,7 +10010,11 @@ var Model = function() {
         if(mv = mathValue(node, true)) {
           return numberNode(mv, true)
         }
-        return unaryNode(node.op, [scale(node.args[0])])
+        var args = [];
+        forEach(node.args, function(n) {
+          args.push(scale(n))
+        });
+        return newNode(node.op, args)
       }, numeric:function(node) {
         if(isUndefined(node)) {
           return node
