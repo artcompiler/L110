@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 3386025
+ * Mathcore unversioned - 3101876
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -4732,6 +4732,9 @@ var Model = function() {
       return false
     }
     if(n.op) {
+      if(n.op === Model.POW) {
+        n = n.args[0]
+      }
       var cp = constantPart(n);
       mv = mathValue(cp, true);
       if(!mv) {
@@ -6904,6 +6907,9 @@ var Model = function() {
             var arg0 = normalize(node.args[0]);
             node = multiplyNode([nodeOne, binaryNode(Model.POW, [newNode(s, [arg0]), nodeMinusOne])]);
             break;
+          case Model.ABS:
+            node = normalizeAbs(node);
+            break;
           default:
             break
         }
@@ -8134,6 +8140,23 @@ var Model = function() {
             }
           }
         }
+      }
+      return node
+    }
+    function normalizeAbs(node) {
+      assert(node.op === Model.ABS, "2000: Internal error");
+      switch(node.args[0].op) {
+        case Model.ADD:
+          if(every(node.args[0].args, function(n) {
+            return!isNeg(n)
+          })) {
+            var args = [];
+            forEach(node.args[0].args, function(n) {
+              args.push(unaryNode(Model.ABS, [n]))
+            });
+            node = binaryNode(Model.ADD, args)
+          }
+          break
       }
       return node
     }
