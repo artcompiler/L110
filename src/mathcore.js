@@ -5059,7 +5059,7 @@ var Model = function() {
     var cc = [];
     forEach(tt, function(v) {
       var d = degree(v, true);
-      if(d === Number.POSITIVE_INFINITY || (d < 0 || (d !== Math.floor(d) || (d > 10 || mathValue(constantPart(v), true) === null)))) {
+      if(isImaginary(v) || (d === Number.POSITIVE_INFINITY || (d < 0 || (d !== Math.floor(d) || (d > 10 || mathValue(constantPart(v), true) === null))))) {
         notPolynomial = true;
         return
       }
@@ -9745,7 +9745,7 @@ var Model = function() {
                       var mv = pow(bmv, emv);
                       args.push(numberNode(mv))
                     }else {
-                      if(ea < 10 && (isAdditive(n) || !dontExpandPowers)) {
+                      if(ea < 5 || ea < 10 && (!isPolynomial(n) && !dontExpandPowers)) {
                         var invert = isNeg(emv);
                         for(var i = 0;i < ea;i++) {
                           if(invert) {
@@ -9898,7 +9898,7 @@ var Model = function() {
           var ff = [];
           var e = mathValue(node.args[1]);
           var ea = Math.abs(toNumber(e));
-          if(e !== null && (isInteger(e) && (ea < 5 || !isAdditive(node.args[0]) && ea < 10))) {
+          if(ea < 5 || ea < 10 && !isPolynomial(node.args[0])) {
             var args = factors(node.args[0], {}, false, true, true);
             for(var j = 0;j < args.length;j++) {
               var f = isDenom ? newNode(Model.POW, [args[j], nodeMinusOne]) : args[j];
@@ -11383,7 +11383,6 @@ var MathCore = function() {
   "matrix":{}, "pmatrix":{}, "bmatrix":{}, "Bmatrix":{}, "vmatrix":{}, "Vmatrix":{}, "array":{}, "\\alpha":{type:"var"}, "\\beta":{type:"var"}, "\\gamma":{type:"var"}, "\\delta":{type:"var"}, "\\epsilon":{type:"var"}, "\\zeta":{type:"var"}, "\\eta":{type:"var"}, "\\theta":{type:"var"}, "\\iota":{type:"var"}, "\\kappa":{type:"var"}, "\\lambda":{type:"var"}, "\\mu":{type:"const", value:mu}, "\\nu":{type:"var"}, "\\xi":{type:"var"}, "\\pi":{type:"const", value:Math.PI}, "e":{type:"const", value:Math.E}, 
   "\\rho":{type:"var"}, "\\sigma":{type:"var"}, "\\tau":{type:"var"}, "\\upsilon":{type:"var"}, "\\phi":{type:"var"}, "\\chi":{type:"var"}, "\\psi":{type:"var"}, "\\omega":{type:"var"}};
   function evaluate(spec, solution, resume) {
-    var t = new Date;
     try {
       assert(spec, message(3001, [spec]));
       assert(solution != undefined, message(3002, [solution]));
