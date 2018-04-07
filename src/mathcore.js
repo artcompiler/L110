@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 87ff4b6
+ * Mathcore unversioned - b4eb1e5
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -6945,6 +6945,10 @@ var Model = function() {
             }else {
               args.push(normalize(node.args[0]))
             }
+            if(node.args.length > 1) {
+              args = args.concat(node.args.slice(1))
+            }
+            node = binaryNode(node.op, args);
             break;
           case Model.POW:
             if(isMinusOne(node.args[0]) && toNumber(mathValue(node.args[1], true)) === 0.5) {
@@ -6962,15 +6966,11 @@ var Model = function() {
                 }
               }
             }
-          ;
+            break;
           default:
-            args.push(normalize(node.args[0]));
             break
         }
-        if(node.args.length > 1) {
-          args.push(normalize(node.args[1]))
-        }
-        return binaryNode(node.op, args)
+        return node
       }, comma:function(node) {
         var vals = [];
         forEach(node.args, function(n) {
@@ -7001,7 +7001,7 @@ var Model = function() {
           node = binaryNode(node.op, [binaryNode(Model.ADD, [node.args[0], multiplyNode([nodeMinusOne, node.args[1]], true)], true), nodeZero])
         }else {
           if(!isZero(mathValue(node.args[1], true)) && !isOne(mathValue(node.args[1], true))) {
-            node = binaryNode(node.op, [multiplyNode([node.args[0], binaryNode(Model.POW, [node.args[1], nodeMinusOne], true)]), nodeOne])
+            node = binaryNode(node.op, [multiplyNode([node.args[0], binaryNode(Model.POW, [node.args[1], nodeMinusOne])]), nodeOne])
           }
         }
         if(node.op === Model.COLON) {
@@ -9892,7 +9892,7 @@ var Model = function() {
         }
         if(node.op === Model.POW) {
           var isDenom;
-          if(isNeg(node.args[1])) {
+          if(isNeg(mathValue(binaryNode(Model.POW, node.args.slice(1)), true))) {
             isDenom = true
           }
           var ff = [];
