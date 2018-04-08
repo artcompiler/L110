@@ -3290,6 +3290,9 @@ var Model = function() {
       return{op:Model.NUM, args:[String(n2)], hasThousandsSeparator:separatorCount !== 0, numberFormat:numberFormat, hasLeadingZero:hasLeadingZero, hasTrailingZero:hasTrailingZero}
     }
     function multiplyNode(args, flatten) {
+      if(args.length === 0) {
+        args = [nodeOne]
+      }
       return binaryNode(Model.MUL, args, flatten)
     }
     function unaryNode(op, args) {
@@ -3359,6 +3362,14 @@ var Model = function() {
         var n0 = node.args[0];
         var n1 = node.args[1];
         return n0.op === Model.NUM && (n0.numberFormat === "integer" && (n1.op === Model.NUM && n1.numberFormat === "integer"))
+      }
+      return false
+    }
+    function isProperFraction(node) {
+      if(node.op === Model.FRAC) {
+        var n0 = node.args[0];
+        var n1 = node.args[1];
+        return n0.op === Model.NUM && (n0.numberFormat === "integer" && (n1.op === Model.NUM && (n1.numberFormat === "integer" && +n0.args[0] < n1.args[0])))
       }
       return false
     }
@@ -4011,11 +4022,20 @@ var Model = function() {
         return t === TK_MUL || (t === TK_DIV || t === TK_SLASH)
       }
     }
+    function isNumber(n) {
+      if((n.op === Model.SUB || n.op === Model.ADD) && n.args.length === 1) {
+        n = n.args[0]
+      }
+      if(n.op === Model.NUM) {
+        return n
+      }
+      return false
+    }
     function isMixedNumber(n0, n1) {
       if(n0.op === Model.SUB && n0.args.length === 1) {
         n0 = n0.args[0]
       }
-      if(!n0.lbrk && (!n1.lbrk && (n0.op === Model.NUM && isSimpleFraction(n1)))) {
+      if(!n0.lbrk && (!n1.lbrk && (n0.op === Model.NUM && isProperFraction(n1)))) {
         return true
       }
       return false
@@ -4786,6 +4806,9 @@ var Model = function() {
     return node
   }
   function multiplyNode(args, flatten) {
+    if(args.length === 0) {
+      args = [nodeOne]
+    }
     return binaryNode(Model.MUL, args, flatten)
   }
   function fractionNode(n, d) {
@@ -5885,7 +5908,7 @@ var Model = function() {
             break;
           case "\\simpleFraction":
           ;
-          case "\\nonMixedFraction":
+          case "\\nonMixedNumber":
             if(node.isFraction) {
               return true
             }
@@ -6146,11 +6169,13 @@ var Model = function() {
         ;
         case "\\fraction":
         ;
+        case "\\nonMixedFraction":
+        ;
         case "\\mixedFraction":
         ;
         case "\\mixedNumber":
         ;
-        case "\\nonMixedFraction":
+        case "\\nonMixedNumber":
         ;
         case "\\fractionOrDecimal":
           name = id;
@@ -6232,22 +6257,24 @@ var Model = function() {
         });
         return multiplyNode(args)
       }, unary:function(node) {
-        var arg0 = normalizeSyntax(node.args[0], ref.args[0]);
+        var args = [];
+        forEach(node.args, function(n, i) {
+          args = args.concat(normalizeSyntax(n, ref.args[i]))
+        });
         switch(node.op) {
           case Model.PERCENT:
-            node = unaryNode(node.op, [arg0]);
+            node = unaryNode(node.op, args);
+            break;
+          case Model.ADD:
+            node = args[0];
             break;
           case Model.SUB:
             if(ref && (ref.op === Model.FORMAT && checkNumberFormat(ref.args[0], node.args[0]))) {
               return normalNumber
             }
-            node = negate(arg0, true);
+            node = negate(args[0], true);
             break;
           default:
-            var args = [];
-            forEach(node.args, function(n) {
-              args = args.concat(normalize(n))
-            });
             node = newNode(node.op, args);
             break
         }
