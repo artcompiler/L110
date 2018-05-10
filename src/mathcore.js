@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - b4eb1e5
+ * Mathcore unversioned - b00832b
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -4544,9 +4544,8 @@ var Model = function() {
           curIndex = startIndex
         }
         while(c === CC_SINGLEQUOTE) {
-          c = src.charCodeAt(curIndex++);
-          var ch = String.fromCharCode(c);
-          lexeme += ch
+          lexeme += String.fromCharCode(c);
+          c = src.charCodeAt(curIndex++)
         }
         curIndex--;
         return TK_VAR
