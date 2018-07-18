@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - f77897e
+ * Mathcore unversioned - c00fcc0
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -2621,6 +2621,7 @@ var Model = function() {
   Assert.messages[1008] = "The same character '%1' is being used as a thousands and decimal separators.";
   Assert.messages[1009] = "Missing argument for '%1' command.";
   Assert.messages[1010] = "Expecting an operator between numbers.";
+  Assert.messages[1011] = "Invalid grouping bracket.";
   var message = Assert.message;
   Model.create = Mp.create = function create(node, location) {
     assert(node != undefined, message(1011));
@@ -2670,14 +2671,14 @@ var Model = function() {
     });
     return model
   };
-  Model.fromLaTeX = Mp.fromLaTeX = function fromLaTex(src) {
+  Model.fromLaTex = Mp.fromLaTex = function fromLaTex(src) {
     assert(typeof src === "string", "1000: Model.prototype.fromLaTex");
     if(!this) {
       return Model.create(src)
     }
     return this.create(src)
   };
-  Mp.toLaTeX = function toLaTeX(node) {
+  Mp.toLaTex = function toLaTex(node) {
     return render(node)
   };
   var OpStr = {ADD:"+", SUB:"-", MUL:"mul", TIMES:"times", COEFF:"coeff", DIV:"div", FRAC:"frac", EQL:"=", ATAN2:"atan2", SQRT:"sqrt", VEC:"vec", PM:"pm", SIN:"sin", COS:"cos", TAN:"tan", SEC:"sec", COT:"cot", CSC:"csc", ARCSIN:"arcsin", ARCCOS:"arccos", ARCTAN:"arctan", SINH:"sinh", COSH:"cosh", TANH:"tanh", SECH:"sech", COTH:"coth", CSCH:"csch", ARCSINH:"arcsinh", ARCCOSH:"arccosh", ARCTANH:"arctanh", LOG:"log", LN:"ln", LG:"lg", VAR:"var", NUM:"num", CST:"cst", COMMA:",", POW:"^", SUBSCRIPT:"_", 
@@ -2689,8 +2690,7 @@ var Model = function() {
   var OpToLaTeX = {};
   OpToLaTeX[OpStr.ADD] = "+";
   OpToLaTeX[OpStr.SUB] = "-";
-  OpToLaTeX[OpStr.MUL] = "\\times";
-  OpToLaTeX[OpStr.TIMES] = "\\times";
+  OpToLaTeX[OpStr.MUL] = "*";
   OpToLaTeX[OpStr.DIV] = "\\div";
   OpToLaTeX[OpStr.FRAC] = "\\frac";
   OpToLaTeX[OpStr.EQL] = "=";
@@ -2781,7 +2781,7 @@ var Model = function() {
                   args[0] = " (" + args[0] + ") "
                 }
               }
-              text = args[0] + "^{" + args[1] + "}";
+              text = "{" + args[0] + "^{" + args[1] + "}}";
               break;
             case OpStr.SIN:
             ;
@@ -2822,10 +2822,10 @@ var Model = function() {
             case OpStr.LN:
             ;
             case OpStr.M:
-              text = OpToLaTeX[n.op] + "{" + args[0] + "}";
+              text = "{" + OpToLaTeX[n.op] + "{" + args[0] + "}}";
               break;
             case OpStr.FRAC:
-              text = "\\frac{" + args[0] + "}{" + args[1] + "}";
+              text = "\\dfrac{" + args[0] + "}{" + args[1] + "}";
               break;
             case OpStr.BINOM:
               text = "\\binom{" + args[0] + "}{" + args[1] + "}";
@@ -2851,28 +2851,18 @@ var Model = function() {
                   if(term.op === OpStr.ADD || term.op === OpStr.SUB) {
                     args[index] = "(" + args[index] + ")"
                   }
-                  if(index !== 0) {
-                    if(typeof term === "number") {
-                      text += OpToLaTeX[n.op] + " "
-                    }else {
-                      if(isScientific([prevTerm, term])) {
-                        text += "\\times"
-                      }
-                    }
+                  if(index !== 0 && typeof term === "number") {
+                    text += OpToLaTeX[n.op] + " "
                   }
                   text += args[index]
                 }else {
-                  if(term.op === OpStr.PAREN || (term.op === OpStr.VAR || (term.op === OpStr.CST || (typeof prevTerm === "number" && typeof term !== "number" || n.isMixedNumber)))) {
+                  if(term.op === OpStr.PAREN || (term.op === OpStr.VAR || (term.op === OpStr.CST || typeof prevTerm === "number" && typeof term !== "number"))) {
                     text += args[index]
                   }else {
-                    if(term.op === Model.POW && term.args[1].args[0] === "-1") {
-                      text += "/" + args[index]
-                    }else {
-                      if(index !== 0) {
-                        text += " " + OpToLaTeX[n.op] + " "
-                      }
-                      text += args[index]
+                    if(index !== 0) {
+                      text += " " + OpToLaTeX[n.op] + " "
                     }
+                    text += args[index]
                   }
                 }
                 prevTerm = term
@@ -3137,56 +3127,6 @@ var Model = function() {
   tokenToOperator[TK_MATHBF] = OpStr.MATHBF;
   tokenToOperator[TK_DOT] = OpStr.DOT;
   tokenToOperator[TK_MATHFIELD] = OpStr.MATHFIELD;
-  var bigZero = new BigDecimal("0");
-  var bigOne = new BigDecimal("1");
-  function isNumber(n) {
-    if((n.op === Model.SUB || n.op === Model.ADD) && n.args.length === 1) {
-      n = n.args[0]
-    }
-    if(n.op === Model.NUM) {
-      return n
-    }
-    return false
-  }
-  function isInteger(node) {
-    var mv;
-    if(!node) {
-      return false
-    }
-    if(node.op === Model.SUB && node.args.length === 1) {
-      node = node.args[0]
-    }
-    if(node.op === Model.NUM && ((mv = new BigDecimal(node.args[0])) && isInteger(mv))) {
-      return true
-    }else {
-      if(node instanceof BigDecimal) {
-        return node.remainder(bigOne).compareTo(bigZero) === 0
-      }
-    }
-    return false
-  }
-  function isScientific(args) {
-    var n;
-    if(args.length === 1) {
-      if((n = isNumber(args[0])) && (n.args[0].length === 1 || indexOf(n.args[0], ".") === 1)) {
-        return true
-      }else {
-        if(args[0].op === Model.POW && ((n = isNumber(args[0].args[0])) && (n.args[0] === "10" && isInteger(args[0].args[1])))) {
-          return true
-        }
-      }
-      return false
-    }else {
-      if(args.length === 2) {
-        var a = args[0];
-        var e = args[1];
-        if((n = isNumber(a)) && ((n.args[0].length === 1 || indexOf(n.args[0], ".") === 1) && (e.op === Model.POW && ((n = isNumber(e.args[0])) && (n.args[0] === "10" && isInteger(e.args[1])))))) {
-          return true
-        }
-        return false
-      }
-    }
-  }
   var parse = function parse(src, env) {
     src = stripInvisible(src);
     function newNode(op, args) {
@@ -3711,12 +3651,12 @@ var Model = function() {
       bracketTokenCount++;
       eat(tk);
       if(hd() === TK_RIGHTPAREN || hd() === TK_RIGHTBRACKET) {
-        eat(tk === TK_LEFTPAREN ? TK_RIGHTPAREN : TK_RIGHTBRACKET);
+        eat(tk2 = tk === TK_LEFTPAREN ? TK_RIGHTPAREN : TK_RIGHTBRACKET);
         e = newNode(Model.COMMA, [])
       }else {
         var allowInterval = Model.option("allowInterval");
         var allowSemicolon = allowInterval;
-        e = commaExpr(allowInterval);
+        e = commaExpr(allowSemicolon);
         if(allowInterval) {
           eat(tk2 = hd() === TK_RIGHTPAREN ? TK_RIGHTPAREN : hd() === TK_RIGHTBRACKET ? TK_RIGHTBRACKET : TK_LEFTBRACKET)
         }else {
@@ -3731,6 +3671,7 @@ var Model = function() {
         e.args.push(numberNode(tk2))
       }else {
         if(e.op === Model.COMMA) {
+          assert(tk === TK_LEFTPAREN && tk2 === TK_RIGHTPAREN || tk === TK_LEFTBRACKET && tk2 === TK_RIGHTBRACKET, message(1011));
           e.op = Model.LIST
         }
       }
@@ -3930,6 +3871,17 @@ var Model = function() {
       var sym = Model.env[n.args[0]];
       return sym && sym.name ? true : false
     }
+    function isVar(n, id) {
+      assert(typeof id === "undefined" || typeof id === "string", "1000: Invalid id");
+      if(n.op === Model.VAR) {
+        return id === undefined ? true : n.args[0] === id
+      }else {
+        if(n.op === Model.POW && (isVar(n.args[0]) && isInteger(n.args[1]))) {
+          return id === undefined ? true : n.args[0].args[0] === id
+        }
+      }
+      return false
+    }
     function isOneOrMinusOne(node) {
       return isOne(node) || isMinusOne(node)
     }
@@ -4041,6 +3993,15 @@ var Model = function() {
         return t === TK_MUL || (t === TK_DIV || t === TK_SLASH)
       }
     }
+    function isNumber(n) {
+      if((n.op === Model.SUB || n.op === Model.ADD) && n.args.length === 1) {
+        n = n.args[0]
+      }
+      if(n.op === Model.NUM) {
+        return n
+      }
+      return false
+    }
     function isMixedNumber(n0, n1) {
       if(n0.op === Model.SUB && n0.args.length === 1) {
         n0 = n0.args[0]
@@ -4059,6 +4020,25 @@ var Model = function() {
       }
       return false
     }
+    function isInteger(node) {
+      var mv;
+      if(!node) {
+        return false
+      }
+      if(node.op === Model.SUB && node.args.length === 1) {
+        node = node.args[0]
+      }
+      if(node.op === Model.NUM && ((mv = new BigDecimal(node.args[0])) && isInteger(mv))) {
+        return true
+      }else {
+        if(node instanceof BigDecimal) {
+          return node.remainder(bigOne).compareTo(bigZero) === 0
+        }
+      }
+      return false
+    }
+    var bigZero = new BigDecimal("0");
+    var bigOne = new BigDecimal("1");
     function isRepeatingDecimal(args) {
       var expr, n0, n1;
       if(args[0].isRepeating === Model.DOT) {
@@ -4124,6 +4104,28 @@ var Model = function() {
       }
       return false
     }
+    function isScientific(args) {
+      var n;
+      if(args.length === 1) {
+        if((n = isNumber(args[0])) && (n.args[0].length === 1 || indexOf(n.args[0], ".") === 1)) {
+          return true
+        }else {
+          if(args[0].op === Model.POW && ((n = isNumber(args[0].args[0])) && (n.args[0] === "10" && isInteger(args[0].args[1])))) {
+            return true
+          }
+        }
+        return false
+      }else {
+        if(args.length === 2) {
+          var a = args[0];
+          var e = args[1];
+          if((n = isNumber(a)) && ((n.args[0].length === 1 || indexOf(n.args[0], ".") === 1) && (e.op === Model.POW && ((n = isNumber(e.args[0])) && (n.args[0] === "10" && isInteger(e.args[1])))))) {
+            return true
+          }
+          return false
+        }
+      }
+    }
     function isNeg(n) {
       if(typeof n === "number") {
         return n < 0
@@ -4136,17 +4138,6 @@ var Model = function() {
           }
         }
       }
-    }
-    function isVar(n, id) {
-      assert(typeof id === "undefined" || typeof id === "string", "1000: Invalid id");
-      if(n.op === Model.VAR) {
-        return id === undefined ? true : n.args[0] === id
-      }else {
-        if(n.op === Model.POW && (isVar(n.args[0]) && isInteger(n.args[1]))) {
-          return id === undefined ? true : n.args[0].args[0] === id
-        }
-      }
-      return false
     }
     function negate(n) {
       if(typeof n === "number") {
@@ -4480,12 +4471,6 @@ var Model = function() {
                 return TK_GE
               }
               return TK_GT;
-            case 116:
-              if(src.charCodeAt(curIndex) === 111) {
-                curIndex++;
-                return TK_COLON
-              }
-            ;
             default:
               if(isAlphaCharCode(c) || c === CC_SINGLEQUOTE) {
                 return variable(c)
@@ -4592,13 +4577,12 @@ var Model = function() {
             }
             lexeme = "";
             var c = src.charCodeAt(curIndex++);
-            var keepTextWhitespace = Model.option("keepTextWhitespace");
             while(c && c !== CC_RIGHTBRACE) {
               var ch = String.fromCharCode(c);
-              if(!keepTextWhitespace && (ch === "&" && indexOf(src.substring(curIndex), "nbsp;") === 0)) {
+              if(ch === "&" && indexOf(src.substring(curIndex), "nbsp;") === 0) {
                 curIndex += 5
               }else {
-                if(!keepTextWhitespace && (ch === " " || ch === "\t")) {
+                if(ch === " " || ch === "\t") {
                 }else {
                   lexeme += ch
                 }
