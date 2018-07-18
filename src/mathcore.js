@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - b5d6289
+ * Mathcore unversioned - f77897e
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -2689,7 +2689,8 @@ var Model = function() {
   var OpToLaTeX = {};
   OpToLaTeX[OpStr.ADD] = "+";
   OpToLaTeX[OpStr.SUB] = "-";
-  OpToLaTeX[OpStr.MUL] = "*";
+  OpToLaTeX[OpStr.MUL] = "\\times";
+  OpToLaTeX[OpStr.TIMES] = "\\times";
   OpToLaTeX[OpStr.DIV] = "\\div";
   OpToLaTeX[OpStr.FRAC] = "\\frac";
   OpToLaTeX[OpStr.EQL] = "=";
@@ -2864,10 +2865,14 @@ var Model = function() {
                   if(term.op === OpStr.PAREN || (term.op === OpStr.VAR || (term.op === OpStr.CST || (typeof prevTerm === "number" && typeof term !== "number" || n.isMixedNumber)))) {
                     text += args[index]
                   }else {
-                    if(index !== 0) {
-                      text += " " + OpToLaTeX[n.op] + " "
+                    if(term.op === Model.POW && term.args[1].args[0] === "-1") {
+                      text += "/" + args[index]
+                    }else {
+                      if(index !== 0) {
+                        text += " " + OpToLaTeX[n.op] + " "
+                      }
+                      text += args[index]
                     }
-                    text += args[index]
                   }
                 }
                 prevTerm = term
@@ -4035,15 +4040,6 @@ var Model = function() {
       function isMultiplicative(t) {
         return t === TK_MUL || (t === TK_DIV || t === TK_SLASH)
       }
-    }
-    function isNumber(n) {
-      if((n.op === Model.SUB || n.op === Model.ADD) && n.args.length === 1) {
-        n = n.args[0]
-      }
-      if(n.op === Model.NUM) {
-        return n
-      }
-      return false
     }
     function isMixedNumber(n0, n1) {
       if(n0.op === Model.SUB && n0.args.length === 1) {
@@ -6187,8 +6183,6 @@ var Model = function() {
         case "\\scientific":
         ;
         case "\\fraction":
-        ;
-        case "\\nonMixedFraction":
         ;
         case "\\mixedFraction":
         ;
@@ -10366,16 +10360,6 @@ var Model = function() {
       }
       return null
     }
-    function getRoots(a, b, c) {
-      a = toNumber(a);
-      b = toNumber(b);
-      c = toNumber(c);
-      var x0 = (-b + Math.sqrt(b * b - 4 * a * c)) / (2 * a);
-      var x1 = (-b - Math.sqrt(b * b - 4 * a * c)) / (2 * a);
-      var opt = option("field");
-      var hasSolution = x0 === (x0 | 0) && x1 === (x1 | 0) || b * b - 4 * a * c >= 0;
-      return hasSolution ? [x0, x1] : null
-    }
     function primeFactors(n) {
       var absN = Math.abs(n);
       if(absN <= 1 || (isNaN(n) || (isInfinity(n) || isImaginary(n)))) {
@@ -11227,6 +11211,16 @@ var Model = function() {
     Assert.setLocation(prevLocation);
     return result
   };
+  Model.fn.expand = function(n1) {
+    var prevLocation = Assert.location;
+    if(n1.location) {
+      Assert.setLocation(n1.location)
+    }
+    var result = ast.toLaTeX(normalizeExpanded(normalize(expand(normalize(n1)))));
+    result = typeof result === "string" ? result : "ERROR";
+    Assert.setLocation(prevLocation);
+    return result
+  };
   Model.fn.isExpanded = function isExpanded(node) {
     var n1, n2, nid1, nid2, result;
     if(node.op === Model.COMMA) {
@@ -11490,7 +11484,6 @@ var MathCore = function() {
       trace(e + "\n" + e.stack);
       resume(e.stack, undefined)
     }
-    return result
   }
   function evaluateVerbose(spec, solution, resume) {
     var model, result;
@@ -11535,7 +11528,7 @@ var MathCore = function() {
       return e
     }
   }
-  var timeoutDuration = 3E6;
+  var timeoutDuration = 3E4;
   function setTimeoutDuration(duration) {
     timeoutDuration = duration
   }
@@ -11620,6 +11613,12 @@ var MathCore = function() {
         }
         assert(false, message(3007, [p, v]));
         break;
+      case "env":
+        if(typeof v === "undefined" || typeof v === "object") {
+          break
+        }
+        assert(false, message(3007, [p, JSON.stringify(v)]));
+        break;
       default:
         assert(false, message(3006, [p]));
         break
@@ -11640,15 +11639,24 @@ var MathCore = function() {
     Assert.setLocation("spec");
     validateOptions(options);
     Model.pushEnv(env);
+    if(options.env) {
+      Model.pushEnv(options.env)
+    }
     var valueNode = value != undefined ? Model.create(value, "spec") : undefined;
     if(valueNode) {
       valueNode.env = env
+    }
+    if(options.env) {
+      Model.popEnv(options.env)
     }
     Model.popEnv();
     var evaluate = function evaluate(solution, resume) {
       Assert.setLocation("user");
       assert(solution != undefined, message(3002));
       Model.pushEnv(env);
+      if(options.env) {
+        Model.pushEnv(options.env)
+      }
       var solutionNode = Model.create(solution, "user");
       if(!outerResult.model) {
         solutionNode.env = env;
@@ -11699,6 +11707,12 @@ var MathCore = function() {
         case "simplify":
           result = solutionNode.simplify();
           break;
+        case "expand":
+          result = solutionNode.expand();
+          break;
+        case "variables":
+          result = solutionNode.variables();
+          break;
         case "format":
           result = valueNode.format(solutionNode);
           break;
@@ -11708,6 +11722,9 @@ var MathCore = function() {
         default:
           assert(false, message(3004, [method]));
           break
+      }
+      if(options.env) {
+        Model.popEnv(options.env)
       }
       Model.popEnv();
       resume(null, result)
