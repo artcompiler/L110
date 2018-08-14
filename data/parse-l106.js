@@ -24,10 +24,8 @@ function load() {
         eraseCount++;
         return;
       }
-
       var id = item.substring(0, item.indexOf("|"));
       item = item.substring(id.length + 1);
-      //item = escapeXML(item);
       try {
         var obj = JSON.parse(item);
         if (typeof obj === "string") {
