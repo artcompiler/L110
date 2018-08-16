@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - d286958
+ * Mathcore unversioned - 22efbed
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -2682,8 +2682,8 @@ var Model = function() {
     return render(node)
   };
   var OpStr = {ADD:"+", SUB:"-", MUL:"mul", TIMES:"times", COEFF:"coeff", DIV:"div", FRAC:"frac", EQL:"=", ATAN2:"atan2", SQRT:"sqrt", VEC:"vec", PM:"pm", SIN:"sin", COS:"cos", TAN:"tan", SEC:"sec", COT:"cot", CSC:"csc", ARCSIN:"arcsin", ARCCOS:"arccos", ARCTAN:"arctan", ARCSEC:"arcsec", ARCCSC:"arccsc", ARCCOT:"arccot", SINH:"sinh", COSH:"cosh", TANH:"tanh", SECH:"sech", COTH:"coth", CSCH:"csch", ARCSINH:"arcsinh", ARCCOSH:"arccosh", ARCTANH:"arctanh", ARCSECH:"arcsech", ARCCSCH:"arccsch", ARCCOTH:"arccoth", 
-  LOG:"log", LN:"ln", LG:"lg", VAR:"var", NUM:"num", CST:"cst", COMMA:",", POW:"^", SUBSCRIPT:"_", ABS:"abs", PAREN:"()", HIGHLIGHT:"hi", LT:"lt", LE:"le", GT:"gt", GE:"ge", NE:"ne", NGTR:"ngtr", NLESS:"nless", APPROX:"approx", INTERVAL:"interval", LIST:"list", EXISTS:"exists", IN:"in", FORALL:"forall", LIM:"lim", EXP:"exp", TO:"to", SUM:"sum", INT:"int", PROD:"prod", PERCENT:"%", M:"M", RIGHTARROW:"->", FACT:"fact", BINOM:"binom", ROW:"row", COL:"col", COLON:"colon", MATRIX:"matrix", FORMAT:"format", 
-  OVERSET:"overset", UNDERSET:"underset", OVERLINE:"overline", DEGREE:"degree", BACKSLASH:"backslash", MATHBF:"mathbf", DOT:"dot", NONE:"none"};
+  LOG:"log", LN:"ln", LG:"lg", VAR:"var", NUM:"num", CST:"cst", COMMA:",", POW:"^", SUBSCRIPT:"_", ABS:"abs", PAREN:"()", HIGHLIGHT:"hi", LT:"lt", LE:"le", GT:"gt", GE:"ge", NE:"ne", NGTR:"ngtr", NLESS:"nless", APPROX:"approx", INTERVAL:"interval", LIST:"list", EXISTS:"exists", IN:"in", FORALL:"forall", LIM:"lim", EXP:"exp", TO:"to", SUM:"sum", DERIV:"deriv", INT:"int", PROD:"prod", PERCENT:"%", M:"M", RIGHTARROW:"->", FACT:"fact", BINOM:"binom", ROW:"row", COL:"col", COLON:"colon", MATRIX:"matrix", 
+  FORMAT:"format", OVERSET:"overset", UNDERSET:"underset", OVERLINE:"overline", DEGREE:"degree", BACKSLASH:"backslash", MATHBF:"mathbf", DOT:"dot", NONE:"none"};
   forEach(keys(OpStr), function(v, i) {
     Model[v] = OpStr[v]
   });
@@ -3271,6 +3271,9 @@ var Model = function() {
       }
       return binaryNode(Model.MUL, args, flatten)
     }
+    function fractionNode(n, d) {
+      return multiplyNode([n, binaryNode(Model.POW, [d, nodeMinusOne])], true)
+    }
     function unaryNode(op, args) {
       assert(args.length === 1, "1000: Wrong number of arguments for unary node");
       return newNode(op, args)
@@ -3373,6 +3376,16 @@ var Model = function() {
       }
       return binaryNode(Model.MUL, [n, u])
     }
+    function isDerivative(n) {
+      if(n.op !== Model.FRAC) {
+        return
+      }
+      var numer = n.args[0];
+      var numerHead = numer.op === Model.MUL && (numer.args[0].op === Model.VAR && numer.args[0].args[0]) || numer.op === Model.VAR && numer.args[0];
+      var denom = n.args[1];
+      var denomHead = denom.op === Model.MUL && (denom.args[0].op === Model.VAR && denom.args[0].args[0]);
+      return numerHead === "d" && (denomHead === "d" && denom.args[1].op === Model.VAR) || undefined
+    }
     function primaryExpr() {
       var e;
       var tk;
@@ -3441,6 +3454,9 @@ var Model = function() {
           expr2 = expr1.args.length === 0 ? newNode(Model.COMMA, [nodeNone]) : expr2;
           e = newNode(Model.FRAC, [expr1, expr2]);
           e.isFraction = isSimpleFraction(e);
+          if(isDerivative(e)) {
+            e = derivativeExpr(e)
+          }
           break;
         case TK_BINOM:
           next();
@@ -3574,7 +3590,7 @@ var Model = function() {
           var t, args = [];
           eat(TK_UNDERSCORE);
           args.push(primaryExpr());
-          args.push(primaryExpr());
+          args.push(multiplicativeExpr());
           return newNode(tokenToOperator[tk], args);
           break;
         case TK_INT:
@@ -3591,7 +3607,7 @@ var Model = function() {
             args.push(primaryExpr())
           }
           if(tk === TK_INT) {
-            args.push(integralExpr())
+            args = args.concat(integralExpr())
           }else {
             args.push(commaExpr())
           }
@@ -4236,8 +4252,26 @@ var Model = function() {
       assert(node.op === Model.MUL);
       return multiplyNode(node.args.slice(0, node.args.length - 2))
     }
+    function flattenNestedNodes(node) {
+      var args = [];
+      if(node.op === Model.NUM || node.op === Model.VAR) {
+        return node
+      }
+      forEach(node.args, function(n) {
+        n = flattenNestedNodes(n);
+        if(n.op === node.op) {
+          args = args.concat(n.args)
+        }else {
+          args.push(n)
+        }
+      });
+      var isMixedNumber = node.isMixedNumber;
+      node = newNode(node.op, args);
+      node.isMixedNumber = isMixedNumber;
+      return node
+    }
     function integralExpr() {
-      var expr = multiplicativeExpr();
+      var expr = flattenNestedNodes(multiplicativeExpr());
       var t;
       var foundDX = hasDX(expr);
       expr = foundDX ? stripDX(expr) : expr;
@@ -4256,6 +4290,17 @@ var Model = function() {
         }
       }
       return expr
+    }
+    function derivativeExpr(node) {
+      var expr = multiplicativeExpr();
+      if(node.op !== Model.FRAC) {
+        return
+      }
+      var numer = node.args[0];
+      var denom = node.args[1];
+      var n = numer.op === Model.MUL && multiplyNode([nodeOne].concat(numer.args.slice(1))) || nodeOne;
+      var d = multiplyNode(denom.args.slice(2));
+      return newNode(Model.DERIV, [denom.args[1], multiplyNode([fractionNode(n, d), expr])])
     }
     function isRelational(t) {
       return t === TK_LT || (t === TK_LE || (t === TK_GT || (t === TK_GE || (t === TK_NGTR || (t === TK_NLESS || (t === TK_IN || (t === TK_TO || (t === TK_COLON || t === TK_VAR && lexeme() === "to"))))))))
@@ -5383,6 +5428,8 @@ var Model = function() {
         case Model.EXP:
         ;
         case Model.TO:
+        ;
+        case Model.DERIV:
         ;
         case Model.INT:
         ;
@@ -11609,7 +11656,7 @@ var MathCore = function() {
       return e
     }
   }
-  var timeoutDuration = 3E4;
+  var timeoutDuration = 3E6;
   function setTimeoutDuration(duration) {
     timeoutDuration = duration
   }
