@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 71c3ca2
+ * Mathcore unversioned - e344e58
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -3454,9 +3454,6 @@ var Model = function() {
           expr2 = expr1.args.length === 0 ? newNode(Model.COMMA, [nodeNone]) : expr2;
           e = newNode(Model.FRAC, [expr1, expr2]);
           e.isFraction = isSimpleFraction(e);
-          if(isDerivative(e)) {
-            e = derivativeExpr(e)
-          }
           break;
         case TK_BINOM:
           next();
@@ -4293,17 +4290,6 @@ var Model = function() {
         }
       }
       return expr
-    }
-    function derivativeExpr(node) {
-      var expr = multiplicativeExpr();
-      if(node.op !== Model.FRAC) {
-        return
-      }
-      var numer = node.args[0];
-      var denom = node.args[1];
-      var n = numer.op === Model.MUL && multiplyNode([nodeOne].concat(numer.args.slice(1))) || nodeOne;
-      var d = multiplyNode(denom.args.slice(2));
-      return newNode(Model.DERIV, [denom.args[1], multiplyNode([fractionNode(n, d), expr])])
     }
     function isRelational(t) {
       return t === TK_LT || (t === TK_LE || (t === TK_GT || (t === TK_GE || (t === TK_NGTR || (t === TK_NLESS || (t === TK_IN || (t === TK_TO || (t === TK_COLON || t === TK_VAR && lexeme() === "to"))))))))
