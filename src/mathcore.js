@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 22efbed
+ * Mathcore unversioned - 71c3ca2
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -3957,6 +3957,9 @@ var Model = function() {
       var t, expr, explicitOperator = false, prevExplicitOperator, isFraction, args = [];
       var n0;
       expr = fractionExpr();
+      if(isDerivative(expr)) {
+        expr.isDerivative = true
+      }
       if(expr.op === Model.MUL && !expr.isBinomial) {
         args = expr.args
       }else {
@@ -11565,13 +11568,6 @@ var Model = function() {
       }
     }
     return opt
-  };
-  var RUN_SELF_TESTS = false;
-  if(RUN_SELF_TESTS) {
-    var env = {};
-    trace("\nMath Model self testing");
-    (function() {
-    })()
   }
 })(Model.prototype);
 var MathCore = function() {
