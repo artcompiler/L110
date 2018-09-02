@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - e344e58
+ * Mathcore unversioned - 6fda34d
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -6457,12 +6457,13 @@ var Model = function() {
         }
         var ff = factors(n, {}, false, true, true);
         forEach(ff, function(f) {
-          var isDenom = f.op === Model.POW && isMinusOne(f.args[1]);
-          var mv = mathValue(isDenom ? f.args[0] : f, true);
+          var isDenom = f.op === Model.POW && isNeg(f.args[1]);
+          var k = isDenom && (isMinusOne(f.args[1]) && f.args[0]) || (isDenom && newNode(Model.POW, [f.args[0], negate(f.args[1])]) || f);
+          var mv = mathValue(k, true);
           if(isOne(mv)) {
             return
           }
-          var key = mv !== null ? String(mv) : "nid$" + ast.intern(isDenom ? f.args[0] : f);
+          var key = mv !== null ? String(mv) : "nid$" + ast.intern(k);
           if(isDenom) {
             if(!denoms[key]) {
               denoms[key] = []
@@ -6476,7 +6477,7 @@ var Model = function() {
           }
         })
       });
-      assert(!numers["1"] && !denoms["1"], "2000: Identity multiplicateion should be factored out by now.");
+      assert(!numers["1"] && !denoms["1"], "2000: Identity multiplication should be factored out by now.");
       if(numers["-1"]) {
         if(numers["-1"].length % 2 === 0) {
           delete numers["-1"]
@@ -6921,10 +6922,24 @@ var Model = function() {
             }
           }
         }
-        var args = [];
-        if(node.op === Model.MATRIX) {
+        if(node.op === Model.MATRIX || node.op === Model.BACKSLASH) {
           return node
         }
+        var mv = bigZero;
+        var args = [];
+        forEach(node.args, function(n) {
+          if(n.op === Model.NUM && (mathValue(n, true) && !option("dontConvertDecimalToFraction"))) {
+            mv = mv.add(mathValue(n, true))
+          }else {
+            args = args.concat(normalize(n))
+          }
+        });
+        var isMixedNumber = node.isMixedNumber;
+        if(!isZero(mv) || args.length === 0) {
+          args.unshift(numberNode(mv))
+        }
+        node = newNode(node.op, args);
+        node.isMixedNumber = isMixedNumber;
         node = flattenNestedNodes(node);
         return sort(node)
       }, multiplicative:function(node) {
@@ -7036,7 +7051,7 @@ var Model = function() {
           case Model.ARCSINH:
           ;
           case Model.ARCCOSH:
-            node = normalizeTrigIdent(node.op, node.args);
+            node = normalizeTrigIdent(node);
             break;
           case Model.TAN:
           ;
@@ -7059,14 +7074,14 @@ var Model = function() {
           case Model.SECH:
             var c = node.op === Model.SEC ? Model.COS : Model.COSH;
             var arg0 = normalize(node.args[0]);
-            node = multiplyNode([nodeOne, binaryNode(Model.POW, [newNode(c, [arg0]), nodeMinusOne])]);
+            node = multiplyNode([binaryNode(Model.POW, [newNode(c, [arg0]), nodeMinusOne])]);
             break;
           case Model.CSC:
           ;
           case Model.CSCH:
             var s = node.op === Model.CSC ? Model.SIN : Model.SINH;
             var arg0 = normalize(node.args[0]);
-            node = multiplyNode([nodeOne, binaryNode(Model.POW, [newNode(s, [arg0]), nodeMinusOne])]);
+            node = multiplyNode([binaryNode(Model.POW, [newNode(s, [arg0]), nodeMinusOne])]);
             break;
           case Model.ABS:
             node = normalizeAbs(node);
@@ -7093,6 +7108,23 @@ var Model = function() {
         }
         return node
       }, exponential:function(node) {
+        var base = node.args[0];
+        var expo = node.args[1];
+        if(node.op === Model.POW && (node.args.length === 2 && (base.op === Model.TANH && (expo.op === Model.NUM && expo.args[0] === "2")))) {
+          return addNode([nodeOne, negate(binaryNode(Model.POW, [binaryNode(Model.POW, [newNode(Model.COSH, base.args), nodeTwo]), nodeMinusOne]))])
+        }else {
+          if(node.op === Model.POW && (node.args.length === 2 && (base.op === Model.COTH && (expo.op === Model.NUM && expo.args[0] === "2")))) {
+            return addNode([nodeOne, binaryNode(Model.POW, [binaryNode(Model.POW, [newNode(Model.SINH, base.args), nodeTwo]), nodeMinusOne])])
+          }else {
+            if(node.op === Model.POW && (node.args.length === 2 && (base.op === Model.SECH && (expo.op === Model.NUM && expo.args[0] === "2")))) {
+              return binaryNode(Model.POW, [binaryNode(Model.POW, [newNode(Model.COSH, base.args), nodeTwo]), nodeMinusOne])
+            }else {
+              if(node.op === Model.POW && (node.args.length === 2 && (base.op === Model.CSCH && (expo.op === Model.NUM && expo.args[0] === "2")))) {
+                return binaryNode(Model.POW, [binaryNode(Model.POW, [newNode(Model.SINH, base.args), nodeTwo]), nodeMinusOne])
+              }
+            }
+          }
+        }
         var args = [];
         forEach(node.args, function(n) {
           args = args.concat(normalize(n))
@@ -7109,7 +7141,7 @@ var Model = function() {
             if(node.args.length > 1) {
               args = args.concat(node.args.slice(1))
             }
-            node = binaryNode(node.op, args);
+            node = normalizeLogIdent(args[0], args[1]);
             break;
           case Model.POW:
             if(isMinusOne(node.args[0]) && toNumber(mathValue(node.args[1], true)) === 0.5) {
@@ -7583,7 +7615,7 @@ var Model = function() {
         forEach(node.args, function(n, i) {
           node.args[i] = sort(n)
         });
-        if(node.op === Model.COLON || (node.op === Model.RIGHTARROW || (node.op === Model.GT || (node.op === Model.GE || (node.op === Model.LT || (node.op === Model.LE || (node.op === Model.NGTR || node.op === Model.NLESS))))))) {
+        if(node.op === Model.COLON || (node.op === Model.RIGHTARROW || (node.op === Model.GT || (node.op === Model.GE || (node.op === Model.LT || (node.op === Model.LE || (node.op === Model.NGTR || (node.op === Model.NLESS || node.args.length === 2 && isZero(node.args[1]))))))))) {
           return node
         }
         var d0, d1;
@@ -8102,7 +8134,40 @@ var Model = function() {
       }
       return toDecimal(f(n))
     }
-    function normalizeTrigIdent(op, args) {
+    function normalizeLogIdent(base, expo) {
+      var args = [];
+      var node;
+      if(isMultiplicative(expo)) {
+        var aa = [];
+        forEach(expo.args, function(e) {
+          if(e.op === Model.POW) {
+            aa.push(multiplyNode([e.args[1], newNode(Model.LOG, [base, e.args[0]])]))
+          }else {
+            aa.push(newNode(Model.LOG, [base, e]))
+          }
+        });
+        args.push(addNode(aa));
+        node = binaryNode(Model.LOG, args)
+      }else {
+        if(expo.op === Model.POW) {
+          args.push(multiplyNode([expo.args[1], newNode(Model.LOG, [base, expo.args[0]])]));
+          assert(args.length > 0, "2000: Internal error");
+          if(args.length > 1) {
+            node = multiplyNode(args)
+          }else {
+            if(args.length === 1) {
+              node = args[0]
+            }
+          }
+        }else {
+          node = newNode(Model.LOG, [base, expo])
+        }
+      }
+      return node
+    }
+    function normalizeTrigIdent(node) {
+      var op = node.op;
+      var args = node.args;
       var neg = sign(args[0]) < 0;
       var tt = terms(args[0]);
       var mv = bigZero;
@@ -8212,15 +8277,15 @@ var Model = function() {
           }
           break;
         case Model.SINH:
-          arg = args[0];
+          var arg = args[0];
           node = fractionNode(addNode([binaryNode(Model.POW, [nodeE, arg]), negate(binaryNode(Model.POW, [nodeE, negate(arg)]))]), nodeTwo);
           break;
         case Model.COSH:
-          arg = args[0];
+          var arg = args[0];
           node = fractionNode(addNode([binaryNode(Model.POW, [nodeE, arg]), binaryNode(Model.POW, [nodeE, negate(arg)])]), nodeTwo);
           break;
         case Model.ARCSINH:
-          arg = args[0];
+          var arg = args[0];
           var doNegate;
           if(isNeg(arg)) {
             arg = negate(arg);
@@ -8232,7 +8297,7 @@ var Model = function() {
           }
           break;
         case Model.ARCCOSH:
-          arg = args[0];
+          var arg = args[0];
           var doNegate;
           if(isNeg(arg)) {
             arg = negate(arg)
@@ -8861,6 +8926,10 @@ var Model = function() {
                 }else {
                   if(ldegr === 2 && (rdegr === 2 && (isOne(lcoeff) && (isOne(rcoeff) && ((lnode.args[0].op === Model.SIN && rnode.args[0].op === Model.COS || lnode.args[0].op === Model.COS && rnode.args[0].op === Model.SIN) && ast.intern(lnode.args[0].args[0]) === ast.intern(rnode.args[0].args[0])))))) {
                     return nodeOne
+                  }else {
+                    if(ldegr === 2 && (rdegr === 2 && (isOne(lcoeff) && (isOne(rcoeff) && ((lnode.args[0].op === Model.SIN && rnode.args[0].op === Model.COS || lnode.args[0].op === Model.COS && rnode.args[0].op === Model.SIN) && ast.intern(lnode.args[0].args[0]) === ast.intern(rnode.args[0].args[0])))))) {
+                      return nodeOne
+                    }
                   }
                 }
               }
@@ -9117,8 +9186,6 @@ var Model = function() {
                                   if(option("dontExpandPowers") && (lnode.op === Model.POW && (rnode.op === Model.POW && ast.intern(lnode.args[1]) === ast.intern(rnode.args[1])))) {
                                     var lbase = lnode.args[0];
                                     var rbase = rnode.args[0];
-                                    var lexpo = exponent(lnode);
-                                    var rexpo = exponent(rnode);
                                     var args = [];
                                     if(lbase.op === Model.MUL) {
                                       args = args.concat(lbase.args)
@@ -9292,9 +9359,13 @@ var Model = function() {
                                 if(expo.op === Model.LOG && ast.intern(base) === ast.intern(expo.args[0])) {
                                   return expo.args[1]
                                 }else {
-                                  var b = pow(bmv, emv);
-                                  if(b !== null) {
-                                    return numberNode(b)
+                                  if(base.op === Model.SINH && (ast.intern(expo) && ast.intern(nodeTwo))) {
+                                    return addNode([binaryNode(Model.POW, [newNode(Model.COSH, base.args), nodeTwo]), nodeMinusOne])
+                                  }else {
+                                    var b = pow(bmv, emv);
+                                    if(b !== null) {
+                                      return numberNode(b)
+                                    }
                                   }
                                 }
                               }
@@ -9930,6 +10001,11 @@ var Model = function() {
             if(dontExpandPowers && (base.op === Model.VAR || base.op === Model.NUM)) {
               return[expo, base]
             }
+            if(base.op === Model.POW && !(isNeg(base.args[1]) || isNeg(expo))) {
+              expo = multiplyNode(base.args.slice(1).concat(expo));
+              base = base.args[0];
+              return[expo, base]
+            }
             var ff = factors(base, null, false, true);
             if(ff.length === 0) {
               return nodeOne
@@ -10291,7 +10367,20 @@ var Model = function() {
         forEach(node.args, function(n) {
           args.push(scale(n))
         });
-        return newNode(node.op, args)
+        switch(node.op) {
+          case Model.SINH:
+            var arg = args[0];
+            node = fractionNode(addNode([binaryNode(Model.POW, [nodeE, arg]), negate(binaryNode(Model.POW, [nodeE, negate(arg)]))]), nodeTwo);
+            break;
+          case Model.COSH:
+            var arg = args[0];
+            node = fractionNode(addNode([binaryNode(Model.POW, [nodeE, arg]), binaryNode(Model.POW, [nodeE, negate(arg)])]), nodeTwo);
+            break;
+          default:
+            node = newNode(node.op, args);
+            break
+        }
+        return node
       }, numeric:function(node) {
         if(isUndefined(node)) {
           return node
@@ -11438,7 +11527,9 @@ var Model = function() {
   };
   Model.fn.isFactorised = function(n1) {
     var inverseResult = option("inverseResult");
+    var dontConvertDecimalToFraction = option("dontConvertDecimalToFraction", true);
     var result = isFactorised(normalize(n1));
+    option("dontConvertDecimalToFraction", dontConvertDecimalToFraction);
     return inverseResult ? !result : result
   };
   Model.fn.isUnit = function(n1, n2) {
