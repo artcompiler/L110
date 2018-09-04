@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 6fda34d
+ * Mathcore unversioned - e48e0f1
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -2763,7 +2763,7 @@ var Model = function() {
             case OpStr.CST:
             ;
             case OpStr.NUM:
-              text = n.args[0];
+              text = "(" + n.args[0] + ")";
               break;
             case OpStr.SUB:
               if(n.args.length === 1) {
@@ -5005,7 +5005,11 @@ var Model = function() {
             }
           }else {
             if(n.op === Model.POW && isMinusOne(n.args[1])) {
-              return binaryNode(Model.POW, [negate(n.args[0]), nodeMinusOne])
+              if(isZero(n.args[0])) {
+                return nodeNegativeInfinity
+              }else {
+                return binaryNode(Model.POW, [negate(n.args[0]), nodeMinusOne])
+              }
             }else {
               if(n.op === Model.INT && n.args.length === 3) {
                 return newNode(Model.INT, [n.args[1], n.args[0], n.args[2]])
@@ -7010,7 +7014,7 @@ var Model = function() {
         switch(node.op) {
           case Model.SUB:
             if(node.args[0].op === Model.POW && isNeg(node.args[0].args[1])) {
-              node = multiplyNode([nodeMinusOne, node.args[0]])
+              node = negate(node.args[0])
             }else {
               node = negate(node.args[0], true)
             }
@@ -7113,14 +7117,18 @@ var Model = function() {
         if(node.op === Model.POW && (node.args.length === 2 && (base.op === Model.TANH && (expo.op === Model.NUM && expo.args[0] === "2")))) {
           return addNode([nodeOne, negate(binaryNode(Model.POW, [binaryNode(Model.POW, [newNode(Model.COSH, base.args), nodeTwo]), nodeMinusOne]))])
         }else {
-          if(node.op === Model.POW && (node.args.length === 2 && (base.op === Model.COTH && (expo.op === Model.NUM && expo.args[0] === "2")))) {
-            return addNode([nodeOne, binaryNode(Model.POW, [binaryNode(Model.POW, [newNode(Model.SINH, base.args), nodeTwo]), nodeMinusOne])])
+          if(node.op === Model.POW && (node.args.length === 2 && (base.op === Model.SINH && ast.intern(expo) === ast.intern(nodeTwo)))) {
+            return addNode([binaryNode(Model.POW, [newNode(Model.COSH, base.args), nodeTwo]), nodeMinusOne])
           }else {
-            if(node.op === Model.POW && (node.args.length === 2 && (base.op === Model.SECH && (expo.op === Model.NUM && expo.args[0] === "2")))) {
-              return binaryNode(Model.POW, [binaryNode(Model.POW, [newNode(Model.COSH, base.args), nodeTwo]), nodeMinusOne])
+            if(node.op === Model.POW && (node.args.length === 2 && (base.op === Model.COTH && (expo.op === Model.NUM && expo.args[0] === "2")))) {
+              return addNode([nodeOne, binaryNode(Model.POW, [binaryNode(Model.POW, [newNode(Model.SINH, base.args), nodeTwo]), nodeMinusOne])])
             }else {
-              if(node.op === Model.POW && (node.args.length === 2 && (base.op === Model.CSCH && (expo.op === Model.NUM && expo.args[0] === "2")))) {
-                return binaryNode(Model.POW, [binaryNode(Model.POW, [newNode(Model.SINH, base.args), nodeTwo]), nodeMinusOne])
+              if(node.op === Model.POW && (node.args.length === 2 && (base.op === Model.SECH && (expo.op === Model.NUM && expo.args[0] === "2")))) {
+                return binaryNode(Model.POW, [binaryNode(Model.POW, [newNode(Model.COSH, base.args), nodeTwo]), nodeMinusOne])
+              }else {
+                if(node.op === Model.POW && (node.args.length === 2 && (base.op === Model.CSCH && (expo.op === Model.NUM && expo.args[0] === "2")))) {
+                  return binaryNode(Model.POW, [binaryNode(Model.POW, [newNode(Model.SINH, base.args), nodeTwo]), nodeMinusOne])
+                }
               }
             }
           }
@@ -7381,7 +7389,7 @@ var Model = function() {
         assert(coeffs.length === 2, "2000: Internal error.");
         var c0 = coeffs[0] === undefined ? "1" : coeffs[0];
         var c1 = coeffs[1] === undefined ? "1" : coeffs[1];
-        return fractionNode(multiplyNode([nodeMinusOne, numberNode(c0)]), numberNode(c1))
+        return fractionNode(negate(numberNode(c0)), numberNode(c1))
       }}), root.location);
       while(nid !== ast.intern(node)) {
         nid = ast.intern(node);
@@ -8251,7 +8259,7 @@ var Model = function() {
               case -1:
                 arg = addNode(vp);
                 node = unaryNode(Model.COS, [arg]);
-                node = multiplyNode([nodeMinusOne, node]);
+                node = negate(node);
                 break;
               case 1 / 2:
                 arg = addNode(vp);
@@ -8267,7 +8275,7 @@ var Model = function() {
                 }else {
                   var arg1 = vp[0];
                   var arg2 = addNode(vp.slice(1).concat(cp));
-                  node = addNode([multiplyNode([unaryNode(Model.COS, [arg1]), unaryNode(Model.COS, [arg2])]), multiplyNode([nodeMinusOne, unaryNode(Model.SIN, [arg1]), unaryNode(Model.SIN, [arg2])])])
+                  node = addNode([multiplyNode([unaryNode(Model.COS, [arg1]), unaryNode(Model.COS, [arg2])]), negate(multiplyNode([unaryNode(Model.SIN, [arg1]), unaryNode(Model.SIN, [arg2])]))])
                 }
                 break;
               default:
@@ -8277,12 +8285,8 @@ var Model = function() {
           }
           break;
         case Model.SINH:
-          var arg = args[0];
-          node = fractionNode(addNode([binaryNode(Model.POW, [nodeE, arg]), negate(binaryNode(Model.POW, [nodeE, negate(arg)]))]), nodeTwo);
-          break;
+        ;
         case Model.COSH:
-          var arg = args[0];
-          node = fractionNode(addNode([binaryNode(Model.POW, [nodeE, arg]), binaryNode(Model.POW, [nodeE, negate(arg)])]), nodeTwo);
           break;
         case Model.ARCSINH:
           var arg = args[0];
@@ -9230,7 +9234,7 @@ var Model = function() {
         node = newNode(node.op, args);
         switch(node.op) {
           case Model.SUB:
-            node = multiplyNode([node.args[0], nodeMinusOne]);
+            node = negate(node.args[0]);
             break;
           case Model.ABS:
             var arg = simplify(node.args[0]);
@@ -9321,7 +9325,7 @@ var Model = function() {
                           return[nodeMinusOne]
                         }else {
                           if(emv.remainder(bigThree).compareTo(bigZero) === 0) {
-                            return[multiplyNode([nodeMinusOne, nodeImaginary])]
+                            return[negate(nodeImaginary)]
                           }else {
                             if(emv.remainder(bigFive).compareTo(bigZero) === 0) {
                               return[nodeImaginary]
@@ -9359,7 +9363,7 @@ var Model = function() {
                                 if(expo.op === Model.LOG && ast.intern(base) === ast.intern(expo.args[0])) {
                                   return expo.args[1]
                                 }else {
-                                  if(base.op === Model.SINH && (ast.intern(expo) && ast.intern(nodeTwo))) {
+                                  if(base.op === Model.SINH && ast.intern(expo) === ast.intern(nodeTwo)) {
                                     return addNode([binaryNode(Model.POW, [newNode(Model.COSH, base.args), nodeTwo]), nodeMinusOne])
                                   }else {
                                     var b = pow(bmv, emv);
@@ -9429,7 +9433,7 @@ var Model = function() {
             var mv = mathValue(n, true);
             if(erasedMinus && isInequality(node.op) || (mv !== null && (!isZero(mv) && ff.length > 1) || (n.op === Model.VAR && (units(n).length > 0 && ff.length > 1) || (n.op === Model.POW && (units(n.args[0]).length > 0 && (mathValue(n.args[0]) !== null && ff.length > 1)) || n.op === Model.POW && isNeg(n.args[1]))))) {
               if(args0.length > 0 && (node.op !== Model.EQL && (node.op !== Model.APPROX && isNeg(n)))) {
-                args0.push(expand(multiplyNode([nodeMinusOne, args0.pop()])))
+                args0.push(expand(negate(args0.pop())))
               }
             }else {
               if(isZero(mv)) {
@@ -10281,12 +10285,43 @@ var Model = function() {
       }
       return addNode(args)
     }
+    function isHyperbolicTangent(node) {
+      return node.op === Model.MUL && (node.args.length > 1 && (node.args[0].op === Model.SINH && (node.args[1].op === Model.POW && (node.args[1].args[0].op === Model.COSH && isMinusOne(node.args[1].args[1])))))
+    }
+    function isHyperbolicCotangent(node) {
+      return node.op === Model.MUL && (node.args.length > 1 && (node.args[0].op === Model.COSH && (node.args[1].op === Model.POW && (node.args[1].args[0].op === Model.SINH && isMinusOne(node.args[1].args[1])))))
+    }
+    function isHyperbolicSecant(node) {
+      return node.op === Model.POW && (node.args.length > 1 && (node.args[0].op === Model.COSH && isMinusOne(node.args[1])))
+    }
+    function isHyperbolicCosecant(node) {
+      return node.op === Model.POW && (node.args.length > 1 && (node.args[0].op === Model.SINH && isMinusOne(node.args[1])))
+    }
     function scale(root) {
       assert(root && root.args, "2000: Internal error.");
       var node = Model.create(visit(root, {name:"scale", exponential:function(node) {
         var mv, nd;
         if((mv = mathValue(node, true)) && (nd = numberNode(String(mv), true))) {
           return nd
+        }
+        if(isHyperbolicSecant(node)) {
+          var arg = node.args[0].args[0];
+          var epx = binaryNode(Model.POW, [nodeE, arg]);
+          var emx = binaryNode(Model.POW, [nodeE, negate(arg)]);
+          var numer = nodeTwo;
+          var denom = addNode([epx, emx]);
+          node = fractionNode(numer, denom);
+          node = scale(expand(normalize(simplify(expand(normalize(node))))))
+        }else {
+          if(isHyperbolicCosecant(node)) {
+            var arg = node.args[0].args[0];
+            var epx = binaryNode(Model.POW, [nodeE, arg]);
+            var emx = binaryNode(Model.POW, [nodeE, negate(arg)]);
+            var numer = nodeTwo;
+            var denom = addNode([epx, negate(emx)]);
+            node = fractionNode(numer, denom);
+            node = scale(expand(normalize(simplify(expand(normalize(node))))))
+          }
         }
         var args = [];
         forEach(node.args, function(n) {
@@ -10297,6 +10332,27 @@ var Model = function() {
         var mv, nd;
         if((mv = mathValue(node, true)) && (nd = numberNode(String(mv), true))) {
           return nd
+        }
+        if(isHyperbolicTangent(node)) {
+          var arg = node.args[0].args[0];
+          var epx = binaryNode(Model.POW, [nodeE, arg]);
+          var emx = binaryNode(Model.POW, [nodeE, negate(arg)]);
+          var numer = addNode([epx, negate(emx)]);
+          var denom = addNode([epx, emx]);
+          node = fractionNode(numer, denom);
+          node = scale(expand(normalize(simplify(expand(normalize(node))))));
+          return node
+        }else {
+          if(isHyperbolicCotangent(node)) {
+            var arg = node.args[0].args[0];
+            var epx = binaryNode(Model.POW, [nodeE, arg]);
+            var emx = binaryNode(Model.POW, [nodeE, negate(arg)]);
+            var numer = addNode([epx, emx]);
+            var denom = addNode([epx, negate(emx)]);
+            node = fractionNode(numer, denom);
+            node = scale(expand(normalize(simplify(expand(normalize(node))))));
+            return node
+          }
         }
         var args = [];
         var mv2 = bigOne;
@@ -10370,11 +10426,11 @@ var Model = function() {
         switch(node.op) {
           case Model.SINH:
             var arg = args[0];
-            node = fractionNode(addNode([binaryNode(Model.POW, [nodeE, arg]), negate(binaryNode(Model.POW, [nodeE, negate(arg)]))]), nodeTwo);
+            node = scale(addNode([fractionNode(binaryNode(Model.POW, [nodeE, arg]), nodeTwo), fractionNode(negate(binaryNode(Model.POW, [nodeE, negate(arg)])), nodeTwo)]));
             break;
           case Model.COSH:
             var arg = args[0];
-            node = fractionNode(addNode([binaryNode(Model.POW, [nodeE, arg]), binaryNode(Model.POW, [nodeE, negate(arg)])]), nodeTwo);
+            node = scale(addNode([fractionNode(binaryNode(Model.POW, [nodeE, arg]), nodeTwo), fractionNode(binaryNode(Model.POW, [nodeE, negate(arg)]), nodeTwo)]));
             break;
           default:
             node = newNode(node.op, args);
@@ -11319,7 +11375,7 @@ var Model = function() {
             result = nid1 === nid2
           }else {
             if(!isComparison(n2.op) && (!isAggregate(n1) && !isAggregate(n2))) {
-              n1 = newNode(Model.SUB, [n1o, n2o]);
+              n1 = addNode([n1o, negate(n2o)]);
               n2 = nodeZero;
               n1 = scale(normalize(simplify(expand(normalize(n1)))));
               n2 = scale(normalize(simplify(expand(normalize(n2)))));
