@@ -405,6 +405,9 @@ var transformer = function() {
         let methods = "equivSymbolic " + (val.methods || ""); 
         if (response) {
           options.strict = true;
+          options.env = {
+            auth: options.data.AUTH,
+          };
           delete options.data;  // cleanup.
           MathCore.evaluateVerbose({
             method: "equivSymbolic",
@@ -412,14 +415,14 @@ var transformer = function() {
             value: reference,
           }, response, function (err, val) {
             delete options.strict;
+            delete options.env;
             if (err && err.length) {
               errs = errs.concat(error(err, 0));
             }
             response = escapeStr(response);
             reference = escapeStr(reference);
-            console.log("equivSymbolic() score=" + score + " val=" + JSON.stringify(val));
             resume(errs, {
-              score: score > 0 && val && val.result ? 1 : -1,
+              score: val.result || -1,
               response: response,
               value: reference,
               methods: methods,
