@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 0394f86
+ * Mathcore unversioned - dc8bd81
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -5774,7 +5774,7 @@ var Model = function() {
           case Model.COTH:
             return 1;
           case Model.SQRT:
-            assert(args.length === 1, message(2003));
+            option("L107", true);
             return d / 2;
           case Model.FACT:
             if(d !== 0) {
@@ -7168,6 +7168,11 @@ var Model = function() {
         });
         node = newNode(node.op, args);
         switch(node.op) {
+          case Model.DERIV:
+          ;
+          case Model.LIM:
+            option("L107", true);
+            break;
           case Model.SUB:
             if(node.args[0].op === Model.POW && isNeg(node.args[0].args[1])) {
               node = multiplyNode([nodeMinusOne, node.args[0]])
@@ -7198,6 +7203,7 @@ var Model = function() {
             }
             break;
           case Model.INT:
+            option("L107", true);
             node = normalizeIntegral(node);
             break;
           case Model.SIN:
@@ -10037,8 +10043,12 @@ var Model = function() {
             lterms = terms(lnode);
             rterms = terms(rnode)
           }
-          if(lterms && (rterms && ((!isAggregate(lnode) && lterms.length > 1 || !isAggregate(rnode) && rterms.length > 1) && lterms.length * rterms.length < 64))) {
-            return multiplyTerms(lterms, rterms, expo)
+          if(lterms && (rterms && (!isAggregate(lnode) && lterms.length > 1 || !isAggregate(rnode) && rterms.length > 1))) {
+            if(lterms.length * rterms.length < 64) {
+              return multiplyTerms(lterms, rterms, expo)
+            }else {
+              option("L107", true)
+            }
           }
           var result = [];
           if(lnode.op === Model.MUL) {
@@ -10144,6 +10154,7 @@ var Model = function() {
                           }
                         }
                       }else {
+                        option("L107", true);
                         args.push(newNode(op, [n, expo]))
                       }
                     }
@@ -10545,6 +10556,8 @@ var Model = function() {
           if(coeffs !== null && variables(node).length === 1) {
             if(coeffs.length === 3) {
               return!solveQuadratic(coeffs[2], coeffs[1], coeffs[0])
+            }else {
+              option("useSymp", true)
             }
             return!hasRoot(node, coeffs)
           }else {
@@ -11385,22 +11398,65 @@ var Model = function() {
           })
         })
       }else {
-        if(true || !result && !inverseResult) {
-          var value = stripMetadata(n1o);
-          var input = stripMetadata(n2o);
-          var src = "rubric [ symbolic " + JSON.stringify(value) + "] in []..";
-          var t0 = new Date;
-          putCode("L107", src, function(err, val) {
-            var t1 = new Date;
-            var data = [{id:val.id, data:[input]}];
-            var auth = Model.options.env.auth;
-            putComp(auth, data, function(err, val) {
-              var t2 = new Date;
-              var result = val[0].data.rating[0].score;
+        var nn = eraseCommonExpressions(normalize(n1), normalize(n2));
+        n1 = nn[0];
+        n2 = nn[1];
+        var n1o = stripMetadata(n1);
+        var n2o = stripMetadata(n2);
+        var mv1, mv2;
+        if((mv1 = mathValue(n1, true)) && (mv2 = mathValue(n2, true))) {
+          n1 = scale(n1);
+          n2 = scale(n2)
+        }else {
+          n1 = scale(expand(normalize(simplify(expand(normalize(n1))))));
+          n2 = scale(expand(normalize(simplify(expand(normalize(n2))))))
+        }
+        var nid1 = ast.intern(n1);
+        var nid2 = ast.intern(n2);
+        var result = nid1 === nid2;
+        if(!result) {
+          if(option("L107")) {
+            option("L107", undefined);
+            var value = n1o;
+            var input = n2o;
+            var src = "rubric [ symbolic " + JSON.stringify(value) + "] in []..";
+            var t0 = new Date;
+            putCode("L107", src, function(err, val) {
+              var t1 = new Date;
+              console.log("putCode() in " + (t1 - t0) + "ms");
+              var data = [{id:val.id, data:[input]}];
+              var auth = Model.options.env.auth;
+              putComp(auth, data, function(err, val) {
+                var t2 = new Date;
+                console.log("putComp() in " + (t2 - t1) + "ms");
+                var result = val[0].data.rating[0].score;
+                result = inverseResult && !result || result;
+                resume(null, result)
+              })
+            })
+          }else {
+            if(isComparison(n1.op)) {
+              n1 = scale(normalize(simplify(expand(normalize(n1)))));
+              n2 = scale(normalize(simplify(expand(normalize(n2)))));
+              nid1 = ast.intern(n1);
+              nid2 = ast.intern(n2);
+              result = nid1 === nid2;
               result = inverseResult && !result || result;
               resume(null, result)
-            })
-          })
+            }else {
+              if(!isComparison(n2.op) && (!isAggregate(n1) && !isAggregate(n2))) {
+                n1 = addNode([n1o, negate(n2o)]);
+                n2 = nodeZero;
+                n1 = scale(normalize(simplify(expand(normalize(n1)))));
+                n2 = scale(normalize(simplify(expand(normalize(n2)))));
+                nid1 = ast.intern(n1);
+                nid2 = ast.intern(n2);
+                result = nid1 === nid2;
+                result = inverseResult && !result || result;
+                resume(null, result)
+              }
+            }
+          }
         }else {
           result = inverseResult && !result || result;
           resume(null, result)
