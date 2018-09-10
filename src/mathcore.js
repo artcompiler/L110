@@ -4772,7 +4772,7 @@ var Model = function() {
   function putComp(auth, data, resume) {
     var encodedData = JSON.stringify(data);
     var options = {host:"acx.ac", port:"443", path:"/comp", method:"PUT", headers:{"Content-Type":"text/plain", "Content-Length":Buffer.byteLength(encodedData), "Authorization":auth}};
-    var req = http.request(options);
+    var req = https.request(options);
     req.on("response", function(res) {
       var data = "";
       res.on("data", function(chunk) {
