@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 59e203b
+ * Mathcore unversioned - 18347a5
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -2765,7 +2765,7 @@ var Model = function() {
             case OpStr.CST:
             ;
             case OpStr.NUM:
-              text = n.args[0];
+              text = "(" + n.args[0] + ")";
               break;
             case OpStr.SUB:
               if(n.args.length === 1) {
@@ -3956,10 +3956,33 @@ var Model = function() {
     function isMinusOne(node) {
       return node.op === Model.SUB && (node.args.length === 1 && isOne(node.args[0]))
     }
+    function isDerivative(n) {
+      if(n.op !== Model.FRAC) {
+        return
+      }
+      var numer = n.args[0];
+      var numerHead = numer.op === Model.MUL && (numer.args[0].op === Model.VAR && numer.args[0].args[0]) || numer.op === Model.VAR && numer.args[0];
+      var denom = n.args[1];
+      var denomHead = denom.op === Model.MUL && (denom.args[0].op === Model.VAR && denom.args[0].args[0]);
+      return numerHead === "d" && (denomHead === "d" && denom.args[1].op === Model.VAR) || undefined
+    }
+    function derivativeExpr(node) {
+      if(node.op !== Model.FRAC) {
+        return
+      }
+      var numer = node.args[0];
+      var denom = node.args[1];
+      var n = numer.op === Model.MUL && (numer.args.slice(1).length > 0 && multiplyNode(numer.args.slice(1))) || nodeOne;
+      assert(denom.args.length === 2);
+      return newNode(Model.DERIV, [denom.args[1], n])
+    }
     function multiplicativeExpr() {
       var t, expr, explicitOperator = false, prevExplicitOperator, isFraction, args = [];
       var n0;
       expr = fractionExpr();
+      if(isDerivative(expr)) {
+        expr = derivativeExpr(expr)
+      }
       if(expr.op === Model.MUL && !expr.isBinomial) {
         args = expr.args
       }else {
@@ -3977,6 +4000,9 @@ var Model = function() {
           explicitOperator = true
         }
         expr = fractionExpr();
+        if(isDerivative(expr)) {
+          expr = derivativeExpr(expr)
+        }
         if(t === TK_DIV) {
           expr = newNode(Model.POW, [expr, nodeMinusOne])
         }
@@ -4031,7 +4057,13 @@ var Model = function() {
                         t.isImplicit = undefined
                       }
                     }else {
-                      expr.isImplicit = true
+                      if(args[args.length - 1].op === Model.DERIV) {
+                        var e = args[args.length - 1].args[1];
+                        expr = newNode(Model.DERIV, [args[args.length - 1].args[0], multiplyNode([e, expr])]);
+                        args.pop()
+                      }else {
+                        expr.isImplicit = true
+                      }
                     }
                   }
                 }
@@ -4724,6 +4756,10 @@ var Model = function() {
   var latexSympy = require("./latex-sympy.js").Core;
   var http = require("http");
   var https = require("https");
+  var LOCAL = true;
+  var host = LOCAL && "localhost" || "www.graffiticode.com";
+  var port = LOCAL && "3000" || "443";
+  var protocol = LOCAL && http || https;
   function texToSympy(val, resume) {
     var errs = [];
     var source = val;
@@ -4746,8 +4782,8 @@ var Model = function() {
     var path = "/code";
     var data = {language:lang, src:src};
     var encodedData = JSON.stringify(data);
-    var options = {method:"PUT", host:"www.graffiticode.com", port:"443", path:path, headers:{"Content-Type":"text/plain", "Content-Length":encodedData.length}};
-    var req = https.request(options, function(res) {
+    var options = {method:"PUT", host:host, port:port, path:path, headers:{"Content-Type":"text/plain", "Content-Length":encodedData.length}};
+    var req = protocol.request(options, function(res) {
       var data = "";
       res.on("data", function(chunk) {
         data += chunk
@@ -4771,8 +4807,8 @@ var Model = function() {
   }
   function putComp(auth, data, resume) {
     var encodedData = JSON.stringify(data);
-    var options = {host:"www.graffiticode.com", port:"443", path:"/comp", method:"PUT", headers:{"Content-Type":"text/plain", "Content-Length":Buffer.byteLength(encodedData), "Authorization":auth}};
-    var req = https.request(options);
+    var options = {host:host, port:port, path:"/comp", method:"PUT", headers:{"Content-Type":"text/plain", "Content-Length":Buffer.byteLength(encodedData), "Authorization":auth}};
+    var req = protocol.request(options);
     req.on("response", function(res) {
       var data = "";
       res.on("data", function(chunk) {
@@ -5180,7 +5216,11 @@ var Model = function() {
             }
           }else {
             if(n.op === Model.POW && isMinusOne(n.args[1])) {
-              return binaryNode(Model.POW, [negate(n.args[0]), nodeMinusOne])
+              if(isZero(n.args[0])) {
+                return nodeNegativeInfinity
+              }else {
+                return binaryNode(Model.POW, [negate(n.args[0]), nodeMinusOne])
+              }
             }else {
               if(n.op === Model.INT && n.args.length === 3) {
                 return newNode(Model.INT, [n.args[1], n.args[0], n.args[2]])
@@ -6632,12 +6672,13 @@ var Model = function() {
         }
         var ff = factors(n, {}, false, true, true);
         forEach(ff, function(f) {
-          var isDenom = f.op === Model.POW && isMinusOne(f.args[1]);
-          var mv = mathValue(isDenom ? f.args[0] : f, true);
+          var isDenom = f.op === Model.POW && isNeg(f.args[1]);
+          var k = isDenom && (isMinusOne(f.args[1]) && f.args[0]) || (isDenom && newNode(Model.POW, [f.args[0], negate(f.args[1])]) || f);
+          var mv = mathValue(k, true);
           if(isOne(mv)) {
             return
           }
-          var key = mv !== null ? String(mv) : "nid$" + ast.intern(isDenom ? f.args[0] : f);
+          var key = mv !== null ? String(mv) : "nid$" + ast.intern(k);
           if(isDenom) {
             if(!denoms[key]) {
               denoms[key] = []
@@ -6651,7 +6692,7 @@ var Model = function() {
           }
         })
       });
-      assert(!numers["1"] && !denoms["1"], "2000: Identity multiplicateion should be factored out by now.");
+      assert(!numers["1"] && !denoms["1"], "2000: Identity multiplication should be factored out by now.");
       if(numers["-1"]) {
         if(numers["-1"].length % 2 === 0) {
           delete numers["-1"]
@@ -7096,10 +7137,24 @@ var Model = function() {
             }
           }
         }
-        var args = [];
-        if(node.op === Model.MATRIX) {
+        if(node.op === Model.MATRIX || node.op === Model.BACKSLASH) {
           return node
         }
+        var mv = bigZero;
+        var args = [];
+        forEach(node.args, function(n) {
+          if(n.op === Model.NUM && (mathValue(n, true) && !option("dontConvertDecimalToFraction"))) {
+            mv = mv.add(mathValue(n, true))
+          }else {
+            args = args.concat(normalize(n))
+          }
+        });
+        var isMixedNumber = node.isMixedNumber;
+        if(!isZero(mv) || args.length === 0) {
+          args.unshift(numberNode(mv))
+        }
+        node = newNode(node.op, args);
+        node.isMixedNumber = isMixedNumber;
         node = flattenNestedNodes(node);
         return sort(node)
       }, multiplicative:function(node) {
@@ -7175,7 +7230,7 @@ var Model = function() {
             break;
           case Model.SUB:
             if(node.args[0].op === Model.POW && isNeg(node.args[0].args[1])) {
-              node = multiplyNode([nodeMinusOne, node.args[0]])
+              node = negate(node.args[0])
             }else {
               node = negate(node.args[0], true)
             }
@@ -7217,7 +7272,7 @@ var Model = function() {
           case Model.ARCSINH:
           ;
           case Model.ARCCOSH:
-            node = normalizeTrigIdent(node.op, node.args);
+            node = normalizeTrigIdent(node);
             break;
           case Model.TAN:
           ;
@@ -7240,14 +7295,14 @@ var Model = function() {
           case Model.SECH:
             var c = node.op === Model.SEC ? Model.COS : Model.COSH;
             var arg0 = normalize(node.args[0]);
-            node = multiplyNode([nodeOne, binaryNode(Model.POW, [newNode(c, [arg0]), nodeMinusOne])]);
+            node = multiplyNode([binaryNode(Model.POW, [newNode(c, [arg0]), nodeMinusOne])]);
             break;
           case Model.CSC:
           ;
           case Model.CSCH:
             var s = node.op === Model.CSC ? Model.SIN : Model.SINH;
             var arg0 = normalize(node.args[0]);
-            node = multiplyNode([nodeOne, binaryNode(Model.POW, [newNode(s, [arg0]), nodeMinusOne])]);
+            node = multiplyNode([binaryNode(Model.POW, [newNode(s, [arg0]), nodeMinusOne])]);
             break;
           case Model.ABS:
             node = normalizeAbs(node);
@@ -7274,6 +7329,27 @@ var Model = function() {
         }
         return node
       }, exponential:function(node) {
+        var base = node.args[0];
+        var expo = node.args[1];
+        if(node.op === Model.POW && (node.args.length === 2 && (base.op === Model.TANH && (expo.op === Model.NUM && expo.args[0] === "2")))) {
+          return addNode([nodeOne, negate(binaryNode(Model.POW, [binaryNode(Model.POW, [newNode(Model.COSH, base.args), nodeTwo]), nodeMinusOne]))])
+        }else {
+          if(node.op === Model.POW && (node.args.length === 2 && (base.op === Model.SINH && ast.intern(expo) === ast.intern(nodeTwo)))) {
+            return addNode([binaryNode(Model.POW, [newNode(Model.COSH, base.args), nodeTwo]), nodeMinusOne])
+          }else {
+            if(node.op === Model.POW && (node.args.length === 2 && (base.op === Model.COTH && (expo.op === Model.NUM && expo.args[0] === "2")))) {
+              return addNode([nodeOne, binaryNode(Model.POW, [binaryNode(Model.POW, [newNode(Model.SINH, base.args), nodeTwo]), nodeMinusOne])])
+            }else {
+              if(node.op === Model.POW && (node.args.length === 2 && (base.op === Model.SECH && (expo.op === Model.NUM && expo.args[0] === "2")))) {
+                return binaryNode(Model.POW, [binaryNode(Model.POW, [newNode(Model.COSH, base.args), nodeTwo]), nodeMinusOne])
+              }else {
+                if(node.op === Model.POW && (node.args.length === 2 && (base.op === Model.CSCH && (expo.op === Model.NUM && expo.args[0] === "2")))) {
+                  return binaryNode(Model.POW, [binaryNode(Model.POW, [newNode(Model.SINH, base.args), nodeTwo]), nodeMinusOne])
+                }
+              }
+            }
+          }
+        }
         var args = [];
         forEach(node.args, function(n) {
           args = args.concat(normalize(n))
@@ -7290,7 +7366,7 @@ var Model = function() {
             if(node.args.length > 1) {
               args = args.concat(node.args.slice(1))
             }
-            node = binaryNode(node.op, args);
+            node = normalizeLogIdent(args[0], args[1]);
             break;
           case Model.POW:
             if(isMinusOne(node.args[0]) && toNumber(mathValue(node.args[1], true)) === 0.5) {
@@ -7530,7 +7606,7 @@ var Model = function() {
         assert(coeffs.length === 2, "2000: Internal error.");
         var c0 = coeffs[0] === undefined ? "1" : coeffs[0];
         var c1 = coeffs[1] === undefined ? "1" : coeffs[1];
-        return fractionNode(multiplyNode([nodeMinusOne, numberNode(c0)]), numberNode(c1))
+        return fractionNode(negate(numberNode(c0)), numberNode(c1))
       }}), root.location);
       while(nid !== ast.intern(node)) {
         nid = ast.intern(node);
@@ -7764,7 +7840,7 @@ var Model = function() {
         forEach(node.args, function(n, i) {
           node.args[i] = sort(n)
         });
-        if(node.op === Model.COLON || (node.op === Model.RIGHTARROW || (node.op === Model.GT || (node.op === Model.GE || (node.op === Model.LT || (node.op === Model.LE || (node.op === Model.NGTR || node.op === Model.NLESS))))))) {
+        if(node.op === Model.COLON || (node.op === Model.RIGHTARROW || (node.op === Model.GT || (node.op === Model.GE || (node.op === Model.LT || (node.op === Model.LE || (node.op === Model.NGTR || (node.op === Model.NLESS || node.args.length === 2 && isZero(node.args[1]))))))))) {
           return node
         }
         var d0, d1;
@@ -8283,7 +8359,40 @@ var Model = function() {
       }
       return toDecimal(f(n))
     }
-    function normalizeTrigIdent(op, args) {
+    function normalizeLogIdent(base, expo) {
+      var args = [];
+      var node;
+      if(isMultiplicative(expo)) {
+        var aa = [];
+        forEach(expo.args, function(e) {
+          if(e.op === Model.POW) {
+            aa.push(multiplyNode([e.args[1], newNode(Model.LOG, [base, e.args[0]])]))
+          }else {
+            aa.push(newNode(Model.LOG, [base, e]))
+          }
+        });
+        args.push(addNode(aa));
+        node = binaryNode(Model.LOG, args)
+      }else {
+        if(expo.op === Model.POW) {
+          args.push(multiplyNode([expo.args[1], newNode(Model.LOG, [base, expo.args[0]])]));
+          assert(args.length > 0, "2000: Internal error");
+          if(args.length > 1) {
+            node = multiplyNode(args)
+          }else {
+            if(args.length === 1) {
+              node = args[0]
+            }
+          }
+        }else {
+          node = newNode(Model.LOG, [base, expo])
+        }
+      }
+      return node
+    }
+    function normalizeTrigIdent(node) {
+      var op = node.op;
+      var args = node.args;
       var neg = sign(args[0]) < 0;
       var tt = terms(args[0]);
       var mv = bigZero;
@@ -8367,7 +8476,7 @@ var Model = function() {
               case -1:
                 arg = addNode(vp);
                 node = unaryNode(Model.COS, [arg]);
-                node = multiplyNode([nodeMinusOne, node]);
+                node = negate(node);
                 break;
               case 1 / 2:
                 arg = addNode(vp);
@@ -8383,7 +8492,7 @@ var Model = function() {
                 }else {
                   var arg1 = vp[0];
                   var arg2 = addNode(vp.slice(1).concat(cp));
-                  node = addNode([multiplyNode([unaryNode(Model.COS, [arg1]), unaryNode(Model.COS, [arg2])]), multiplyNode([nodeMinusOne, unaryNode(Model.SIN, [arg1]), unaryNode(Model.SIN, [arg2])])])
+                  node = addNode([multiplyNode([unaryNode(Model.COS, [arg1]), unaryNode(Model.COS, [arg2])]), negate(multiplyNode([unaryNode(Model.SIN, [arg1]), unaryNode(Model.SIN, [arg2])]))])
                 }
                 break;
               default:
@@ -8393,15 +8502,11 @@ var Model = function() {
           }
           break;
         case Model.SINH:
-          arg = args[0];
-          node = fractionNode(addNode([binaryNode(Model.POW, [nodeE, arg]), negate(binaryNode(Model.POW, [nodeE, negate(arg)]))]), nodeTwo);
-          break;
+        ;
         case Model.COSH:
-          arg = args[0];
-          node = fractionNode(addNode([binaryNode(Model.POW, [nodeE, arg]), binaryNode(Model.POW, [nodeE, negate(arg)])]), nodeTwo);
           break;
         case Model.ARCSINH:
-          arg = args[0];
+          var arg = args[0];
           var doNegate;
           if(isNeg(arg)) {
             arg = negate(arg);
@@ -8413,7 +8518,7 @@ var Model = function() {
           }
           break;
         case Model.ARCCOSH:
-          arg = args[0];
+          var arg = args[0];
           var doNegate;
           if(isNeg(arg)) {
             arg = negate(arg)
@@ -9042,6 +9147,10 @@ var Model = function() {
                 }else {
                   if(ldegr === 2 && (rdegr === 2 && (isOne(lcoeff) && (isOne(rcoeff) && ((lnode.args[0].op === Model.SIN && rnode.args[0].op === Model.COS || lnode.args[0].op === Model.COS && rnode.args[0].op === Model.SIN) && ast.intern(lnode.args[0].args[0]) === ast.intern(rnode.args[0].args[0])))))) {
                     return nodeOne
+                  }else {
+                    if(ldegr === 2 && (rdegr === 2 && (isOne(lcoeff) && (isOne(rcoeff) && ((lnode.args[0].op === Model.SIN && rnode.args[0].op === Model.COS || lnode.args[0].op === Model.COS && rnode.args[0].op === Model.SIN) && ast.intern(lnode.args[0].args[0]) === ast.intern(rnode.args[0].args[0])))))) {
+                      return nodeOne
+                    }
                   }
                 }
               }
@@ -9298,8 +9407,6 @@ var Model = function() {
                                   if(option("dontExpandPowers") && (lnode.op === Model.POW && (rnode.op === Model.POW && ast.intern(lnode.args[1]) === ast.intern(rnode.args[1])))) {
                                     var lbase = lnode.args[0];
                                     var rbase = rnode.args[0];
-                                    var lexpo = exponent(lnode);
-                                    var rexpo = exponent(rnode);
                                     var args = [];
                                     if(lbase.op === Model.MUL) {
                                       args = args.concat(lbase.args)
@@ -9344,7 +9451,7 @@ var Model = function() {
         node = newNode(node.op, args);
         switch(node.op) {
           case Model.SUB:
-            node = multiplyNode([node.args[0], nodeMinusOne]);
+            node = negate(node.args[0]);
             break;
           case Model.ABS:
             var arg = simplify(node.args[0]);
@@ -9435,7 +9542,7 @@ var Model = function() {
                           return[nodeMinusOne]
                         }else {
                           if(emv.remainder(bigThree).compareTo(bigZero) === 0) {
-                            return[multiplyNode([nodeMinusOne, nodeImaginary])]
+                            return[negate(nodeImaginary)]
                           }else {
                             if(emv.remainder(bigFive).compareTo(bigZero) === 0) {
                               return[nodeImaginary]
@@ -9473,9 +9580,13 @@ var Model = function() {
                                 if(expo.op === Model.LOG && ast.intern(base) === ast.intern(expo.args[0])) {
                                   return expo.args[1]
                                 }else {
-                                  var b = pow(bmv, emv);
-                                  if(b !== null) {
-                                    return numberNode(b)
+                                  if(base.op === Model.SINH && ast.intern(expo) === ast.intern(nodeTwo)) {
+                                    return addNode([binaryNode(Model.POW, [newNode(Model.COSH, base.args), nodeTwo]), nodeMinusOne])
+                                  }else {
+                                    var b = pow(bmv, emv);
+                                    if(b !== null) {
+                                      return numberNode(b)
+                                    }
                                   }
                                 }
                               }
@@ -9539,7 +9650,7 @@ var Model = function() {
             var mv = mathValue(n, true);
             if(erasedMinus && isInequality(node.op) || (mv !== null && (!isZero(mv) && ff.length > 1) || (n.op === Model.VAR && (units(n).length > 0 && ff.length > 1) || (n.op === Model.POW && (units(n.args[0]).length > 0 && (mathValue(n.args[0]) !== null && ff.length > 1)) || n.op === Model.POW && isNeg(n.args[1]))))) {
               if(args0.length > 0 && (node.op !== Model.EQL && (node.op !== Model.APPROX && isNeg(n)))) {
-                args0.push(expand(multiplyNode([nodeMinusOne, args0.pop()])))
+                args0.push(expand(negate(args0.pop())))
               }
             }else {
               if(isZero(mv)) {
@@ -10115,6 +10226,11 @@ var Model = function() {
             if(dontExpandPowers && (base.op === Model.VAR || base.op === Model.NUM)) {
               return[expo, base]
             }
+            if(base.op === Model.POW && !(isNeg(base.args[1]) || isNeg(expo))) {
+              expo = multiplyNode(base.args.slice(1).concat(expo));
+              base = base.args[0];
+              return[expo, base]
+            }
             var ff = factors(base, null, false, true);
             if(ff.length === 0) {
               return nodeOne
@@ -10391,12 +10507,43 @@ var Model = function() {
       }
       return addNode(args)
     }
+    function isHyperbolicTangent(node) {
+      return node.op === Model.MUL && (node.args.length > 1 && (node.args[0].op === Model.SINH && (node.args[1].op === Model.POW && (node.args[1].args[0].op === Model.COSH && isMinusOne(node.args[1].args[1])))))
+    }
+    function isHyperbolicCotangent(node) {
+      return node.op === Model.MUL && (node.args.length > 1 && (node.args[0].op === Model.COSH && (node.args[1].op === Model.POW && (node.args[1].args[0].op === Model.SINH && isMinusOne(node.args[1].args[1])))))
+    }
+    function isHyperbolicSecant(node) {
+      return node.op === Model.POW && (node.args.length > 1 && (node.args[0].op === Model.COSH && isMinusOne(node.args[1])))
+    }
+    function isHyperbolicCosecant(node) {
+      return node.op === Model.POW && (node.args.length > 1 && (node.args[0].op === Model.SINH && isMinusOne(node.args[1])))
+    }
     function scale(root) {
       assert(root && root.args, "2000: Internal error.");
       var node = Model.create(visit(root, {name:"scale", exponential:function(node) {
         var mv, nd;
         if((mv = mathValue(node, true)) && (nd = numberNode(String(mv), true))) {
           return nd
+        }
+        if(isHyperbolicSecant(node)) {
+          var arg = node.args[0].args[0];
+          var epx = binaryNode(Model.POW, [nodeE, arg]);
+          var emx = binaryNode(Model.POW, [nodeE, negate(arg)]);
+          var numer = nodeTwo;
+          var denom = addNode([epx, emx]);
+          node = fractionNode(numer, denom);
+          node = scale(expand(normalize(simplify(expand(normalize(node))))))
+        }else {
+          if(isHyperbolicCosecant(node)) {
+            var arg = node.args[0].args[0];
+            var epx = binaryNode(Model.POW, [nodeE, arg]);
+            var emx = binaryNode(Model.POW, [nodeE, negate(arg)]);
+            var numer = nodeTwo;
+            var denom = addNode([epx, negate(emx)]);
+            node = fractionNode(numer, denom);
+            node = scale(expand(normalize(simplify(expand(normalize(node))))))
+          }
         }
         var args = [];
         forEach(node.args, function(n) {
@@ -10407,6 +10554,27 @@ var Model = function() {
         var mv, nd;
         if((mv = mathValue(node, true)) && (nd = numberNode(String(mv), true))) {
           return nd
+        }
+        if(isHyperbolicTangent(node)) {
+          var arg = node.args[0].args[0];
+          var epx = binaryNode(Model.POW, [nodeE, arg]);
+          var emx = binaryNode(Model.POW, [nodeE, negate(arg)]);
+          var numer = addNode([epx, negate(emx)]);
+          var denom = addNode([epx, emx]);
+          node = fractionNode(numer, denom);
+          node = scale(expand(normalize(simplify(expand(normalize(node))))));
+          return node
+        }else {
+          if(isHyperbolicCotangent(node)) {
+            var arg = node.args[0].args[0];
+            var epx = binaryNode(Model.POW, [nodeE, arg]);
+            var emx = binaryNode(Model.POW, [nodeE, negate(arg)]);
+            var numer = addNode([epx, emx]);
+            var denom = addNode([epx, negate(emx)]);
+            node = fractionNode(numer, denom);
+            node = scale(expand(normalize(simplify(expand(normalize(node))))));
+            return node
+          }
         }
         var args = [];
         var mv2 = bigOne;
@@ -10477,7 +10645,22 @@ var Model = function() {
         forEach(node.args, function(n) {
           args.push(scale(n))
         });
-        return newNode(node.op, args)
+        switch(node.op) {
+          case Model.SINH:
+            var arg = args[0];
+            node = addNode([fractionNode(binaryNode(Model.POW, [nodeE, arg]), nodeTwo), fractionNode(negate(binaryNode(Model.POW, [nodeE, negate(arg)])), nodeTwo)]);
+            node = scale(expand(normalize(simplify(expand(normalize(node))))));
+            break;
+          case Model.COSH:
+            var arg = args[0];
+            node = addNode([fractionNode(binaryNode(Model.POW, [nodeE, arg]), nodeTwo), fractionNode(binaryNode(Model.POW, [nodeE, negate(arg)]), nodeTwo)]);
+            node = scale(expand(normalize(simplify(expand(normalize(node))))));
+            break;
+          default:
+            node = newNode(node.op, args);
+            break
+        }
+        return node
       }, numeric:function(node) {
         if(isUndefined(node)) {
           return node
@@ -11655,7 +11838,9 @@ var Model = function() {
   };
   Model.fn.isFactorised = function(n1) {
     var inverseResult = option("inverseResult");
+    var dontConvertDecimalToFraction = option("dontConvertDecimalToFraction", true);
     var result = isFactorised(normalize(n1));
+    option("dontConvertDecimalToFraction", dontConvertDecimalToFraction);
     return inverseResult ? !result : result
   };
   Model.fn.isUnit = function(n1, n2) {
