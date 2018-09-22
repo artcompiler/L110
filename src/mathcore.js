@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 0a54e79
+ * Mathcore unversioned - 7393639
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -3721,6 +3721,8 @@ var Model = function() {
       }
       bracketTokenCount--;
       inParenExpr = false;
+      e.lbrk = tk;
+      e.rbrk = tk2;
       return e
     }
     function exponentialExpr() {
