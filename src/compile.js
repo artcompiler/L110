@@ -1,5 +1,3 @@
-/* -*- Mode: js; js-indent-level: 2; indent-tabs-mode: nil; tab-width: 2 -*- */
-/* vim: set shiftwidth=2 tabstop=2 autoindent cindent expandtab: */
 /* Copyright (c) 2014, Art Compiler LLC */
 var _ = require("underscore");
 var mjAPI = require("mathjax-node/lib/mj-single.js");
