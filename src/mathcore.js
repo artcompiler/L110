@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 7393639
+ * Mathcore unversioned - 0e607bc
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -8495,6 +8495,7 @@ var Model = function() {
       }
     }
     function normalizeIntegralAddition(node) {
+      return node;
       var terms = {};
       var args = [];
       forEach(node.args, function(n) {
@@ -8537,6 +8538,7 @@ var Model = function() {
       return binaryNode(node.op, args)
     }
     function normalizeIntegral(node) {
+      return node;
       var start, stop, expr;
       if(node.args.length === 3) {
         start = node.args[0];
@@ -11542,6 +11544,7 @@ var Model = function() {
             var value = n1o;
             var input = n2o;
             var src = "rubric [ symbolic " + JSON.stringify(value) + "] in []..";
+            console.log("equivSymbolic() value=" + JSON.stringify(value, null, 2));
             var t0 = new Date;
             putCode("L107", src, function(err, val) {
               var t1 = new Date;
