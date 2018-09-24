@@ -34,8 +34,10 @@ window.gcexports.viewer = (function () {
         break;
       case "decimalPlaces":
       case "field":
+        options += v + JSON.stringify(value.options[v]) + " ";
+        break;
       default:
-        options += v + "=" + JSON.stringify(value.options[v]) + " ";
+        options += v + " ";
         break;
       }
     });
