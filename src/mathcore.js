@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 8fd61f1
+ * Mathcore unversioned - ed08747
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -4286,13 +4286,32 @@ var Model = function() {
     }
     function hasDX(node) {
       var len = node.args.length;
+      if(node.op === Model.MUL && node.args[len - 1].op === Model.FRAC) {
+        node = node.args[len - 1].args[0];
+        len = node.args.length
+      }else {
+        if(node.op === Model.FRAC) {
+          node = node.args[0]
+        }
+      }
       var dvar = node.args[len - 2];
       var ivar = node.args[len - 1];
       return node && (node.op === Model.MUL && (dvar.op === Model.VAR && (dvar.args[0] === "d" && (ivar.op === Model.VAR && ivar)))) || null
     }
     function stripDX(node) {
-      assert(node.op === Model.MUL);
-      return multiplyNode(node.args.slice(0, node.args.length - 2))
+      assert(node.op === Model.MUL || node.op === Model.FRAC);
+      var nodeLast = node.args[node.args.length - 1];
+      if(node.op === Model.MUL && nodeLast.op === Model.FRAC) {
+        nodeLast = fractionNode(multiplyNode(nodeLast.args.slice(0, nodeLast.args[0].args.length - 2)), nodeLast.args[1]);
+        node = multiplyNode(node.args.slice(0, node.args.length - 1).concat(nodeLast))
+      }else {
+        if(node.op === Model.FRAC) {
+          node = fractionNode(multiplyNode(node.args.slice(0, node.args[0].args.length - 2)), node.args[1])
+        }else {
+          node = multiplyNode(node.args.slice(0, node.args.length - 2))
+        }
+      }
+      return node
     }
     function integralExpr() {
       eat(TK_INT);
