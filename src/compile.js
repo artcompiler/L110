@@ -420,7 +420,7 @@ var transformer = function() {
             response = escapeStr(response);
             reference = escapeStr(reference);
             resume(errs, {
-              score: val.result || -1,
+              score: val.result && 1 || -1,
               response: response,
               value: reference,
               methods: methods,
