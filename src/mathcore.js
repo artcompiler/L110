@@ -3392,10 +3392,6 @@ var Model = function() {
         case TK_VAR:
           var args = [lexeme()];
           next();
-          if((t = hd()) === TK_UNDERSCORE) {
-            next({oneCharToken:true});
-            args.push(primaryExpr())
-          }
           e = newNode(Model.VAR, args);
           if(isChemCore()) {
             if(hd() === TK_LEFTBRACE && lookahead() === TK_RIGHTBRACE) {
