@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 399208e
+ * Mathcore unversioned - de24c87
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -5937,6 +5937,9 @@ var Model = function() {
       }, variable:function(node) {
         if(node.args[0] === "0") {
           return[]
+        }
+        if(node.op === Model.SUBSCRIPT) {
+          node = node.args[0]
         }
         return[node.args[0]]
       }, comma:function(node) {
