@@ -5367,6 +5367,7 @@ var Model = function() {
       var d = degree(v, true);
       if(isImaginary(v) || (d === Number.POSITIVE_INFINITY || (d < 0 || (d !== Math.floor(d) || (d > 10 || mathValue(constantPart(v), true) === null))))) {
         notPolynomial = true;
+        option("L107", true);
         return
       }
       if(cc[d] === undefined) {
@@ -5379,6 +5380,7 @@ var Model = function() {
       cc[d] = cc[d] + toNumber(mathValue(constantPart(v), true))
     });
     if(notPolynomial || variables(node).length > 1) {
+      option("L107", true);
       return null
     }
     if(cc.length > 3) {
