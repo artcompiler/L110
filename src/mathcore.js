@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - 9870341
+ * Mathcore unversioned - c11b97e
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -3058,8 +3058,6 @@ var Model = function() {
   var TK_ARCCSCH = 352;
   var TK_ARCCOTH = 353;
   var TK_OPERATORNAME = 354;
-  var T0 = TK_NONE;
-  var T1 = TK_NONE;
   var tokenToOperator = {};
   tokenToOperator[TK_SLASH] = OpStr.FRAC;
   tokenToOperator[TK_FRAC] = OpStr.FRAC;
@@ -3303,6 +3301,8 @@ var Model = function() {
     var nodeMinusOne = unaryNode(Model.SUB, [numberNode("1")]);
     var nodeNone = newNode(Model.NONE, [numberNode("0")]);
     var nodeEmpty = newNode(Model.VAR, ["0"]);
+    var T0 = TK_NONE;
+    var T1 = TK_NONE;
     var lexemeT0, lexemeT1;
     var scan = scanner(src);
     function start(options) {
@@ -3313,7 +3313,7 @@ var Model = function() {
       return T0
     }
     function lexeme() {
-      assert(lexemeT0 !== undefined, "1000: Lexeme for token is missing");
+      assert(lexemeT0 !== undefined, "1000: Lexeme for token T0=" + T0 + " is missing.");
       return lexemeT0
     }
     function next(options) {
@@ -3321,6 +3321,7 @@ var Model = function() {
         T0 = scan.start(options);
         lexemeT0 = scan.lexeme()
       }else {
+        assert(lexemeT1 !== undefined, "1000: Lexeme for token=" + T1 + " is missing.");
         T0 = T1;
         lexemeT0 = lexemeT1;
         T1 = TK_NONE
@@ -3331,6 +3332,7 @@ var Model = function() {
         T1 = scan.start(options);
         lexemeT1 = scan.lexeme()
       }
+      assert(lexemeT1 !== undefined, "1000: Lexeme for token=" + T1 + " is missing.");
       return T1
     }
     function eat(tc, options) {
@@ -6137,6 +6139,53 @@ var Model = function() {
         return vals
       }})
     }
+    function subexprs(root) {
+      assert(root && root.args, "2000: Internal error.");
+      return visit(root, {name:"terms", exponential:function(node) {
+        var exprs = [];
+        forEach(node.args, function(n) {
+          exprs = exprs.concat(subexprs(n))
+        });
+        return exprs
+      }, multiplicative:function(node) {
+        var exprs = [];
+        forEach(node.args, function(n) {
+          exprs = exprs.concat(subexprs(n))
+        });
+        return exprs
+      }, additive:function(node) {
+        var exprs = [];
+        if(node.isRepeating) {
+          return[node]
+        }
+        forEach(node.args, function(n) {
+          exprs = exprs.concat(subexprs(n))
+        });
+        return exprs
+      }, unary:function(node) {
+        var exprs = [];
+        forEach(node.args, function(n) {
+          exprs = exprs.concat(subexprs(n))
+        });
+        return exprs
+      }, numeric:function(node) {
+        return[node]
+      }, variable:function(node) {
+        return[node]
+      }, comma:function(node) {
+        var exprs = [];
+        forEach(node.args, function(n) {
+          exprs = exprs.concat(subexprs(n))
+        });
+        return exprs
+      }, equals:function(node) {
+        var exprs = [];
+        forEach(node.args, function(n) {
+          exprs = exprs.concat(subexprs(n))
+        });
+        return exprs
+      }})
+    }
     function normalizeFormatObject(fmt) {
       var list = [];
       switch(fmt.op) {
@@ -7043,6 +7092,10 @@ var Model = function() {
       n2 = factorCommonExpressions(n2);
       n1 = cancelFactors(n1);
       n2 = cancelFactors(n2);
+      if(n1.op === n2.op && (n1.op === Model.POW && (n1.args.length === 2 && (n2.args.length === 2 && (ast.intern(n1.args[1]) === ast.intern(n2.args[1]) && mathValue(n1.args[1], true) === null))))) {
+        n1 = n1.args[0];
+        n2 = n2.args[0]
+      }
       if(n1.op !== n2.op || n1.op !== Model.MUL) {
         return[n1, n2]
       }
@@ -7143,7 +7196,7 @@ var Model = function() {
       }
       var rootNid = nid;
       var node = Model.create(visit(root, {name:"normalize", numeric:function(node) {
-        if(isRepeating(node) || !option("dontConvertDecimalToFraction") && isDecimal(node)) {
+        if(!option("dontConvertDecimalToFraction") && (isRepeating(node) || isDecimal(node))) {
           node = decimalToFraction(node)
         }
         return node
@@ -7176,12 +7229,18 @@ var Model = function() {
           }
         });
         var isMixedNumber = node.isMixedNumber;
+        var isRepeating = node.isRepeating;
         if(!isZero(mv) || args.length === 0) {
           args.unshift(numberNode(mv))
         }
         node = newNode(node.op, args);
+        if(mathValue(node, true) && !option("dontConvertDecimalToFraction")) {
+          node = commonDenom(node)
+        }
         node.isMixedNumber = isMixedNumber;
         node = flattenNestedNodes(node);
+        node.isMixedNumber = isMixedNumber;
+        node.isRepeating = isRepeating;
         return sort(node)
       }, multiplicative:function(node) {
         assert(node.op !== Model.DIV, "2000: Divsion should be eliminated during parsing");
@@ -7229,6 +7288,7 @@ var Model = function() {
             }
           }
         });
+        var isRepeating = node.isRepeating;
         if(args.length === 0) {
           node = nodeOne
         }else {
@@ -7241,6 +7301,7 @@ var Model = function() {
         if(hasPM) {
           node = unaryNode(Model.PM, [node])
         }
+        node.isRepeating = isRepeating;
         return node
       }, unary:function(node) {
         var args = [];
@@ -7677,8 +7738,10 @@ var Model = function() {
         });
         var op = node.op === Model.SUB ? Model.ADD : node.op;
         var isMixedNumber = node.isMixedNumber;
+        var isRepeating = node.isRepeating;
         node = binaryNode(op, args, true);
         node.isMixedNumber = isMixedNumber;
+        node.isRepeating = isRepeating;
         if(node.op === Model.PM || node.op === Model.BACKSLASH) {
           return node
         }
@@ -7733,7 +7796,7 @@ var Model = function() {
                         node.args[i + 1] = n0
                       }
                     }else {
-                      if(isLessThan(cp0 = constantPart(n0), cp1 = constantPart(n1))) {
+                      if(isLessThan((cp0 = mathValue(constantPart(n0)), true), (cp1 = mathValue(constantPart(n1)), true))) {
                         node.args[i] = n1;
                         node.args[i + 1] = n0
                       }else {
@@ -7769,13 +7832,15 @@ var Model = function() {
           n1 = node.args[i + 1];
           d0 = degree(n0);
           d1 = degree(n1);
-          if(d0 > d1) {
-            node.args[i] = n1;
-            node.args[i + 1] = n0
+          if(d0 !== d1) {
+            if(d0 > d1) {
+              node.args[i] = n1;
+              node.args[i + 1] = n0
+            }
           }else {
             if(Math.abs(d0) === Math.abs(d1)) {
-              v0 = variables(n0);
-              v1 = variables(n1);
+              v0 = n0.op === Model.POW && variables(n0.args[0]) || variables(n0);
+              v1 = n1.op === Model.POW && variables(n1.args[0]) || variables(n1);
               var e0 = exponent(n0);
               var e1 = exponent(n1);
               if(e0 !== e1 && (!isNaN(e0) && !isNaN(e1))) {
@@ -7791,7 +7856,7 @@ var Model = function() {
                   }
                 }else {
                   if(n0.op === Model.POW && (n1.op === Model.POW && v0.length === 0)) {
-                    if(mathValue(n0.args[0]) < mathValue(n1.args[0])) {
+                    if(isLessThan(mathValue(n0.args[0], true), mathValue(n1.args[0], true))) {
                       node.args[i] = n1;
                       node.args[i + 1] = n0
                     }
@@ -8106,7 +8171,12 @@ var Model = function() {
           assert(args.length === 1, "2000: Internal error.");
           return negate(args[0], true)
         }
-        return newNode(node.op, args)
+        switch(node.op) {
+          case Model.ADD:
+            return node.args[0];
+          default:
+            return newNode(node.op, args)
+        }
       }, exponential:function(node) {
         var args = [];
         forEach(node.args, function(n) {
@@ -8916,10 +8986,32 @@ var Model = function() {
       var hash = {};
       var vp, vpnid, list;
       var result = !every(node.args, function(n) {
+        if(n.op === Model.MUL && hasLikeFactors(n)) {
+          return true
+        }
         vpnid = ast.intern(n);
         list = hash[vpnid] ? hash[vpnid] : hash[vpnid] = [];
         list.push(n);
         return list.length < 2 || isAdditive(n)
+      });
+      return result
+    }
+    function hasLikeFactorsOrTerms(node) {
+      if(node.op !== Model.MUL && node.op !== Model.ADD || (node.isRepeating || node.isMixedNumber)) {
+        return false
+      }
+      var hash = {};
+      var vp, vpnid, list;
+      var result = some(node.args, function(n) {
+        if((n.op === Model.ADD || n.op === Model.MUL) && hasLikeFactorsOrTerms(n)) {
+          return true
+        }
+        vpnid = n.op === Model.NUM && (mathValue(n, true) && (!isMinusOne(n) && "0")) || ast.intern(n);
+        if(hash[vpnid]) {
+          return true
+        }
+        hash[vpnid] = true;
+        return false
       });
       return result
     }
@@ -8995,6 +9087,103 @@ var Model = function() {
         return isNeg(constantPart(n))
       }))))
     }
+    function commonDenom(node) {
+      var n0 = node.args;
+      if(!isChemCore()) {
+        var denoms = [];
+        var deg = 0;
+        forEach(n0, function(n1) {
+          denoms = denom(n1, denoms);
+          forEach(denoms, function(n) {
+            var d = degree(n);
+            deg = d > deg && d || deg
+          })
+        });
+        if(denoms.length > 1 && deg < 3 || denoms.length === 1 && (!isMinusOne(denoms[0]) && !isOne(denoms[0]))) {
+          var denominator = binaryNode(Model.POW, [multiplyNode(denoms, true), nodeMinusOne]);
+          var n2 = [];
+          forEach(n0, function(n1) {
+            var d, n;
+            d = denom(n1, []);
+            n = numer(n1, d[0], denoms);
+            n2 = n2.concat(n)
+          });
+          if(n2.length) {
+            n0 = binaryNode(node.op, n2);
+            var mv;
+            if(mv = mathValue(n0)) {
+              n0 = numberNode(mv)
+            }
+            node = multiplyNode([n0, denominator])
+          }else {
+            node = denominator
+          }
+        }else {
+        }
+      }
+      return node
+    }
+    function numer(n, d, denoms) {
+      denoms = denoms.slice(0);
+      var ff = factors(n, {}, true, true);
+      var hasNumer = false;
+      var n0, nn = [];
+      forEach(ff, function(n) {
+        if(n.op !== Model.POW || !isNeg(mathValue(n.args[1], true))) {
+          nn.push(n)
+        }
+      });
+      if(nn.length === 0 || isOne(nn[0])) {
+        n0 = []
+      }else {
+        n0 = [multiplyNode(nn)]
+      }
+      var nid0 = d ? ast.intern(d) : 0;
+      var index = -1;
+      some(denoms, function(n, i) {
+        var nid1 = ast.intern(n);
+        if(nid0 === nid1) {
+          index = i;
+          return true
+        }
+        return false
+      });
+      if(index > -1) {
+        denoms.splice(index, 1)
+      }
+      if(n0.length || denoms.length) {
+        return multiplyNode([].concat(n0).concat(denoms), true)
+      }
+      return nodeOne
+    }
+    function denom(n, denoms) {
+      var ff = factors(n, {}, true, true);
+      var hasDenom = false;
+      var d0, dd = [];
+      forEach(ff, function(n) {
+        d0 = n.args[0];
+        if(n.op === Model.POW && !isOne(n.args[0])) {
+          if(isMinusOne(n.args[1])) {
+            dd.push(d0)
+          }else {
+            if(isNeg(mathValue(n.args[1], true))) {
+              dd.push(binaryNode(Model.POW, [d0, simplify(negate(n.args[1]), env)]))
+            }
+          }
+        }
+      });
+      if(dd.length === 0) {
+        return denoms
+      }else {
+        d0 = multiplyNode(dd)
+      }
+      if(every(denoms, function(d) {
+        return ast.intern(d) !== ast.intern(d0)
+      })) {
+        denoms.push(d0)
+      }
+      return denoms
+    }
     var simplifiedNodes = [];
     function simplify(root, env, resume) {
       assert(root && root.args, "2000: Internal error.");
@@ -9051,94 +9240,6 @@ var Model = function() {
         node.isMixedNumber = isMixedNumber;
         assert(node.args.length > 0, "2000: Internal error.");
         return node;
-        function commonDenom(node) {
-          var n0 = node.args;
-          if(!isChemCore()) {
-            var denoms = [];
-            forEach(n0, function(n1) {
-              denoms = denom(n1, denoms)
-            });
-            if(denoms.length > 1 || denoms.length === 1 && (!isMinusOne(denoms[0]) && !isOne(denoms[0]))) {
-              var denominator = binaryNode(Model.POW, [multiplyNode(denoms, true), nodeMinusOne]);
-              var n2 = [];
-              forEach(n0, function(n1) {
-                var d, n;
-                d = denom(n1, []);
-                n = numer(n1, d[0], denoms);
-                n2 = n2.concat(n)
-              });
-              if(n2.length) {
-                n0 = binaryNode(node.op, n2);
-                node = multiplyNode([n0, denominator])
-              }else {
-                node = denominator
-              }
-            }else {
-            }
-          }
-          return node
-        }
-        function numer(n, d, denoms) {
-          denoms = denoms.slice(0);
-          var ff = factors(n, {}, true, true);
-          var hasNumer = false;
-          var n0, nn = [];
-          forEach(ff, function(n) {
-            if(n.op !== Model.POW || !isNeg(mathValue(n.args[1], true))) {
-              nn.push(n)
-            }
-          });
-          if(nn.length === 0 || isOne(nn[0])) {
-            n0 = []
-          }else {
-            n0 = [multiplyNode(nn)]
-          }
-          var nid0 = d ? ast.intern(d) : 0;
-          var index = -1;
-          some(denoms, function(n, i) {
-            var nid1 = ast.intern(n);
-            if(nid0 === nid1) {
-              index = i;
-              return true
-            }
-            return false
-          });
-          if(index > -1) {
-            denoms.splice(index, 1)
-          }
-          if(n0.length || denoms.length) {
-            return multiplyNode([].concat(n0).concat(denoms), true)
-          }
-          return nodeOne
-        }
-        function denom(n, denoms) {
-          var ff = factors(n, {}, true, true);
-          var hasDenom = false;
-          var d0, dd = [];
-          forEach(ff, function(n) {
-            d0 = n.args[0];
-            if(n.op === Model.POW && !isOne(n.args[0])) {
-              if(isMinusOne(n.args[1])) {
-                dd.push(d0)
-              }else {
-                if(isNeg(mathValue(n.args[1], true))) {
-                  dd.push(binaryNode(Model.POW, [d0, simplify(negate(n.args[1]), env)]))
-                }
-              }
-            }
-          });
-          if(dd.length === 0) {
-            return denoms
-          }else {
-            d0 = multiplyNode(dd)
-          }
-          if(every(denoms, function(d) {
-            return ast.intern(d) !== ast.intern(d0)
-          })) {
-            denoms.push(d0)
-          }
-          return denoms
-        }
         function fold(lnode, rnode) {
           var ldegr = degree(lnode);
           var rdegr = degree(rnode);
@@ -9236,9 +9337,9 @@ var Model = function() {
           n0 = n0.concat(fold(n0.pop(), n1))
         });
         if(n0.length < 2) {
+          assert(n0.length, "2000: Internal error.");
           node = n0[0]
         }else {
-          assert(n0.length, "2000: Internal error.");
           node = sort(flattenNestedNodes(multiplyNode(n0)))
         }
         return node;
@@ -10962,12 +11063,14 @@ var Model = function() {
     this.formatMath = formatMath;
     this.expand = expand;
     this.terms = terms;
+    this.subexprs = subexprs;
     this.factors = factors;
     this.isFactorised = isFactorised;
     this.mathValue = mathValue;
     this.units = units;
     this.scale = scale;
     this.hasLikeFactors = hasLikeFactors;
+    this.hasLikeFactorsOrTerms = hasLikeFactorsOrTerms;
     this.factorGroupingKey = factorGroupingKey;
     this.hint = hint;
     this.eraseCommonExpressions = eraseCommonExpressions
@@ -11095,6 +11198,15 @@ var Model = function() {
     Assert.setLocation(prevLocation);
     return result
   }
+  function hasLikeFactorsOrTerms(node, env) {
+    var prevLocation = Assert.location;
+    if(node.location) {
+      Assert.setLocation(node.location)
+    }
+    var result = visitor.hasLikeFactorsOrTerms(node, env);
+    Assert.setLocation(prevLocation);
+    return result
+  }
   function expand(node, env) {
     var visitor = new Visitor(ast);
     var prevLocation = Assert.location;
@@ -11111,6 +11223,15 @@ var Model = function() {
       Assert.setLocation(node.location)
     }
     var result = visitor.terms(node, env);
+    Assert.setLocation(prevLocation);
+    return result
+  }
+  function subexprs(node, env) {
+    var prevLocation = Assert.location;
+    if(node.location) {
+      Assert.setLocation(node.location)
+    }
+    var result = visitor.subexprs(node, env);
     Assert.setLocation(prevLocation);
     return result
   }
@@ -11629,8 +11750,8 @@ var Model = function() {
         var nn = eraseCommonExpressions(normalize(n1), normalize(n2));
         n1 = nn[0];
         n2 = nn[1];
-        var n1o = stripMetadata(n1);
-        var n2o = stripMetadata(n2);
+        var n1o = stripMetadata(n1o);
+        var n2o = stripMetadata(n2o);
         var mv1, mv2;
         if((mv1 = mathValue(n1, true)) && (mv2 = mathValue(n2, true))) {
           n1 = scale(n1);
@@ -11644,7 +11765,6 @@ var Model = function() {
         var result = nid1 === nid2;
         if(!result) {
           if(option("L107")) {
-            option("L107", undefined);
             var value = JSON.stringify(n1o).replace(/\\\\/g, "\\");
             var input = n2o;
             var src = "rubric [ symbolic " + value + "] in []..";
@@ -11817,7 +11937,7 @@ var Model = function() {
         option("dontFactorTerms", dontFactorTerms);
         option("dontConvertDecimalToFraction", dontConvertDecimalToFraction);
         option("dontSimplifyImaginary", dontSimplifyImaginary);
-        if(nid1 === nid2 && !hasLikeFactors(n1)) {
+        if(nid1 === nid2 && !hasLikeFactorsOrTerms(n1)) {
           result = true
         }else {
           result = false
@@ -11877,17 +11997,17 @@ var Model = function() {
         n2 = normalize(simplify(expand(normalize(node))));
         nid1 = ast.intern(n1);
         nid2 = ast.intern(n2);
-        result = nid1 === nid2
+        result = nid1 === nid2 || subexprs(n1).length < subexprs(n2).length
       }
     }
     option("dontFactorDenominators", dontFactorDenominators);
     option("dontFactorTerms", dontFactorTerms);
     option("dontConvertDecimalToFraction", dontConvertDecimalToFraction);
     option("dontSimplifyImaginary", dontSimplifyImaginary);
-    if(result && (!n1 || !hasLikeFactors(n1))) {
-      return inverseResult ? false : true
+    if(result && (n1 && hasLikeFactorsOrTerms(n1))) {
+      return inverseResult ? true : false
     }
-    return inverseResult ? true : false
+    return inverseResult ? !result : result
   };
   Model.fn.isFactorised = function(n1) {
     var inverseResult = option("inverseResult");
