@@ -11723,7 +11723,7 @@ var Model = function() {
     }
     var ignoreUnits = option("ignoreUnits", true);
     if(formulaKind(n1) !== formulaKind(n2)) {
-      var result = false
+      resume(null, inverseResult && true)
     }else {
       if(option("compareSides") && (isComparison(n1.op) && n1.op === n2.op)) {
         var n1l = n1.args[0];
@@ -11778,7 +11778,7 @@ var Model = function() {
                 var t2 = new Date;
                 console.log("putComp() in " + (t2 - t1) + "ms");
                 var result = val[0].data.rating[0].score;
-                result = inverseResult && !result || result;
+                result = inverseResult ? !result : result;
                 option("ignoreUnits", ignoreUnits);
                 resume(null, result)
               })
@@ -11790,7 +11790,7 @@ var Model = function() {
               nid1 = ast.intern(n1);
               nid2 = ast.intern(n2);
               result = nid1 === nid2;
-              result = inverseResult && !result || result;
+              result = inverseResult ? !result : result;
               option("ignoreUnits", ignoreUnits);
               resume(null, result)
             }else {
@@ -11802,23 +11802,19 @@ var Model = function() {
                 nid1 = ast.intern(n1);
                 nid2 = ast.intern(n2);
                 result = nid1 === nid2;
-                result = inverseResult && !result || result;
+                result = inverseResult ? !result : result;
                 option("ignoreUnits", ignoreUnits);
                 resume(null, result)
               }
             }
           }
         }else {
-          result = inverseResult && !result || result;
+          result = inverseResult ? !result : result;
           option("ignoreUnits", ignoreUnits);
           resume(null, result)
         }
       }
     }
-    if(result) {
-      return inverseResult ? false : true
-    }
-    return inverseResult ? true : false
   };
   function isEqualsComparison(op) {
     return op === Model.LE || (op === Model.GE || op === Model.EQL)
