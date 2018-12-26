@@ -2,6 +2,10 @@
 /* vim: set shiftwidth=2 tabstop=2 autoindent cindent expandtab: */
 /* copyright (c) 2014, Jeff Dyer */
 window.gcexports.viewer = (function () {
+  const CLEAR = "#FEFEFE";
+  const YELLOW = "#E7B416";
+  const RED = "#CC3232";
+  const GREEN = "#2DC937";
   var height;
   function updateObj(obj) {
     objCodeMirror.setValue(obj);
@@ -102,26 +106,20 @@ window.gcexports.viewer = (function () {
     if (obj.score === undefined) {
       checkSrc = "";
     } else if (obj.score > 0) {
-      fill = "#FFF";
-      border = "rgb(100,255,100)";
       fontStyle = "normal";
       checkSrc = 
-        '<rect x="4" y="4" width="20" height="20" fill="rgb(100, 255, 100)" ' +
+        '<rect x="4" y="4" width="20" height="20" fill=' + GREEN + ' ' +
         'fill-opacity="1" stroke-opacity="0"/> ';
     } else if (obj.score < 0) {
-      fill = "#FFF";
-      border = "rgb(255,100,100)";
       fontStyle = "normal";
       checkSrc = 
-        '<rect x="4" y="4" width="20" height="20" fill="rgb(255, 100, 100)" ' +
+        '<rect x="4" y="4" width="20" height="20" fill=' + RED + ' ' +
         'fill-opacity="1" stroke-opacity="0"/> ';
     } else {
-      fill = "#FFF";
-      border = "rgb(255,255,100)";
       fontStyle = "italic";
       text = "Invalid program code.";
       checkSrc = 
-        '<rect x="4" y="4" width="20" height="20" fill="rgb(255, 255, 100)" ' +
+        '<rect x="4" y="4" width="20" height="20" fill=' + CLEAR + ' ' +
         'fill-opacity="1" stroke-opacity="0"/> ';
     }
     var data = [];
