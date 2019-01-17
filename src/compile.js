@@ -2,7 +2,8 @@
 var _ = require("underscore");
 var mjAPI = require("mathjax-node/lib/mj-single.js");
 import MathCore from "./mathcore.js";
-import {Core} from "./spokenmath.js";
+import {Core as SpokenMathCore} from "./spokenmath.js";
+import {Core as TexSympyCore} from "./latex-sympy.js";
 
 function error(str, nid) {
   return {
@@ -72,6 +73,7 @@ var transformer = function() {
     "CALCULATE": calculate,
     "TRANSLATE": trans,
     "SPEAK": speak,
+    "SYMPY": sympy,
     "FORMAT": format,
     "VALID-SYNTAX": validSyntax,
     "INVERSE-RESULT": inverseResult,
@@ -614,23 +616,41 @@ var transformer = function() {
       }
     });
   }
-  function translate(val, options, resume) {
+  function translate(dialect, val, options, resume) {
     var errs = [];
     var source = val;
     if (source) {
       delete options.data; // Synthetic option.
-      Core.translate(options, source, function (err, val) {
-        delete options.strict;
-        if (err && err.length) {
-          errs = errs.concat(error(err, node.elts[0]));
-        }
-        resume(errs, val);
-      });
+      if (dialect === "ClearSpeak") {
+        SpokenMathCore.translate(options, source, function (err, val) {
+          delete options.strict;
+          if (err && err.length) {
+            errs = errs.concat(error(err, node.elts[0]));
+          }
+          delete options.words;
+          delete options.types;
+          delete options.rules;
+          resume(errs, val);
+        });
+      } else if (dialect === "SymPy") {
+        TexSympyCore.translate(options, source, function (err, val) {
+          delete options.strict;
+          if (err && err.length) {
+            errs = errs.concat(error(err, node.elts[0]));
+          }
+          delete options.words;
+          delete options.types;
+          delete options.rules;
+          resume(errs, val);
+        });
+      }
     }
   }
   function speak(node, options, resume) {
-    //options.dialect = "clearSpeak";
-    return trans(node, options, resume);
+    return trans("ClearSpeak", node, options, resume);
+  }
+  function sympy(node, options, resume) {
+    return trans("SymPy", node, options, resume);
   }
   function format(node, options, resume) {
     var errs = [];
@@ -667,21 +687,15 @@ var transformer = function() {
       });
     });
   }
-  function trans(node, options, resume) {
+  function trans(dialect, node, options, resume) {
     var errs = [];
     visit(node.elts[0], options, function (err, val) {
       errs = errs.concat(err);
       let latex = val;
       let opts;
-      var methods = "speak " + (val.methods || "");
+      var methods = dialect + " " + (val.methods || "");
       if (latex) {
-        if (options) {
-          // Add item options to global options.
-          opts = Object.assign({}, options, options);
-        } else {
-          opts = dialect.options;
-        }
-        translate(latex, opts, function (err, val) {
+        translate(dialect, latex, options, function (err, val) {
           if (err && err.length) {
             errs = errs.concat(error(err, node.elts[0]));
           }

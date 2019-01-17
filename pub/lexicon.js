@@ -23,6 +23,7 @@ window.gcexports.globalLexicon = {
     "calculate" : { "tk": 1, "name": "CALCULATE", "cls": "function", "length": 1 , "arity": 1 },
     "translate" : { "tk": 1, "name": "SPEAK", "cls": "function", "length": 2 , "arity": 2 },
     "speak" : { "tk": 1, "name": "SPEAK", "cls": "function", "length": 1 , "arity": 1 },
+    "sympy" : { "tk": 1, "name": "SYMPY", "cls": "function", "length": 1 , "arity": 1 },
     "format" : { "tk": 1, "name": "FORMAT", "cls": "function", "length": 2 , "arity": 2 },
     "validSyntax" : { "tk": 1, "name": "VALID-SYNTAX", "cls": "function", "length": 1 , "arity": 1 },
     "not" : { "tk": 1, "name": "NOT", "cls": "function", "length": 1 },
