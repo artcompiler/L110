@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - c11b97e
+ * Mathcore unversioned - c6150d1
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -11650,6 +11650,7 @@ var Model = function() {
     return kind
   }
   Model.fn.equivSymbolic = function equivSymbolic(n1, n2, resume) {
+    option("L107", true);
     var n1o = n1;
     var n2o = n2;
     var result;
@@ -11763,7 +11764,7 @@ var Model = function() {
         var nid1 = ast.intern(n1);
         var nid2 = ast.intern(n2);
         var result = nid1 === nid2;
-        if(!result) {
+        if(true || !result) {
           if(option("L107")) {
             var value = JSON.stringify(n1o).replace(/\\\\/g, "\\");
             var input = n2o;
