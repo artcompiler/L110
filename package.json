@@ -1,7 +1,7 @@
 {
-  "name": "L108",
+  "name": "L110",
   "version": "0.1.0",
-  "description": "L108 compiler as a service",
+  "description": "L110 compiler as a service",
   "main": "index.js",
   "scripts": {
     "start": "node --harmony index.js"
@@ -19,7 +19,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/artcompiler/L108"
+    "url": "https://github.com/artcompiler/L110"
   },
   "keywords": [
     "node",
