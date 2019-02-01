@@ -1,5 +1,5 @@
 /*
- * Mathcore unversioned - c72af12
+ * Mathcore unversioned - 03c6ea8
  * Copyright 2014 Learnosity Ltd. All Rights Reserved.
  *
  */
@@ -4796,7 +4796,7 @@ var Model = function() {
   return Model
 }();
 (function(ast) {
-  var latexSympy = require("./latex-sympy.js").Core;
+  var latexSympy = require("./latexsympy.js").Core;
   var http = require("http");
   var https = require("https");
   var LOCAL = false;
