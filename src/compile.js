@@ -311,7 +311,6 @@ var transformer = function() {
         let methods = "equivSyntax " + (val.methods || "");
         if (response) {
           options.strict = true;
-          delete options.data;
           MathCore.evaluateVerbose({
             method: "equivSyntax",
             options: options,
@@ -345,7 +344,6 @@ var transformer = function() {
         let methods = "equivLiteral " + (val.methods || ""); 
         var hideExpected = options.hideExpected;
         delete options.hideExpected;
-        delete options.data;
         if (response) {
           options.strict = true;
           options.keepTextWhitespace = true;
@@ -408,7 +406,6 @@ var transformer = function() {
           options.env = {
             auth: options.data.AUTH,
           };
-          delete options.data;  // cleanup.
           MathCore.evaluateVerbose({
             method: "equivSymbolic",
             options: options,
@@ -445,7 +442,6 @@ var transformer = function() {
         let methods = "equivValue " + (val.methods || ""); 
         if (response) {
           options.strict = true;
-          delete options.data;
           MathCore.evaluateVerbose({
             method: "equivValue",
             options: options,
@@ -478,7 +474,6 @@ var transformer = function() {
       let methods = "isFactorised " + (val.methods || ""); 
       if (response) {
         options.strict = true;
-        delete options.data;
         MathCore.evaluateVerbose({
           method: "isFactorised",
           options: options,
@@ -507,7 +502,6 @@ var transformer = function() {
       let methods = "isSimplified " + (val.methods || ""); 
       if (response) {
         options.strict = true;
-        delete options.data;
         MathCore.evaluateVerbose({
           method: "isSimplified",
           options: options,
@@ -536,7 +530,6 @@ var transformer = function() {
       let methods = "isExpanded " + (val.methods || ""); 
       if (response) {
         options.strict = true;
-        delete options.data;
         MathCore.evaluateVerbose({
           method: "isExpanded",
           options: options,
@@ -565,7 +558,6 @@ var transformer = function() {
       let methods = "isTrue " + (val.methods || ""); 
       if (response) {
         options.strict = true;
-        delete options.data;
         MathCore.evaluateVerbose({
           method: "isTrue",
           options: options,
@@ -594,7 +586,6 @@ var transformer = function() {
       let methods = "calculate " + (val.methods || ""); 
       if (response) {
         options.strict = true;
-        delete options.data;
         MathCore.evaluateVerbose({
           method: "calculate",
           options: options,
@@ -620,7 +611,6 @@ var transformer = function() {
     var errs = [];
     var source = val;
     if (source) {
-      delete options.data; // Synthetic option.
       if (dialect === "ClearSpeak") {
         SpokenMathCore.translate(options, source, function (err, val) {
           delete options.strict;
@@ -664,7 +654,6 @@ var transformer = function() {
         let methods = "format " + (val.methods || "");
         if (response) {
           options.strict = true;
-          delete options.data;
           MathCore.evaluateVerbose({
             method: "format",
             options: options,
@@ -721,7 +710,6 @@ var transformer = function() {
       let methods = "validSyntax " + (val.methods || ""); 
       if (response) {
         options.strict = true;
-        delete options.data;
         MathCore.evaluateVerbose({
           method: "validSyntax",
           options: options,
@@ -753,7 +741,6 @@ var transformer = function() {
         let methods = "isUnit " + (val.methods || ""); 
         if (response) {
           options.strict = true;
-          delete options.data;
           MathCore.evaluateVerbose({
             method: "isUnit",
             options: options,

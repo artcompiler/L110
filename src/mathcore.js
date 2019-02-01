@@ -12304,6 +12304,8 @@ var MathCore = function() {
         assert(false, message(3007, [p, v]));
         break;
       case "env":
+      ;
+      case "data":
         if(typeof v === "undefined" || typeof v === "object") {
           break
         }
