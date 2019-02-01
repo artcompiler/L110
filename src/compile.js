@@ -3,7 +3,7 @@ var _ = require("underscore");
 var mjAPI = require("mathjax-node/lib/mj-single.js");
 import MathCore from "./mathcore.js";
 import {Core as SpokenMathCore} from "./spokenmath.js";
-import {Core as TexSympyCore} from "./latex-sympy.js";
+import {Core as TexSympyCore} from "./latexsympy.js";
 
 function error(str, nid) {
   return {

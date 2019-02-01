@@ -4,7 +4,7 @@
   "description": "L110 compiler as a service",
   "main": "index.js",
   "scripts": {
-    "start": "node --harmony index.js"
+    "start": "(ls lib || mkdir lib) && cp latexsympy/build/spokenmath.js lib/latexsympy.js; node --harmony index.js"
   },
   "dependencies": {
     "express": "~3.4.x",
