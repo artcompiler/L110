@@ -80,11 +80,11 @@ window.gcexports.viewer = (function () {
       svg =
         "<image width='" + valueSize.width +
         "' height='" + valueSize.height +
-        "' x='4' y='30' xlink:href=\"data:image/svg+xml;utf8," + obj.valueSVG +
+        "' x='4' y='30' xlink:href=\"data:image/svg+xml;utf8," + obj.valueSVG.replace(/#/g, "%23") +
         "\"/><image width='" + responseSize.width +
         "' height='" + responseSize.height +
         "' x='4' y='" + (valueSize.height + 40) +
-        "' xlink:href=\"data:image/svg+xml;utf8," + obj.responseSVG +
+        "' xlink:href=\"data:image/svg+xml;utf8," + obj.responseSVG.replace(/#/g, "%23") +
         "\"/>";
     } else {
       var valueHeight = 0;
@@ -99,7 +99,7 @@ window.gcexports.viewer = (function () {
       svg =
         "<image width='" + responseSize.width +
         "' height='" + responseSize.height +
-        "' x='4' y='" + (valueHeight + 35) + "' xlink:href='data:image/svg+xml;utf8," + obj.responseSVG +
+        "' x='4' y='" + (valueHeight + 35) + "' xlink:href='data:image/svg+xml;utf8," + obj.responseSVG.replace(/#/g, "%23") +
         "'/>";
     }
     var border;
