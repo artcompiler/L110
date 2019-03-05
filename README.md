@@ -10,7 +10,7 @@
 * Clone and build mathcore (while in the L107 root directory.)
   * `$ git clone git@github.com:artcompiler/mathcore.git`
   * `$ cd mathcore`
-  * `$ git checkout L107`
+  * `$ git checkout L110`
   * `$ npm install`
   * `$ make`
   * `$ cd ..`
