@@ -25,3 +25,5 @@
   * `$ make`
 * Make sure everything is good.
   * In a browser, go to "localhost:3000/lang?id=110".
+  * Copy the following into code view: `equivSymbolic "(x+2)(x+3)" "x^2+5x+6"..`
+  * See in the form view this: https://www.graffiticode.com/form?id=XZgF1ev6tM
