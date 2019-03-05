@@ -3,7 +3,7 @@
 ### Steps include
 
 * Get, build and start the Graffiticode host app (https://github.com/graffiticode/graffiticode).
-* Clone and initialize the L120 compiler.
+* Clone and initialize the L110 compiler.
   * `$ git clone git@github.com:graffiticode/L110.git`
   * `$ cd L110`
   * `$ npm install`
