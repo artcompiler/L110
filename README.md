@@ -1,7 +1,5 @@
 ## Making L110
 
-### Steps include
-
 * Get, build and start the Graffiticode host app (https://github.com/graffiticode/graffiticode).
 * Clone and initialize the L110 compiler.
   * `$ git clone git@github.com:artcompiler/L110.git`
@@ -29,8 +27,6 @@
   * See in the form view this: https://www.graffiticode.com/form?id=XZgF1ev6tM
 
 ## Updating the SymPy translator
-
-### Steps include
 
 * Edit and test a translator definition using L120.
 * Modify the line in the file `./latexsympy/tools/build.js` that begins `const id =` to refer to the new L120 translator definition.
