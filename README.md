@@ -27,3 +27,11 @@
   * In a browser, go to "localhost:3000/lang?id=110".
   * Copy the following into code view: `equivSymbolic "(x+2)(x+3)" "x^2+5x+6"..`
   * See in the form view this: https://www.graffiticode.com/form?id=XZgF1ev6tM
+
+## Updating the SymPy translator
+
+### Steps include
+
+* Edit and test an L120 translator definition.
+* Edit the file `./latexsympy/tools/build.js`
+* Change the ID of the translator definition to the ID of the translator definition that result in step 1 above. The ID is set by the statement that begins `const id =`. 
