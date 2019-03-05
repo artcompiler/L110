@@ -4,7 +4,7 @@
 
 * Get, build and start the Graffiticode host app (https://github.com/graffiticode/graffiticode).
 * Clone and initialize the L110 compiler.
-  * `$ git clone git@github.com:graffiticode/L110.git`
+  * `$ git clone git@github.com:artcompiler/L110.git`
   * `$ cd L110`
   * `$ npm install`
 * Clone and build mathcore (while in the L107 root directory.)
