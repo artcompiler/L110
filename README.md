@@ -32,6 +32,7 @@
 
 ### Steps include
 
-* Edit and test an L120 translator definition.
-* Edit the file `./latexsympy/tools/build.js`
-* Change the ID of the translator definition to the ID of the translator definition that result in step 1 above. The ID is set by the statement that begins `const id =`. 
+* Edit and test a translator definition using L120.
+* Modify the line in the file `./latexsympy/tools/build.js` that begins `const id =` to refer to the new L120 translator definition.
+* Test changes: `make test`.
+* Resolve any regressions.
