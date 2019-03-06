@@ -5,7 +5,7 @@
   * `$ git clone git@github.com:artcompiler/L110.git`
   * `$ cd L110`
   * `$ npm install`
-* Clone and build mathcore (while in the L107 root directory.)
+* Clone and build mathcore (while in the L110 root directory.)
   * `$ git clone git@github.com:artcompiler/mathcore.git`
   * `$ cd mathcore`
   * `$ git pull origin L110`
