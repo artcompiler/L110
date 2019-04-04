@@ -36,6 +36,7 @@ var transformer = function() {
     "CALCULATE": calculate,
     "TRANSLATE": trans,
     "SPEAK": speak,
+    "SYMPY": sympy,
     "VALID-SYNTAX": validSyntax,
     "INVERSE-RESULT": inverseResult,
     "DECIMAL-PLACES": decimalPlaces,
